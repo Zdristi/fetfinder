@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Account Blocked - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 50px auto; text-align: center;">
+    <div style="font-size: 4rem; margin-bottom: 20px; color: var(--danger);">
+        <i class="fas fa-ban"></i>
+    </div>
+    
+    <h1 style="color: var(--danger); margin-bottom: 20px;">Account Blocked</h1>
+    
+    <p style="font-size: 1.2rem; margin-bottom: 20px;">
+        Your account has been blocked due to violation of our terms of service.
+    </p>
+    
+    {% if current_user.blocked_reason %}
+        <div style="background-color: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ffeaa7;">
+            <p style="margin: 0; color: #856404;">
+                <strong>Reason:</strong> {{ current_user.blocked_reason }}
+            </p>
+        </div>
+    {% endif %}
+    
+    <p style="color: var(--gray); margin-bottom: 30px;">
+        If you believe this is a mistake, please contact our support team.
+    </p>
+    
+    <a href="{{ url_for('logout') }}" class="btn">
+        <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+</div>
+{% endblock %}

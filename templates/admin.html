@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="fas fa-user-shield"></i> Admin Panel
+        </h2>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('home') }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Back to Site
+        </a>
+    </div>
+    
+    <h3 style="margin: 20px 0; color: var(--dark);">
+        <i class="fas fa-users"></i> User Management
+    </h3>
+    
+    {% if users %}
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 12px; text-align: left;">User</th>
+                        <th style="padding: 12px; text-align: left;">Email</th>
+                        <th style="padding: 12px; text-align: left;">Location</th>
+                        <th style="padding: 12px; text-align: left;">Status</th>
+                        <th style="padding: 12px; text-align: left;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user_id, user in users.items() %}
+                        <tr style="border-bottom: 1px solid #dee2e6;">
+                            <td style="padding: 12px;">
+                                <strong>{{ user.username }}</strong>
+                                {% if user.get('is_admin', False) %}
+                                    <span class="badge" style="background-color: var(--accent);">Admin</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 12px;">{{ user.email or 'N/A' }}</td>
+                            <td style="padding: 12px;">
+                                {{ user.city }}{% if user.city and user.country %}, {% endif %}{{ user.country }}
+                            </td>
+                            <td style="padding: 12px;">
+                                {% if user.get('is_blocked', False) %}
+                                    <span class="badge" style="background-color: var(--danger);">
+                                        <i class="fas fa-ban"></i> Blocked
+                                    </span>
+                                {% else %}
+                                    <span class="badge" style="background-color: var(--success);">
+                                        <i class="fas fa-check"></i> Active
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 12px;">
+                                {% if user_id != current_user.id %}
+                                    {% if user.get('is_blocked', False) %}
+                                        <form method="POST" action="{{ url_for('unblock_user', user_id=user_id) }}" style="display: inline;">
+                                            <button type="submit" class="btn" style="background-color: var(--success); padding: 5px 10px; font-size: 0.9rem;">
+                                                <i class="fas fa-unlock"></i> Unblock
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <form method="POST" action="{{ url_for('block_user', user_id=user_id) }}" style="display: inline;">
+                                            <input type="hidden" name="reason" value="Violation of terms of service">
+                                            <button type="submit" class="btn" style="background-color: var(--danger); padding: 5px 10px; font-size: 0.9rem;" 
+                                                    onclick="return confirm('Are you sure you want to block this user?')">
+                                                <i class="fas fa-ban"></i> Block
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    
+                                    <form method="POST" action="{{ url_for('delete_user', user_id=user_id) }}" style="display: inline;">
+                                        <button type="submit" class="btn" style="background-color: var(--gray); padding: 5px 10px; font-size: 0.9rem;" 
+                                                onclick="return confirm('Are you sure you want to DELETE this user? This cannot be undone!')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                    
+                                    {% if not user.get('is_admin', False) %}
+                                        <form method="POST" action="{{ url_for('make_admin', user_id=user_id) }}" style="display: inline;">
+                                            <button type="submit" class="btn" style="background-color: var(--accent); padding: 5px 10px; font-size: 0.9rem;">
+                                                <i class="fas fa-crown"></i> Make Admin
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="color: var(--gray);">Current User</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div style="font-size: 4rem; margin-bottom: 20px;">👥</div>
+            <h3>No users found</h3>
+            <p>There are no registered users yet.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

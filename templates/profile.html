@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user_data.username or 'Profile' }} - LoveConnect{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="profile-header">
+        {% if user_data.photo %}
+            <img src="{{ url_for('static', filename='uploads/' + user_data.photo) if user_data.photo and not user_data.photo.startswith('http') else user_data.photo }}" 
+                 alt="{{ user_data.username }}" class="profile-avatar" style="width: 100px; height: 100px; object-fit: cover;">
+        {% else %}
+            <div class="profile-avatar">
+                {{ user_data.username[0].upper() if user_data.username else '?' }}
+            </div>
+        {% endif %}
+        <div class="profile-info">
+            <h1>{{ user_data.username or 'Anonymous' }}</h1>
+            {% if user_data.country or user_data.city %}
+                <p>
+                    <i class="fas fa-map-marker-alt"></i> 
+                    {{ user_data.city }}{% if user_data.city and user_data.country %}, {% endif %}{{ user_data.country }}
+                </p>
+            {% endif %}
+            <p><i class="fas fa-calendar-alt"></i> {{ get_text('member_since') }} {{ user_data.created_at[:10] }}</p>
+        </div>
+    </div>
+    
+    {% if not is_complete %}
+        <div style="background-color: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ffeaa7;">
+            <p style="margin: 0; color: #856404;">
+                <i class="fas fa-exclamation-circle"></i> {{ get_text('please_complete_profile') }}
+            </p>
+            <a href="{{ url_for('edit_profile') }}" class="btn" style="margin-top: 10px; padding: 8px 15px; font-size: 0.9rem;">
+                {{ get_text('complete_profile') }}
+            </a>
+        </div>
+    {% endif %}
+    
+    <div class="section-title">
+        <h2><i class="fas fa-user-circle"></i> {{ get_text('about') }}</h2>
+    </div>
+    <p>{{ user_data.bio or get_text('no_bio') }}</p>
+    
+    <div class="section-title">
+        <h2><i class="fas fa-fire"></i> {{ get_text('fetishes') }}</h2>
+    </div>
+    {% if user_data.fetishes %}
+        <div>
+            {% for fetish in user_data.fetishes %}
+                <span class="badge badge-fetish">{{ fetish }}</span>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>{{ get_text('no_fetishes') }}</p>
+    {% endif %}
+    
+    <div class="section-title">
+        <h2><i class="fas fa-heart"></i> {{ get_text('interests') }}</h2>
+    </div>
+    {% if user_data.interests %}
+        <div>
+            {% for interest in user_data.interests %}
+                <span class="badge badge-interest">{{ interest }}</span>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>{{ get_text('no_interests') }}</p>
+    {% endif %}
+    
+    <div style="margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap;">
+        <a href="{{ url_for('swipe') }}" class="btn">
+            <i class="fas fa-heart"></i> {{ get_text('swipe_now') }}
+        </a>
+        <a href="{{ url_for('users') }}" class="btn btn-outline">
+            <i class="fas fa-users"></i> {{ get_text('all_users') }}
+        </a>
+        <a href="{{ url_for('edit_profile') }}" class="btn btn-outline">
+            <i class="fas fa-edit"></i> {{ get_text('edit_profile') }}
+        </a>
+    </div>
+</div>
+{% endblock %}

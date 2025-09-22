@@ -1,0 +1,7 @@
+web:
+  commands:
+    - pip install -r requirements.txt
+    - python app.py
+  env:
+    - key: PYTHON_VERSION
+      value: 3.9.15

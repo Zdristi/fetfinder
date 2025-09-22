@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+    <!-- For logged in users, show swipe interface -->
+    <div style="text-align: center; max-width: 800px; margin: 0 auto;">
+        <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: var(--dark);">
+            {{ get_text('welcome_back') }}, {{ current_user.username }}!
+        </h1>
+        <p style="font-size: 1.2rem; color: var(--gray); margin-bottom: 30px;">
+            {{ get_text('discover_matches') }}
+        </p>
+        
+        <div style="margin: 40px 0;">
+            <a href="{{ url_for('swipe') }}" class="btn" style="font-size: 1.2rem; padding: 15px 40px;">
+                <i class="fas fa-heart"></i> {{ get_text('swipe_now') }}
+            </a>
+        </div>
+    </div>
+{% else %}
+    <!-- For guests, show landing page -->
+    <div style="text-align: center; max-width: 800px; margin: 0 auto;">
+        <h1 style="font-size: 3rem; margin-bottom: 20px; color: var(--dark);">{{ get_text('find_match') }}</h1>
+        <p style="font-size: 1.2rem; color: var(--gray); margin-bottom: 30px;">
+            {{ get_text('description') }}
+        </p>
+        
+        <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 40px; flex-wrap: wrap;">
+            <div class="card" style="flex: 1; min-width: 250px; max-width: 300px;">
+                <div style="font-size: 3rem; margin-bottom: 20px; color: var(--primary);">👤</div>
+                <h3>{{ get_text('create_profile') }}</h3>
+                <p>{{ get_text('step1_desc') }}</p>
+            </div>
+            
+            <div class="card" style="flex: 1; min-width: 250px; max-width: 300px;">
+                <div style="font-size: 3rem; margin-bottom: 20px; color: var(--accent);">❤️</div>
+                <h3>{{ get_text('discover') }}</h3>
+                <p>{{ get_text('swipe_feature') }}</p>
+            </div>
+            
+            <div class="card" style="flex: 1; min-width: 250px; max-width: 300px;">
+                <div style="font-size: 3rem; margin-bottom: 20px; color: var(--secondary);">💬</div>
+                <h3>{{ get_text('connect') }}</h3>
+                <p>{{ get_text('chat') }}</p>
+            </div>
+        </div>
+        
+        <div style="margin: 40px 0;">
+            <a href="{{ url_for('register') }}" class="btn" style="font-size: 1.2rem; padding: 15px 40px;">
+                <i class="fas fa-user-plus"></i> {{ get_text('get_started') }}
+            </a>
+        </div>
+        
+        <div style="margin-top: 50px; padding-top: 30px; border-top: 1px solid #eee;">
+            <h2>{{ get_text('how_works') }}</h2>
+            <div style="display: flex; gap: 30px; margin-top: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px;">
+                    <div style="background: var(--primary); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; font-weight: bold;">1</div>
+                    <h3>{{ get_text('step1') }}</h3>
+                    <p>{{ get_text('step1_desc') }}</p>
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                    <div style="background: var(--accent); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; font-weight: bold;">2</div>
+                    <h3>{{ get_text('step2') }}</h3>
+                    <p>{{ get_text('step2_desc') }}</p>
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                    <div style="background: var(--secondary); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; font-weight: bold;">3</div>
+                    <h3>{{ get_text('step3') }}</h3>
+                    <p>{{ get_text('step3_desc') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

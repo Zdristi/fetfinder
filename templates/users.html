@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ get_text('all_users') }} - LoveConnect{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 25px; color: var(--dark);">{{ get_text('all_users') }}</h1>
+
+{% if users %}
+    {% for user_id, user in users.items() %}
+        {% if user_id != current_user.id %}
+            <div class="user-card">
+                {% if user.photo %}
+                    <img src="{{ url_for('static', filename='uploads/' + user.photo) if user.photo and not user.photo.startswith('http') else user.photo }}" 
+                         alt="{{ user.username }}" class="user-avatar" style="width: 70px; height: 70px; object-fit: cover;">
+                {% else %}
+                    <div class="user-avatar">
+                        {{ user.username[0].upper() if user.username else '?' }}
+                    </div>
+                {% endif %}
+                <div class="user-info">
+                    <h3>{{ user.username or 'Anonymous' }}</h3>
+                    {% if user.country or user.city %}
+                        <p>
+                            <i class="fas fa-map-marker-alt"></i> 
+                            {{ user.city }}{% if user.city and user.country %}, {% endif %}{{ user.country }}
+                        </p>
+                    {% endif %}
+                    <p>{{ user.bio or get_text('no_bio') }}</p>
+                    
+                    {% if user.interests or user.fetishes %}
+                        <div style="margin-top: 10px;">
+                            {% if user.interests %}
+                                {% for interest in user.interests[:3] %}
+                                    <span class="badge badge-interest">{{ interest }}</span>
+                                {% endfor %}
+                            {% endif %}
+                            {% if user.fetishes %}
+                                {% for fetish in user.fetishes[:3] %}
+                                    <span class="badge badge-fetish">{{ fetish }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="user-actions">
+                    <a href="{{ url_for('profile', user_id=user_id) }}" class="btn" style="padding: 8px 15px; font-size: 0.9rem;">
+                        {{ get_text('view_profile') }}
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+{% else %}
+    <div class="card empty-state">
+        <div style="font-size: 4rem; margin-bottom: 20px;">👥</div>
+        <h3>{{ get_text('no_users') }}</h3>
+        <p>{{ get_text('be_first') }}</p>
+        <a href="{{ url_for('edit_profile') }}" class="btn" style="margin-top: 20px;">
+            <i class="fas fa-user-plus"></i> {{ get_text('complete_profile') }}
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

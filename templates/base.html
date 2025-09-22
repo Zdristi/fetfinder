@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="{{ session.get('language', 'en') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LoveConnect Dating Site{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-heart"></i>
+                FetFinder
+            </div>
+            <div class="nav-links">
+                <a href="{{ url_for('home') }}">{{ get_text('home') }}</a>
+                
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('profile') }}">{{ get_text('profile') }}</a>
+                    <a href="{{ url_for('users') }}">{{ get_text('all_users') }}</a>
+                    {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin') }}">Admin Panel</a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}">{{ get_text('logout') }} ({{ current_user.username }})</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}">{{ get_text('login') }}</a>
+                {% endif %}
+                
+                <!-- Theme Switcher -->
+                <div class="theme-switcher" style="position: relative; display: inline-block;">
+                    <button class="btn" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 8px 15px; font-size: 0.9rem;" onclick="toggleTheme()">
+                        <i class="fas fa-moon theme-icon" id="themeIcon"></i>
+                    </button>
+                </div>
+                
+                <!-- Language Switcher -->
+                <div class="language-switcher" style="position: relative; display: inline-block;">
+                    <button class="btn" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 8px 15px; font-size: 0.9rem;" onclick="toggleLanguageMenu()">
+                        <i class="fas fa-globe"></i> {{ get_text('language') }}
+                    </button>
+                    <div id="languageMenu" style="display: none; position: absolute; top: 100%; right: 0; background: var(--card-bg); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; min-width: 150px;">
+                        <a href="{{ url_for('set_language', lang='en') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('english') }}</a>
+                        <a href="{{ url_for('set_language', lang='ru') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none;">{{ get_text('russian') }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div style="background-color: #ffeb3b; padding: 15px; border-radius: 10px; margin: 20px 0; color: #333;">
+                        <i class="fas fa-info-circle"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+    
+    <script>
+        // Theme switching with animation
+        function toggleTheme() {
+            const htmlElement = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            
+            // Add transition class for smooth theme change
+            htmlElement.classList.add('theme-transition');
+            
+            if (htmlElement.getAttribute('data-theme') === 'dark') {
+                htmlElement.removeAttribute('data-theme');
+                themeIcon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'light');
+            } else {
+                htmlElement.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
+            }
+            
+            // Remove transition class after animation completes
+            setTimeout(() => {
+                htmlElement.classList.remove('theme-transition');
+            }, 300);
+        }
+        
+        // Apply saved theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'fas fa-sun';
+            } else {
+                themeIcon.className = 'fas fa-moon';
+            }
+        });
+        
+        function toggleLanguageMenu() {
+            const menu = document.getElementById('languageMenu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        // Close menu when clicking outside
+        window.onclick = function(event) {
+            const menu = document.getElementById('languageMenu');
+            const button = event.target.closest('.language-switcher');
+            if (menu && !button) {
+                menu.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
