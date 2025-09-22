@@ -5,7 +5,7 @@ A modern dating website built with Python and Flask, featuring a Tinder-like swi
 ## Features
 
 - User registration and authentication with secure password hashing
-- Persistent user profiles stored in JSON
+- Persistent user profiles stored in PostgreSQL database
 - Profile completion with location (country/city) and photo upload
 - Separate categories for sexual fetishes and general interests/hobbies
 - Modern, responsive design inspired by popular dating apps
@@ -76,6 +76,16 @@ Users can specify their country and city during profile completion:
 - First select a country from the dropdown
 - Then select a city from the dynamically loaded list
 
+## Database
+
+FetFinder uses PostgreSQL database for persistent storage:
+- User profiles and authentication
+- User preferences (fetishes and interests)
+- Match information
+- Administrative data
+
+The database is automatically created on first run.
+
 ## Moderation System
 
 FetFinder includes a comprehensive moderation system:
@@ -99,6 +109,24 @@ FetFinder includes a comprehensive moderation system:
 ## Persistent Authentication
 
 User sessions are maintained across browser restarts, so you don't need to log in every time.
+
+## Database Setup on Render
+
+To set up the database on Render:
+
+1. Create a PostgreSQL database:
+   - In Render Dashboard, click "New" → "PostgreSQL"
+   - Name it `fetfinder-db`
+   - Select the same region as your web service
+   - Choose "Free" plan
+   - Click "Create Database"
+
+2. Connect your web service to the database:
+   - In your web service settings, add an environment variable:
+     - Key: `DATABASE_URL`
+     - Value: Copy the "External Database URL" from your PostgreSQL database
+
+3. The database tables will be created automatically on first run.
 
 ## Stopping the Server
 

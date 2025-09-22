@@ -59,13 +59,13 @@
                             <td style="padding: 12px;">
                                 {% if user_id != current_user.id %}
                                     {% if user.get('is_blocked', False) %}
-                                        <form method="POST" action="{{ url_for('unblock_user', user_id=user_id) }}" style="display: inline;">
+                                        <form method="POST" action="{{ url_for('admin_unblock_user', user_id=user_id) }}" style="display: inline;">
                                             <button type="submit" class="btn" style="background-color: var(--success); padding: 5px 10px; font-size: 0.9rem;">
                                                 <i class="fas fa-unlock"></i> Unblock
                                             </button>
                                         </form>
                                     {% else %}
-                                        <form method="POST" action="{{ url_for('block_user', user_id=user_id) }}" style="display: inline;">
+                                        <form method="POST" action="{{ url_for('admin_block_user', user_id=user_id) }}" style="display: inline;">
                                             <input type="hidden" name="reason" value="Violation of terms of service">
                                             <button type="submit" class="btn" style="background-color: var(--danger); padding: 5px 10px; font-size: 0.9rem;" 
                                                     onclick="return confirm('Are you sure you want to block this user?')">
@@ -74,7 +74,7 @@
                                         </form>
                                     {% endif %}
                                     
-                                    <form method="POST" action="{{ url_for('delete_user', user_id=user_id) }}" style="display: inline;">
+                                    <form method="POST" action="{{ url_for('admin_delete_user', user_id=user_id) }}" style="display: inline;">
                                         <button type="submit" class="btn" style="background-color: var(--gray); padding: 5px 10px; font-size: 0.9rem;" 
                                                 onclick="return confirm('Are you sure you want to DELETE this user? This cannot be undone!')">
                                             <i class="fas fa-trash"></i> Delete
@@ -82,7 +82,7 @@
                                     </form>
                                     
                                     {% if not user.get('is_admin', False) %}
-                                        <form method="POST" action="{{ url_for('make_admin', user_id=user_id) }}" style="display: inline;">
+                                        <form method="POST" action="{{ url_for('admin_make_admin', user_id=user_id) }}" style="display: inline;">
                                             <button type="submit" class="btn" style="background-color: var(--accent); padding: 5px 10px; font-size: 0.9rem;">
                                                 <i class="fas fa-crown"></i> Make Admin
                                             </button>

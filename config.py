@@ -7,9 +7,10 @@ DEBUG = False if os.environ.get('FLASK_ENV') == 'production' else True
 # Secret key for sessions
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
-# Database file location
-DATABASE_FILE = os.environ.get('DATABASE_FILE', 'users.json')
-MATCHES_FILE = os.environ.get('MATCHES_FILE', 'matches.json')
+# Database configuration
+DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///fetfinder.db')
+
+# Upload folder
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'static/uploads')
 
 # Google OAuth (if you want to use it)

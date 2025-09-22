@@ -1,11 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_sqlalchemy import SQLAlchemy
 import json
 import os
 from datetime import datetime
 import uuid
 from werkzeug.utils import secure_filename
 import hashlib
+from models import db, User as UserModel, Fetish, Interest, Match
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py', silent=True)
@@ -16,13 +18,19 @@ if not app.config.get('SECRET_KEY'):
 else:
     app.secret_key = app.config['SECRET_KEY']
 
+# Database configuration
+DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///fetfinder.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 # Site configuration
 SITE_NAME = 'FetFinder'
 
 # Configuration
 UPLOAD_FOLDER = app.config.get('UPLOAD_FOLDER', 'static/uploads')
-DATABASE_FILE = app.config.get('DATABASE_FILE', 'users.json')
-MATCHES_FILE = app.config.get('MATCHES_FILE', 'matches.json')
+
+# Initialize database
+db.init_app(app)
 
 # Configuration for file uploads
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -61,22 +69,38 @@ class User(UserMixin):
 # User loader for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
-    users = load_users()
-    user_data = users.get(user_id)
-    if user_data:
+    user = UserModel.query.get(int(user_id))
+    if user:
+        # Create a User object compatible with our existing code
         return User(
-            id=user_id,
-            username=user_data.get('username', user_id),
-            email=user_data.get('email'),
-            photo=user_data.get('photo'),
-            country=user_data.get('country'),
-            city=user_data.get('city'),
-            bio=user_data.get('bio'),
-            is_admin=user_data.get('is_admin', False),
-            is_blocked=user_data.get('is_blocked', False),
-            blocked_reason=user_data.get('blocked_reason')
+            id=str(user.id),
+            username=user.username,
+            email=user.email,
+            photo=user.photo,
+            country=user.country,
+            city=user.city,
+            bio=user.bio,
+            is_admin=user.is_admin,
+            is_blocked=user.is_blocked,
+            blocked_reason=user.blocked_reason
         )
     return None
+
+# User class for Flask-Login (compatible with database)
+class User(UserMixin):
+    def __init__(self, id, username, email=None, photo=None, country=None, city=None, bio=None, 
+                 is_admin=False, is_blocked=False, blocked_reason=None):
+        self.id = id
+        self.username = username
+        self.email = email
+        self.photo = photo
+        self.country = country
+        self.city = city
+        self.bio = bio
+        self.is_admin = is_admin
+        self.is_blocked = is_blocked
+        self.blocked_reason = blocked_reason
+        self.created_at = datetime.now().isoformat()
 
 # Country and city data
 COUNTRIES_CITIES = {
@@ -88,24 +112,169 @@ COUNTRIES_CITIES = {
 }
 
 def load_users():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r') as f:
-            return json.load(f)
-    return {}
+    # This function is kept for compatibility but not used with database
+    users = {}
+    db_users = UserModel.query.all()
+    for user in db_users:
+        users[str(user.id)] = {
+            'username': user.username,
+            'email': user.email,
+            'password': user.password_hash,
+            'photo': user.photo,
+            'country': user.country,
+            'city': user.city,
+            'bio': user.bio,
+            'is_admin': user.is_admin,
+            'is_blocked': user.is_blocked,
+            'blocked_reason': user.blocked_reason,
+            'created_at': user.created_at.isoformat()
+        }
+    return users
 
 def save_users(users):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(users, f, indent=2)
+    # This function is kept for compatibility but not used with database
+    pass
 
 def load_matches():
-    if os.path.exists(MATCHES_FILE):
-        with open(MATCHES_FILE, 'r') as f:
-            return json.load(f)
-    return {}
+    # This function is kept for compatibility but not used with database
+    matches = {}
+    db_matches = Match.query.all()
+    for match in db_matches:
+        if str(match.user_id) not in matches:
+            matches[str(match.user_id)] = []
+        matches[str(match.user_id)].append(str(match.matched_user_id))
+    return matches
 
 def save_matches(matches):
-    with open(MATCHES_FILE, 'w') as f:
-        json.dump(matches, f, indent=2)
+    # This function is kept for compatibility but not used with database
+    pass
+
+def get_user_by_id(user_id):
+    return UserModel.query.get(user_id)
+
+def get_all_users():
+    return UserModel.query.all()
+
+def create_user(username, email, password):
+    user = UserModel(
+        username=username,
+        email=email
+    )
+    user.set_password(password)
+    
+    # Check if this is the first user (make them admin)
+    if UserModel.query.count() == 0:
+        user.is_admin = True
+    
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+def update_user_profile(user_id, bio, country, city, photo_filename):
+    user = UserModel.query.get(user_id)
+    if user:
+        user.bio = bio
+        user.country = country
+        user.city = city
+        if photo_filename:
+            user.photo = photo_filename
+        db.session.commit()
+        return True
+    return False
+
+def add_user_fetishes(user_id, fetishes):
+    user = UserModel.query.get(user_id)
+    if user:
+        # Remove existing fetishes
+        Fetish.query.filter_by(user_id=user_id).delete()
+        # Add new fetishes
+        for fetish_name in fetishes:
+            fetish = Fetish(name=fetish_name, user_id=user_id)
+            db.session.add(fetish)
+        db.session.commit()
+        return True
+    return False
+
+def add_user_interests(user_id, interests):
+    user = UserModel.query.get(user_id)
+    if user:
+        # Remove existing interests
+        Interest.query.filter_by(user_id=user_id).delete()
+        # Add new interests
+        for interest_name in interests:
+            interest = Interest(name=interest_name, user_id=user_id)
+            db.session.add(interest)
+        db.session.commit()
+        return True
+    return False
+
+def get_user_fetishes(user_id):
+    fetishes = Fetish.query.filter_by(user_id=user_id).all()
+    return [f.name for f in fetishes]
+
+def get_user_interests(user_id):
+    interests = Interest.query.filter_by(user_id=user_id).all()
+    return [i.name for i in interests]
+
+def block_user(user_id, reason="", blocked_by=None):
+    user = UserModel.query.get(user_id)
+    if user:
+        user.is_blocked = True
+        user.blocked_reason = reason
+        db.session.commit()
+        return True
+    return False
+
+def unblock_user(user_id):
+    user = UserModel.query.get(user_id)
+    if user:
+        user.is_blocked = False
+        user.blocked_reason = None
+        db.session.commit()
+        return True
+    return False
+
+def delete_user(user_id):
+    user = UserModel.query.get(user_id)
+    if user:
+        # Delete related records
+        Fetish.query.filter_by(user_id=user_id).delete()
+        Interest.query.filter_by(user_id=user_id).delete()
+        Match.query.filter_by(user_id=user_id).delete()
+        Match.query.filter_by(matched_user_id=user_id).delete()
+        
+        db.session.delete(user)
+        db.session.commit()
+        return True
+    return False
+
+def make_admin(user_id):
+    user = UserModel.query.get(user_id)
+    if user:
+        user.is_admin = True
+        db.session.commit()
+        return True
+    return False
+
+def add_match(user_id, matched_user_id):
+    # Check if match already exists
+    existing_match = Match.query.filter_by(
+        user_id=user_id, 
+        matched_user_id=matched_user_id
+    ).first()
+    
+    if not existing_match:
+        match = Match(
+            user_id=user_id,
+            matched_user_id=matched_user_id
+        )
+        db.session.add(match)
+        db.session.commit()
+        return True
+    return False
+
+def get_other_users(current_user_id):
+    return UserModel.query.filter(UserModel.id != current_user_id).all()
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -318,36 +487,15 @@ def register():
         email = request.form['email']
         password = request.form['password']
         
-        users = load_users()
-        
         # Check if username already exists
-        for user_id, user_data in users.items():
-            if user_data.get('username') == username:
-                flash(get_text('username_exists'))
-                return redirect(url_for('register'))
+        existing_user = UserModel.query.filter_by(username=username).first()
+        if existing_user:
+            flash(get_text('username_exists'))
+            return redirect(url_for('register'))
         
         # Create new user
-        user_id = str(uuid.uuid4())
+        user = create_user(username, email, password)
         
-        # Check if this is the first user (make them admin)
-        is_admin = len(users) == 0
-        
-        users[user_id] = {
-            'username': username,
-            'email': email,
-            'password': hash_password(password),
-            'photo': '',
-            'country': '',
-            'city': '',
-            'bio': '',
-            'fetishes': [],
-            'interests': [],
-            'is_admin': is_admin,
-            'is_blocked': False,
-            'created_at': datetime.now().isoformat()
-        }
-        
-        save_users(users)
         flash(get_text('registration_success'))
         return redirect(url_for('login'))
     
@@ -361,26 +509,30 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        hashed_password = hash_password(password)
-        
-        users = load_users()
         
         # Find user
-        for user_id, user_data in users.items():
-            if user_data.get('username') == username and user_data.get('password') == hashed_password:
-                # Log in the user
-                user = User(
-                    id=user_id,
-                    username=user_data.get('username', ''),
-                    email=user_data.get('email', ''),
-                    photo=user_data.get('photo', ''),
-                    country=user_data.get('country', ''),
-                    city=user_data.get('city', ''),
-                    bio=user_data.get('bio', '')
-                )
-                
-                login_user(user)
-                return redirect(url_for('profile'))
+        user = UserModel.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            # Check if user is blocked
+            if user.is_blocked:
+                flash('Your account has been blocked')
+                return redirect(url_for('login'))
+            
+            # Log in the user
+            user_obj = User(
+                id=str(user.id),
+                username=user.username,
+                email=user.email,
+                photo=user.photo,
+                country=user.country,
+                city=user.city,
+                bio=user.bio,
+                is_admin=user.is_admin,
+                is_blocked=user.is_blocked
+            )
+            
+            login_user(user_obj)
+            return redirect(url_for('profile'))
         
         flash(get_text('invalid_credentials'))
         return redirect(url_for('login'))
@@ -396,8 +548,26 @@ def logout():
 @app.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
-    users = load_users()
-    user_data = users.get(current_user.id, {})
+    user = UserModel.query.get(int(current_user.id))
+    if not user:
+        flash('User not found')
+        return redirect(url_for('home'))
+    
+    # Get user's current data
+    user_fetishes = get_user_fetishes(int(current_user.id))
+    user_interests = get_user_interests(int(current_user.id))
+    
+    user_data = {
+        'username': user.username,
+        'email': user.email,
+        'photo': user.photo,
+        'country': user.country,
+        'city': user.city,
+        'bio': user.bio,
+        'fetishes': user_fetishes,
+        'interests': user_interests,
+        'created_at': user.created_at.isoformat()
+    }
     
     if request.method == 'POST':
         bio = request.form['bio']
@@ -419,7 +589,7 @@ def edit_profile():
             selected_interests.append(custom_interest)
         
         # Handle photo upload
-        photo_filename = user_data.get('photo')
+        photo_filename = user.photo
         if 'photo' in request.files:
             file = request.files['photo']
             if file and file.filename != '' and allowed_file(file.filename):
@@ -431,20 +601,9 @@ def edit_profile():
                 photo_filename = filename
         
         # Update user data
-        users[current_user.id] = {
-            'username': user_data.get('username', ''),
-            'email': user_data.get('email', ''),
-            'password': user_data.get('password', ''),
-            'photo': photo_filename,
-            'country': country,
-            'city': city,
-            'bio': bio,
-            'fetishes': selected_fetishes,
-            'interests': selected_interests,
-            'created_at': user_data.get('created_at', datetime.now().isoformat())
-        }
-        
-        save_users(users)
+        update_user_profile(int(current_user.id), bio, country, city, photo_filename)
+        add_user_fetishes(int(current_user.id), selected_fetishes)
+        add_user_interests(int(current_user.id), selected_interests)
         
         # Update current user object
         current_user.bio = bio
@@ -469,16 +628,40 @@ def profile(user_id=None):
     if user_id is None:
         user_id = current_user.id
     
-    users = load_users()
-    if user_id not in users:
+    try:
+        user_id_int = int(user_id)
+        user = UserModel.query.get(user_id_int)
+    except (ValueError, TypeError):
+        user = UserModel.query.filter_by(username=user_id).first()
+        if user:
+            user_id_int = user.id
+        else:
+            flash('User not found!')
+            return redirect(url_for('home'))
+    
+    if not user:
         flash('User not found!')
         return redirect(url_for('home'))
     
-    user_data = users[user_id]
+    # Get user's fetishes and interests
+    user_fetishes = get_user_fetishes(user_id_int)
+    user_interests = get_user_interests(user_id_int)
+    
+    user_data = {
+        'username': user.username,
+        'email': user.email,
+        'photo': user.photo,
+        'country': user.country,
+        'city': user.city,
+        'bio': user.bio,
+        'fetishes': user_fetishes,
+        'interests': user_interests,
+        'created_at': user.created_at.isoformat()
+    }
     
     # If viewing own profile, check if it's complete
-    if user_id == current_user.id:
-        is_complete = bool(user_data.get('country') and user_data.get('city'))
+    if str(user_id_int) == current_user.id:
+        is_complete = bool(user.country and user.city)
         return render_template('profile.html', user_data=user_data, is_complete=is_complete)
     
     # Viewing another user's profile
@@ -487,7 +670,22 @@ def profile(user_id=None):
 @app.route('/users')
 @login_required
 def users():
-    users = load_users()
+    db_users = UserModel.query.all()
+    users = {}
+    for user in db_users:
+        user_fetishes = get_user_fetishes(user.id)
+        user_interests = get_user_interests(user.id)
+        users[str(user.id)] = {
+            'username': user.username,
+            'email': user.email,
+            'photo': user.photo,
+            'country': user.country,
+            'city': user.city,
+            'bio': user.bio,
+            'fetishes': user_fetishes,
+            'interests': user_interests,
+            'created_at': user.created_at.isoformat()
+        }
     return render_template('users.html', users=users)
 
 @app.route('/swipe')
@@ -498,10 +696,26 @@ def swipe():
 @app.route('/api/users')
 @login_required
 def api_users():
-    users = load_users()
-    # Remove current user from the list
-    other_users = {k: v for k, v in users.items() if k != current_user.id}
-    return jsonify(list(other_users.items()))
+    db_users = UserModel.query.filter(UserModel.id != int(current_user.id)).all()
+    users = []
+    for user in db_users:
+        user_fetishes = get_user_fetishes(user.id)
+        user_interests = get_user_interests(user.id)
+        users.append([
+            str(user.id),
+            {
+                'username': user.username,
+                'email': user.email,
+                'photo': user.photo,
+                'country': user.country,
+                'city': user.city,
+                'bio': user.bio,
+                'fetishes': user_fetishes,
+                'interests': user_interests,
+                'created_at': user.created_at.isoformat()
+            }
+        ])
+    return jsonify(users)
 
 @app.route('/api/match', methods=['POST'])
 @login_required
@@ -511,12 +725,7 @@ def api_match():
     action = data.get('action')  # 'like' or 'dislike'
     
     if action == 'like':
-        matches = load_matches()
-        if current_user.id not in matches:
-            matches[current_user.id] = []
-        if user2 not in matches[current_user.id]:
-            matches[current_user.id].append(user2)
-        save_matches(matches)
+        add_match(int(current_user.id), int(user2))
     
     return jsonify({'status': 'success'})
 
@@ -538,79 +747,142 @@ def admin():
 
 @app.route('/admin/block_user/<user_id>', methods=['POST'])
 @login_required
-def block_user(user_id):
+def admin_block_user(user_id):
     if not current_user.is_admin:
         flash('Access denied')
         return redirect(url_for('home'))
     
-    users = load_users()
-    if user_id in users:
+    try:
+        user_id_int = int(user_id)
         reason = request.form.get('reason', 'Violation of terms of service')
-        users[user_id]['is_blocked'] = True
-        users[user_id]['blocked_reason'] = reason
-        users[user_id]['blocked_by'] = current_user.id
-        users[user_id]['blocked_at'] = datetime.now().isoformat()
-        save_users(users)
-        flash(f'User {users[user_id].get("username")} has been blocked')
-    else:
-        flash('User not found')
+        if block_user(user_id_int, reason):
+            user = UserModel.query.get(user_id_int)
+            if user:
+                flash(f'User {user.username} has been blocked')
+            else:
+                flash('User blocked')
+        else:
+            flash('Error blocking user')
+    except (ValueError, TypeError):
+        flash('Invalid user ID')
     
     return redirect(url_for('admin'))
 
 @app.route('/admin/unblock_user/<user_id>', methods=['POST'])
 @login_required
-def unblock_user(user_id):
+def admin_unblock_user(user_id):
     if not current_user.is_admin:
         flash('Access denied')
         return redirect(url_for('home'))
     
-    users = load_users()
-    if user_id in users:
-        users[user_id]['is_blocked'] = False
-        users[user_id].pop('blocked_reason', None)
-        users[user_id].pop('blocked_by', None)
-        users[user_id].pop('blocked_at', None)
-        save_users(users)
-        flash(f'User {users[user_id].get("username")} has been unblocked')
-    else:
-        flash('User not found')
+    try:
+        user_id_int = int(user_id)
+        if unblock_user(user_id_int):
+            user = UserModel.query.get(user_id_int)
+            if user:
+                flash(f'User {user.username} has been unblocked')
+            else:
+                flash('User unblocked')
+        else:
+            flash('Error unblocking user')
+    except (ValueError, TypeError):
+        flash('Invalid user ID')
     
     return redirect(url_for('admin'))
 
 @app.route('/admin/delete_user/<user_id>', methods=['POST'])
 @login_required
-def delete_user(user_id):
+def admin_delete_user(user_id):
     if not current_user.is_admin:
         flash('Access denied')
         return redirect(url_for('home'))
     
-    users = load_users()
-    if user_id in users:
-        username = users[user_id].get('username')
-        del users[user_id]
-        save_users(users)
-        flash(f'User {username} has been deleted')
-    else:
-        flash('User not found')
+    try:
+        user_id_int = int(user_id)
+        user = UserModel.query.get(user_id_int)
+        if user:
+            username = user.username
+            if delete_user(user_id_int):
+                flash(f'User {username} has been deleted')
+            else:
+                flash('Error deleting user')
+        else:
+            flash('User not found')
+    except (ValueError, TypeError):
+        flash('Invalid user ID')
     
     return redirect(url_for('admin'))
 
 @app.route('/admin/make_admin/<user_id>', methods=['POST'])
 @login_required
-def make_admin(user_id):
+def admin_make_admin(user_id):
     if not current_user.is_admin:
         flash('Access denied')
         return redirect(url_for('home'))
     
-    users = load_users()
-    if user_id in users:
-        users[user_id]['is_admin'] = True
-        save_users(users)
-        flash(f'User {users[user_id].get("username")} is now an admin')
-    else:
-        flash('User not found')
+    try:
+        user_id_int = int(user_id)
+        user = UserModel.query.get(user_id_int)
+        if user:
+            if make_admin(user_id_int):
+                flash(f'User {user.username} is now an admin')
+            else:
+                flash('Error making user admin')
+        else:
+            flash('User not found')
+    except (ValueError, TypeError):
+        flash('Invalid user ID')
     
     return redirect(url_for('admin'))
+
+def create_tables():
+    with app.app_context():
+        # Create all tables
+        db.create_all()
+        
+        # Check if we need to migrate existing data
+        if os.path.exists('users.json'):
+            migrate_from_json()
+
+def migrate_from_json():
+    """Migrate data from JSON files to database"""
+    if os.path.exists('users.json'):
+        try:
+            with open('users.json', 'r') as f:
+                users_data = json.load(f)
+            
+            for user_id, user_data in users_data.items():
+                # Check if user already exists
+                existing_user = UserModel.query.filter_by(username=user_data.get('username')).first()
+                if not existing_user:
+                    user = UserModel(
+                        username=user_data.get('username'),
+                        email=user_data.get('email'),
+                        country=user_data.get('country'),
+                        city=user_data.get('city'),
+                        bio=user_data.get('bio'),
+                        is_admin=user_data.get('is_admin', False),
+                        is_blocked=user_data.get('is_blocked', False),
+                        blocked_reason=user_data.get('blocked_reason')
+                    )
+                    user.set_password('temp')  # Temporary password, user will need to reset
+                    db.session.add(user)
+                    db.session.commit()
+                    
+                    # Add fetishes
+                    for fetish_name in user_data.get('fetishes', []):
+                        fetish = Fetish(name=fetish_name, user_id=user.id)
+                        db.session.add(fetish)
+                    
+                    # Add interests
+                    for interest_name in user_data.get('interests', []):
+                        interest = Interest(name=interest_name, user_id=user.id)
+                        db.session.add(interest)
+            
+            db.session.commit()
+            print("Data migration completed successfully")
+        except Exception as e:
+            print(f"Error during data migration: {e}")
 
 if __name__ == '__main__':
     # Create templates and static directories if they don't exist
@@ -624,6 +896,9 @@ if __name__ == '__main__':
         os.makedirs('static/js')
     if not os.path.exists('static/uploads'):
         os.makedirs('static/uploads')
+    
+    # Create database tables
+    create_tables()
     
     # For Render and other hosting platforms
     port = int(os.environ.get('PORT', 5000))
