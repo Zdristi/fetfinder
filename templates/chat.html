@@ -57,33 +57,50 @@
         </div>
     </div>
     
-    {% if fetishes or interests %}
-    <div class="card user-details-card">
+    <!-- Fetishes and interests will be loaded dynamically -->
+    <div class="card user-details-card" id="user-details">
         <h3>About {{ recipient.username }}</h3>
         
-        {% if fetishes %}
-        <div class="section">
+        <div id="fetishes-section" style="display: none;">
             <h4>Fetishes:</h4>
-            <div class="tags">
-                {% for fetish in fetishes %}
-                    <span class="badge badge-fetish">{{ fetish }}</span>
-                {% endfor %}
-            </div>
+            <div class="tags" id="fetishes-list"></div>
         </div>
-        {% endif %}
         
-        {% if interests %}
-        <div class="section">
+        <div id="interests-section" style="display: none;">
             <h4>Interests:</h4>
-            <div class="tags">
-                {% for interest in interests %}
-                    <span class="badge badge-interest">{{ interest }}</span>
-                {% endfor %}
-            </div>
+            <div class="tags" id="interests-list"></div>
         </div>
-        {% endif %}
     </div>
-    {% endif %}
+    
+    <script>
+    // Load recipient's fetishes and interests
+    fetch('/api/user_info/{{ recipient.id }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.fetishes && data.fetishes.length > 0) {
+                const fetishesList = document.getElementById('fetishes-list');
+                data.fetishes.forEach(fetish => {
+                    const span = document.createElement('span');
+                    span.className = 'badge badge-fetish';
+                    span.textContent = fetish;
+                    fetishesList.appendChild(span);
+                });
+                document.getElementById('fetishes-section').style.display = 'block';
+            }
+            
+            if (data.interests && data.interests.length > 0) {
+                const interestsList = document.getElementById('interests-list');
+                data.interests.forEach(interest => {
+                    const span = document.createElement('span');
+                    span.className = 'badge badge-interest';
+                    span.textContent = interest;
+                    interestsList.appendChild(span);
+                });
+                document.getElementById('interests-section').style.display = 'block';
+            }
+        })
+        .catch(error => console.error('Error loading user info:', error));
+    </script>
 </div>
 
 <style>

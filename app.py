@@ -594,13 +594,108 @@ def matches():
         match_fetishes = [f.name for f in Fetish.query.filter_by(user_id=match.id).all()]
         match_interests = [i.name for i in Interest.query.filter_by(user_id=match.id).all()]
         
+        # Count unread messages from this match
+        unread_count = Message.query.filter_by(
+            sender_id=match.id, 
+            recipient_id=current_user.id, 
+            is_read=False
+        ).count()
+        
         matches_with_info.append({
             'user': match,
             'fetishes': match_fetishes,
-            'interests': match_interests
+            'interests': match_interests,
+            'unread_count': unread_count
         })
     
     return render_template('matches.html', matches=matches_with_info)
+
+
+@app.route('/chat/<int:recipient_id>', methods=['GET', 'POST'])
+@login_required
+def chat(recipient_id):
+    recipient = UserModel.query.get_or_404(recipient_id)
+    
+    if request.method == 'POST':
+        content = request.form.get('message')
+        if content:
+            message = Message(
+                sender_id=current_user.id,
+                recipient_id=recipient_id,
+                content=content
+            )
+            db.session.add(message)
+            db.session.commit()
+            return redirect(url_for('chat', recipient_id=recipient_id))
+    
+    # Get conversation messages
+    messages = Message.query.filter(
+        ((Message.sender_id == current_user.id) & (Message.recipient_id == recipient_id)) |
+        ((Message.sender_id == recipient_id) & (Message.recipient_id == current_user.id))
+    ).order_by(Message.timestamp).all()
+    
+    # Mark unread messages as read
+    unread_messages = Message.query.filter_by(
+        sender_id=recipient_id,
+        recipient_id=current_user.id,
+        is_read=False
+    ).all()
+    
+    for msg in unread_messages:
+        msg.is_read = True
+    
+    db.session.commit()
+    
+    return render_template('chat.html', recipient=recipient, messages=messages)
+
+
+@app.route('/api/send_message', methods=['POST'])
+@login_required
+def api_send_message():
+    data = request.get_json()
+    recipient_id = data.get('recipient_id')
+    content = data.get('content')
+    
+    if not recipient_id or not content:
+        return jsonify({'status': 'error', 'error': 'Missing recipient_id or content'})
+    
+    recipient = UserModel.query.get(recipient_id)
+    if not recipient:
+        return jsonify({'status': 'error', 'error': 'Recipient not found'})
+    
+    message = Message(
+        sender_id=current_user.id,
+        recipient_id=recipient_id,
+        content=content
+    )
+    db.session.add(message)
+    db.session.commit()
+    
+    # Return message data in the format expected by the chat UI
+    return jsonify({
+        'status': 'success',
+        'message': {
+            'id': message.id,
+            'content': message.content,
+            'timestamp': message.timestamp.isoformat(),
+            'sender_id': message.sender_id
+        }
+    })
+
+
+@app.route('/api/user_info/<int:user_id>')
+@login_required
+def api_user_info(user_id):
+    user = UserModel.query.get_or_404(user_id)
+    
+    # Get user's fetishes and interests
+    user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
+    user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+    
+    return jsonify({
+        'fetishes': user_fetishes,
+        'interests': user_interests
+    })
 
 @app.route('/test_match')
 @login_required
