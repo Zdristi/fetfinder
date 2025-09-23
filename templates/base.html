@@ -23,6 +23,7 @@
                     <a href="{{ url_for('matches') }}">Matches</a>
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('admin') }}">Admin Panel</a>
+                        <a href="{{ url_for('test_match') }}">Test Match</a>
                     {% endif %}
                     <a href="{{ url_for('logout') }}">{{ get_text('logout') }} ({{ current_user.username }})</a>
                 {% else %}

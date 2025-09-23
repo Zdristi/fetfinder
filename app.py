@@ -902,27 +902,33 @@ def admin_delete_user(user_id):
     
     return redirect(url_for('admin'))
 
-@app.route('/admin/make_admin/<user_id>', methods=['POST'])
+@app.route('/test_match')
 @login_required
-def admin_make_admin(user_id):
-    if not current_user.is_admin:
-        flash('Access denied')
+def test_match():
+    """Test route to create a mutual match for testing"""
+    # Get another user (not the current user)
+    other_user = UserModel.query.filter(UserModel.id != int(current_user.id)).first()
+    if not other_user:
+        flash('No other users found')
         return redirect(url_for('home'))
     
-    try:
-        user_id_int = int(user_id)
-        user = UserModel.query.get(user_id_int)
-        if user:
-            if make_admin(user_id_int):
-                flash(f'User {user.username} is now an admin')
-            else:
-                flash('Error making user admin')
-        else:
-            flash('User not found')
-    except (ValueError, TypeError):
-        flash('Invalid user ID')
+    # Create mutual matches
+    match1 = Match(user_id=int(current_user.id), matched_user_id=other_user.id)
+    match2 = Match(user_id=other_user.id, matched_user_id=int(current_user.id))
     
-    return redirect(url_for('admin'))
+    # Check if matches already exist
+    existing1 = Match.query.filter_by(user_id=int(current_user.id), matched_user_id=other_user.id).first()
+    existing2 = Match.query.filter_by(user_id=other_user.id, matched_user_id=int(current_user.id)).first()
+    
+    if not existing1:
+        db.session.add(match1)
+    if not existing2:
+        db.session.add(match2)
+    
+    db.session.commit()
+    
+    flash(f'Created test mutual match with {other_user.username}')
+    return redirect(url_for('matches'))
 
 @app.route('/matches')
 @login_required
