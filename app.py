@@ -1016,6 +1016,18 @@ def create_tables():
         if os.path.exists('users.json'):
             migrate_from_json()
 
+def export_data():
+    """Export all data to JSON backup"""
+    with app.app_context():
+        from data_migration import export_data_to_json
+        export_data_to_json()
+
+def import_data():
+    """Import data from JSON backup"""
+    with app.app_context():
+        from data_migration import import_data_from_json
+        import_data_from_json()
+
 def migrate_from_json():
     """Migrate data from JSON files to database"""
     if os.path.exists('users.json'):
