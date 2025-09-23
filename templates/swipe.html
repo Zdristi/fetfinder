@@ -31,19 +31,21 @@
         </div>
         
         <div class="swipe-actions">
-            <button id="undoBtn" class="btn btn-large btn-info" onclick="undoSwipe()" style="display: none;">
-                <i class="fas fa-undo"></i>
-            </button>
-            <button id="rejectBtn" class="btn btn-large btn-danger" onclick="swipe('dislike')">
-                <i class="fas fa-times"></i>
-            </button>
-            <button id="superlikeBtn" class="btn btn-large btn-warning" onclick="superlike()">
-                <i class="fas fa-star"></i>
-            </button>
-            <button id="likeBtn" class="btn btn-large btn-success" onclick="swipe('like')">
-                <i class="fas fa-heart"></i>
-            </button>
-        </div>
+                {% if current_user.is_premium %}
+                <button id="undoBtn" class="btn btn-large btn-info" onclick="undoSwipe()" style="display: none;">
+                    <i class="fas fa-undo"></i>
+                </button>
+                {% endif %}
+                <button id="rejectBtn" class="btn btn-large btn-danger" onclick="swipe('dislike')">
+                    <i class="fas fa-times"></i>
+                </button>
+                <button id="superlikeBtn" class="btn btn-large btn-warning" onclick="superlike()">
+                    <i class="fas fa-star"></i>
+                </button>
+                <button id="likeBtn" class="btn btn-large btn-success" onclick="swipe('like')">
+                    <i class="fas fa-heart"></i>
+                </button>
+            </div>
     </div>
     
     <div id="noUsersMessage" style="display: none; text-align: center; padding: 50px;">
@@ -207,12 +209,14 @@
         }
 
     function updateUndoButton() {
-        const undoBtn = $('#undoBtn');
-        if (isPremiumUser && swipeHistory.length > 0) {
-            undoBtn.show();
-        } else {
-            undoBtn.hide();
+            if (isPremiumUser) {
+                const undoBtn = $('#undoBtn');
+                if (swipeHistory.length > 0) {
+                    undoBtn.show();
+                } else {
+                    undoBtn.hide();
+                }
+            }
         }
-    }
 </script>
 {% endblock %}
