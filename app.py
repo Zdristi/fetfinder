@@ -697,6 +697,85 @@ def api_user_info(user_id):
         'interests': user_interests
     })
 
+
+# Admin routes for user management
+@app.route('/admin/block_user/<int:user_id>', methods=['POST'])
+@login_required
+def admin_block_user(user_id):
+    if not current_user.is_admin:
+        flash('Access denied')
+        return redirect(url_for('home'))
+    
+    user = UserModel.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('You cannot block yourself')
+    else:
+        user.is_blocked = True
+        db.session.commit()
+        flash(f'User {user.username} has been blocked')
+    
+    return redirect(url_for('admin'))
+
+
+@app.route('/admin/unblock_user/<int:user_id>', methods=['POST'])
+@login_required
+def admin_unblock_user(user_id):
+    if not current_user.is_admin:
+        flash('Access denied')
+        return redirect(url_for('home'))
+    
+    user = UserModel.query.get_or_404(user_id)
+    user.is_blocked = False
+    db.session.commit()
+    flash(f'User {user.username} has been unblocked')
+    
+    return redirect(url_for('admin'))
+
+
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def admin_delete_user(user_id):
+    if not current_user.is_admin:
+        flash('Access denied')
+        return redirect(url_for('home'))
+    
+    user = UserModel.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('You cannot delete your own account')
+    else:
+        # Delete related records first
+        Fetish.query.filter_by(user_id=user.id).delete()
+        Interest.query.filter_by(user_id=user.id).delete()
+        Match.query.filter_by(user_id=user.id).delete()
+        Match.query.filter_by(matched_user_id=user.id).delete()
+        Message.query.filter_by(sender_id=user.id).delete()
+        Message.query.filter_by(recipient_id=user.id).delete()
+        
+        # Delete the user
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'User {user.username} has been deleted')
+    
+    return redirect(url_for('admin'))
+
+
+@app.route('/admin/make_admin/<int:user_id>', methods=['POST'])
+@login_required
+def admin_make_admin(user_id):
+    if not current_user.is_admin:
+        flash('Access denied')
+        return redirect(url_for('home'))
+    
+    user = UserModel.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('You are already an admin')
+    else:
+        user.is_admin = True
+        db.session.commit()
+        flash(f'User {user.username} is now an admin')
+    
+    return redirect(url_for('admin'))
+
 @app.route('/test_match')
 @login_required
 def test_match():
