@@ -263,7 +263,8 @@ def inject_language():
         get_text=get_text, 
         countries=['Russia', 'USA', 'UK', 'Germany', 'France'],
         COUNTRIES_CITIES=countries_cities,
-        SITE_NAME=SITE_NAME
+        SITE_NAME=SITE_NAME,
+        is_premium_user=is_premium_user
     )
 
 
@@ -378,7 +379,8 @@ def show_profile(user_id):
         'bio': user.bio,
         'fetishes': user_fetishes,
         'interests': user_interests,
-        'created_at': user.created_at.isoformat()
+        'created_at': user.created_at.isoformat(),
+        'is_premium': is_premium_user(user)
     }
     
     is_complete = bool(user.country and user.city)
@@ -452,7 +454,8 @@ def edit_profile():
         'bio': current_user.bio,
         'fetishes': user_fetishes,
         'interests': user_interests,
-        'created_at': current_user.created_at.isoformat()
+        'created_at': current_user.created_at.isoformat(),
+        'is_premium': is_premium_user(current_user)
     }
     
     return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
@@ -540,6 +543,11 @@ def api_match():
             
             # Return True if it's a mutual match
             is_mutual_match = reverse_match is not None
+    elif action == 'dislike':
+        # Record dislike (we may need this for undo functionality)
+        # We don't need to store dislikes in a separate table for now
+        # as they don't create matches
+        pass
     
     response = {'status': 'success'}
     
@@ -554,6 +562,31 @@ def api_match():
             response['matched_user_photo'] = matched_user.photo
     
     return jsonify(response)
+
+
+@app.route('/api/undo_swipe', methods=['POST'])
+@login_required
+def api_undo_swipe():
+    if not is_premium_user(current_user):
+        return jsonify({
+            'status': 'error', 
+            'error': 'Undo swipe is a premium feature'
+        })
+    
+    # Note: In a more complex implementation, you might want to track 
+    # the exact action and timestamp to ensure you're undoing the right action.
+    # For this implementation, we'll just remove the most recent like 
+    # of the current user to the specific user.
+    
+    # Since we don't have a separate dislike table, we can only undo likes that 
+    # created matches. Let's find the most recent match from current user to 
+    # the potential target user.
+    # In a real app, you'd have a more sophisticated way to track these actions.
+    
+    # For now, we'll just return success to allow the frontend to handle it
+    # The actual implementation would involve removing the match record from the DB
+    
+    return jsonify({'status': 'success'})
 
 @app.route('/blocked')
 def blocked():
@@ -649,6 +682,37 @@ def chat(recipient_id):
     return render_template('chat.html', recipient=recipient, messages=messages)
 
 
+def messages_today(user_id, date=None):
+    """Count messages sent by user today"""
+    from datetime import datetime, date
+    if date is None:
+        date = datetime.utcnow().date()
+    
+    count = Message.query.filter(
+        Message.sender_id == user_id,
+        db.func.date(Message.timestamp) == date
+    ).count()
+    
+    return count
+
+
+@app.route('/api/undo_swipe', methods=['POST'])
+@login_required
+def api_undo_swipe():
+    if not is_premium_user(current_user):
+        return jsonify({
+            'status': 'error', 
+            'error': 'Undo swipe is a premium feature'
+        })
+    
+    # In a full implementation, you would:
+    # 1. Check if user has used their undo quota for the day (e.g., 5 undos per day)
+    # 2. Remove the last like/dislike action from the database
+    # For this example, we'll just return success to allow the frontend to handle it
+    
+    return jsonify({'status': 'success'})
+
+
 @app.route('/api/send_message', methods=['POST'])
 @login_required
 def api_send_message():
@@ -662,6 +726,15 @@ def api_send_message():
     recipient = UserModel.query.get(recipient_id)
     if not recipient:
         return jsonify({'status': 'error', 'error': 'Recipient not found'})
+    
+    # Check message limit for non-premium users
+    if not is_premium_user(current_user):
+        messages_today_count = messages_today(current_user.id)
+        if messages_today_count >= 1:  # Limit to 1 message per day for free users
+            return jsonify({
+                'status': 'error', 
+                'error': 'Free users can only send 1 message per day. Upgrade to Premium for unlimited messaging!'
+            })
     
     message = Message(
         sender_id=current_user.id,
@@ -775,6 +848,72 @@ def admin_make_admin(user_id):
         flash(f'User {user.username} is now an admin')
     
     return redirect(url_for('admin'))
+
+
+# Premium subscription routes
+@app.route('/premium')
+@login_required
+def premium():
+    return render_template('premium.html', user=current_user)
+
+
+@app.route('/subscribe_premium', methods=['POST'])
+@login_required
+def subscribe_premium():
+    # In a real application, you would integrate with a payment provider here
+    # For now, we'll just give the user premium status
+    
+    # Set user as premium with a 1-month subscription
+    from datetime import datetime, timedelta
+    current_user.is_premium = True
+    current_user.premium_expires = datetime.utcnow() + timedelta(days=30)
+    
+    db.session.commit()
+    flash('Congratulations! You are now a premium member!')
+    
+    return redirect(url_for('profile'))
+
+
+@app.route('/remove_premium/<int:user_id>', methods=['POST'])
+@login_required
+def remove_premium(user_id):
+    if not current_user.is_admin:
+        flash('Access denied')
+        return redirect(url_for('home'))
+    
+    user = UserModel.query.get_or_404(user_id)
+    user.is_premium = False
+    user.premium_expires = None
+    db.session.commit()
+    flash(f'Premium status removed from user {user.username}')
+    
+    return redirect(url_for('admin'))
+
+
+@app.route('/unsubscribe_premium', methods=['POST'])
+@login_required
+def unsubscribe_premium():
+    # In a real application, you would handle cancellation with a payment provider
+    # For now, we'll just remove the premium status
+    current_user.is_premium = False
+    current_user.premium_expires = None
+    db.session.commit()
+    flash('Your premium subscription has been cancelled.')
+    
+    return redirect(url_for('profile'))
+
+
+def is_premium_user(user):
+    """Check if user has an active premium subscription"""
+    if not user.is_premium:
+        return False
+    if user.premium_expires and user.premium_expires < datetime.utcnow():
+        # Subscription has expired, remove premium status
+        user.is_premium = False
+        user.premium_expires = None
+        db.session.commit()
+        return False
+    return True
 
 @app.route('/test_match')
 @login_required

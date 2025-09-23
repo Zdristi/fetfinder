@@ -18,6 +18,8 @@ class User(UserMixin, db.Model):
     bio = db.Column(db.Text, nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
     is_blocked = db.Column(db.Boolean, default=False)
+    is_premium = db.Column(db.Boolean, default=False)  # Premium subscription
+    premium_expires = db.Column(db.DateTime)  # When premium subscription expires
     blocked_reason = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

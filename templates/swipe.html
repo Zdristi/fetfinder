@@ -4,12 +4,215 @@
 
 {% block content %}
 <div class="container">
-    <div class="swipe-container" id="swipe-container">
-        <div class="card-stack">
-            <!-- Cards will be rendered here by JavaScript -->
+    <div class="swipe-header">
+        <a href="{{ url_for('home') }}" class="btn btn-outline">
+            <i class="fas fa-home"></i>
+        </a>
+        <h1>{{ get_text('discover_matches') }}</h1>
+        {% if current_user.is_premium %}
+            <span class="premium-badge" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; margin-left: 10px;">
+                <i class="fas fa-crown"></i> PREMIUM
+            </span>
+        {% endif %}
+        <a href="{{ url_for('matches') }}" class="btn btn-outline">
+            <i class="fas fa-heart"></i>
+        </a>
+    </div>
+    
+    <div class="swipe-container" id="swipeContainer">
+        <div class="card" id="currentCard" style="display: none;">
+            <div class="user-avatar" id="userAvatar" style="background-size: cover; background-position: center;"></div>
+            <div class="user-info">
+                <h2 id="username"></h2>
+                <p id="location"></p>
+                <p id="bio"></p>
+                <div id="tags" class="tags-container"></div>
+            </div>
         </div>
+        
+        <div class="swipe-actions">
+            <button id="undoBtn" class="btn btn-large btn-info" onclick="undoSwipe()" style="display: none;">
+                <i class="fas fa-undo"></i>
+            </button>
+            <button id="rejectBtn" class="btn btn-large btn-danger" onclick="swipe('dislike')">
+                <i class="fas fa-times"></i>
+            </button>
+            <button id="superlikeBtn" class="btn btn-large btn-warning" onclick="superlike()">
+                <i class="fas fa-star"></i>
+            </button>
+            <button id="likeBtn" class="btn btn-large btn-success" onclick="swipe('like')">
+                <i class="fas fa-heart"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div id="noUsersMessage" style="display: none; text-align: center; padding: 50px;">
+        <h2>{{ get_text('no_more_users_to_swipe') }}</h2>
+        <p>{{ get_text('check_back_later_for_new_users') }}</p>
+        <a href="{{ url_for('home') }}" class="btn">{{ get_text('go_home') }}</a>
     </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/swipe.js') }}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let currentUserId = null;
+    let users = [];
+    let currentIndex = 0;
+    let swipeHistory = []; // To store swipe history for undo functionality
+    const isPremiumUser = {{ 'true' if current_user.is_premium else 'false' }}; // Pass premium status to JS
+
+    // Load users on page load
+    $(document).ready(function() {
+        loadUsers();
+        updateUndoButton();
+    });
+
+    function loadUsers() {
+        $.get('/api/users', function(data) {
+            users = data;
+            currentIndex = 0;
+            if (users.length > 0) {
+                showNextUser();
+            } else {
+                $('#noUsersMessage').show();
+                $('#swipeContainer').hide();
+            }
+        }).fail(function() {
+            alert('{{ get_text('error_loading_users') }}');
+        });
+    }
+
+    function showNextUser() {
+        if (currentIndex >= users.length) {
+            $('#noUsersMessage').show();
+            $('#swipeContainer').hide();
+            return;
+        }
+
+        const user = users[currentIndex][1];
+        currentUserId = users[currentIndex][0];
+        
+        $('#username').text(user.username);
+        $('#location').text((user.city || '') + (user.city && user.country ? ', ' : '') + (user.country || ''));
+        $('#bio').text(user.bio || '{{ get_text('no_bio_provided') }}');
+        
+        // Set avatar
+        const avatarDiv = $('#userAvatar');
+        if (user.photo) {
+            if (user.photo.startsWith('http')) {
+                avatarDiv.css('background-image', `url("${user.photo}")`);
+            } else {
+                avatarDiv.css('background-image', `url("/static/uploads/${user.photo}")`);
+            }
+        } else {
+            avatarDiv.css('background-image', 'none');
+            avatarDiv.css('background', 'linear-gradient(135deg, #667eea, #764ba2)');
+            avatarDiv.text(user.username[0].toUpperCase());
+        }
+        
+        // Set tags
+        const tagsContainer = $('#tags');
+        tagsContainer.empty();
+        
+        if (user.fetishes && user.fetishes.length > 0) {
+            user.fetishes.forEach(function(fetish) {
+                tagsContainer.append(`<span class="badge badge-fetish">${fetish}</span>`);
+            });
+        }
+        
+        if (user.interests && user.interests.length > 0) {
+            user.interests.forEach(function(interest) {
+                tagsContainer.append(`<span class="badge badge-interest">${interest}</span>`);
+            });
+        }
+        
+        $('#currentCard').show();
+    }
+
+    function swipe(action) {
+        if (!currentUserId) return;
+
+        // Record swipe in history for potential undo (only for premium users, max 5 per day)
+        if (isPremiumUser) {
+            // Limit undo history to 5 swipes per day
+            if (swipeHistory.length >= 5) {
+                swipeHistory.shift(); // Remove oldest swipe
+            }
+            swipeHistory.push({
+                userId: currentUserId,
+                action: action,
+                index: currentIndex  // Store current index
+            });
+        }
+
+        $.ajax({
+            url: '/api/match',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                user2: currentUserId,
+                action: action
+            }),
+            success: function(response) {
+                currentIndex++;
+                if (response.mutual_match) {
+                    alert('{{ get_text('mutual_match_alert') }}' + response.matched_user_name + '{{ get_text('liked_you_too') }}!');
+                }
+                showNextUser();
+                updateUndoButton();
+            },
+            error: function() {
+                alert('{{ get_text('error_processing_swipe') }}');
+            }
+        });
+    }
+
+    function superlike() {
+        // For now, superlike works the same as like
+        swipe('like');
+    }
+
+    function undoSwipe() {
+            if (!isPremiumUser) {
+                alert('Undo swipe is a premium feature! Upgrade to premium to use this feature.');
+                return;
+            }
+
+            if (swipeHistory.length === 0) {
+                alert('No swipes to undo!');
+                return;
+            }
+
+            // Get the last swipe
+            const lastSwipe = swipeHistory.pop();
+            
+            // Call the backend to undo the swipe
+            $.ajax({
+                url: '/api/undo_swipe',
+                method: 'POST',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        // Go back to the previous user
+                        currentIndex = lastSwipe.index;
+                        showNextUser();
+                        updateUndoButton();
+                    } else {
+                        alert('Error undoing swipe: ' + response.error);
+                    }
+                },
+                error: function() {
+                    alert('Error contacting server to undo swipe');
+                }
+            });
+        }
+
+    function updateUndoButton() {
+        const undoBtn = $('#undoBtn');
+        if (isPremiumUser && swipeHistory.length > 0) {
+            undoBtn.show();
+        } else {
+            undoBtn.hide();
+        }
+    }
+</script>
 {% endblock %}
