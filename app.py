@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from flask_sqlalchemy import SQLAlchemy
 import json
 import os
@@ -89,22 +89,6 @@ def load_user(user_id):
             blocked_reason=user.blocked_reason
         )
     return None
-
-# User class for Flask-Login (compatible with database)
-class User(UserMixin):
-    def __init__(self, id, username, email=None, photo=None, country=None, city=None, bio=None, 
-                 is_admin=False, is_blocked=False, blocked_reason=None):
-        self.id = id
-        self.username = username
-        self.email = email
-        self.photo = photo
-        self.country = country
-        self.city = city
-        self.bio = bio
-        self.is_admin = is_admin
-        self.is_blocked = is_blocked
-        self.blocked_reason = blocked_reason
-        self.created_at = datetime.now().isoformat()
 
 # Country and city data
 COUNTRIES_CITIES = {
