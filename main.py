@@ -3,7 +3,13 @@ from app import app, create_tables, export_data
 
 if __name__ == "__main__":
     # Create database tables
-    create_tables()
+    try:
+        create_tables()
+        print("Database tables created successfully!")
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
+        import traceback
+        traceback.print_exc()
     
     # Export data to JSON backup (for migration purposes)
     try:

@@ -13,6 +13,10 @@ DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///fetfinder.db')
 if DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
+# SQLAlchemy configuration
+SQLALCHEMY_DATABASE_URI = DATABASE_URL
+SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 # Upload folder
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'static/uploads')
 

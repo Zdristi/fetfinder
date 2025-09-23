@@ -8,8 +8,8 @@ if project_home not in sys.path:
     sys.path.insert(0, project_home)
 
 # Import the Flask app
-from app import app as application
+from app import app
 
 # For WSGI servers
 if __name__ == "__main__":
-    application.run()
+    app.run()

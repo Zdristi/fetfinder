@@ -1,9 +1,9 @@
- web:
-    commands:
-      - pip install -r requirements.txt
-      - python init_db.py
-    env:
-      - key: PYTHON_VERSION
-        value: 3.11.9
-      - key: RENDER_WSGI_MODULE
-        value: render_wsgi
+web:
+  commands:
+    - pip install -r requirements.txt
+    - python init_db.py
+  env:
+    - key: PYTHON_VERSION
+      value: 3.11.9
+    - key: RENDER_WSGI_MODULE
+      value: render_wsgi

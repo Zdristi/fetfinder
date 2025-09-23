@@ -6,6 +6,8 @@ import hashlib
 db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
+    __tablename__ = 'user'
+    
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -34,6 +36,8 @@ class User(UserMixin, db.Model):
         return f'<User {self.username}>'
 
 class Fetish(db.Model):
+    __tablename__ = 'fetish'
+    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -42,6 +46,8 @@ class Fetish(db.Model):
         return f'<Fetish {self.name}>'
 
 class Interest(db.Model):
+    __tablename__ = 'interest'
+    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -50,6 +56,8 @@ class Interest(db.Model):
         return f'<Interest {self.name}>'
 
 class Match(db.Model):
+    __tablename__ = 'match'
+    
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     matched_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -62,6 +70,8 @@ class Match(db.Model):
         return f'<Match {self.user_id} -> {self.matched_user_id}>'
 
 class Message(db.Model):
+    __tablename__ = 'message'
+    
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
