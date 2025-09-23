@@ -273,11 +273,69 @@ def add_match(user_id, matched_user_id):
         )
         db.session.add(match)
         db.session.commit()
-        return True
+        
+        # Check if this is a mutual match
+        reverse_match = Match.query.filter_by(
+            user_id=matched_user_id,
+            matched_user_id=user_id
+        ).first()
+        
+        # Return True if it's a mutual match
+        return reverse_match is not None
     return False
 
 def get_other_users(current_user_id):
     return UserModel.query.filter(UserModel.id != current_user_id).all()
+
+def send_message(sender_id, recipient_id, content):
+    """Send a message from sender to recipient"""
+    message = Message(
+        sender_id=sender_id,
+        recipient_id=recipient_id,
+        content=content
+    )
+    db.session.add(message)
+    db.session.commit()
+    return message
+
+def get_user_matches(user_id):
+    """Get all matches for a user"""
+    matches = Match.query.filter_by(user_id=user_id).all()
+    return [match.matched_user_id for match in matches]
+
+def get_mutual_matches(user_id):
+    """Get mutual matches for a user"""
+    # Get all users that this user has matched
+    user_matches = set(get_user_matches(user_id))
+    
+    # Get all users that have matched this user
+    reverse_matches = Match.query.filter_by(matched_user_id=user_id).all()
+    reverse_match_ids = set([match.user_id for match in reverse_matches])
+    
+    # Mutual matches are the intersection
+    mutual_match_ids = user_matches.intersection(reverse_match_ids)
+    
+    # Get user objects for mutual matches
+    mutual_matches = UserModel.query.filter(UserModel.id.in_(mutual_match_ids)).all()
+    return mutual_matches
+
+def get_unread_messages_count(user_id):
+    """Get count of unread messages for a user"""
+    return Message.query.filter_by(recipient_id=user_id, is_read=False).count()
+
+def mark_messages_as_read(sender_id, recipient_id):
+    """Mark messages from sender to recipient as read"""
+    messages = Message.query.filter_by(
+        sender_id=sender_id,
+        recipient_id=recipient_id,
+        is_read=False
+    ).all()
+    
+    for message in messages:
+        message.is_read = True
+    
+    db.session.commit()
+    return len(messages)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -727,10 +785,24 @@ def api_match():
     user2 = data.get('user2')
     action = data.get('action')  # 'like' or 'dislike'
     
-    if action == 'like':
-        add_match(int(current_user.id), int(user2))
+    is_mutual_match = False
     
-    return jsonify({'status': 'success'})
+    if action == 'like':
+        is_mutual_match = add_match(int(current_user.id), int(user2))
+    
+    response = {'status': 'success'}
+    
+    # If it's a mutual match, add notification
+    if is_mutual_match:
+        response['mutual_match'] = True
+        response['matched_user_id'] = user2
+        # Get matched user info
+        matched_user = UserModel.query.get(int(user2))
+        if matched_user:
+            response['matched_user_name'] = matched_user.username
+            response['matched_user_photo'] = matched_user.photo
+    
+    return jsonify(response)
 
 @app.route('/blocked')
 def blocked():
@@ -837,6 +909,103 @@ def admin_make_admin(user_id):
         flash('Invalid user ID')
     
     return redirect(url_for('admin'))
+
+@app.route('/matches')
+@login_required
+def matches():
+    """Show mutual matches for the current user"""
+    mutual_matches = get_mutual_matches(int(current_user.id))
+    
+    # Get unread messages count for each match
+    matches_with_messages = []
+    for match in mutual_matches:
+        unread_count = get_unread_messages_count(match.id)
+        match_fetishes = get_user_fetishes(match.id)
+        match_interests = get_user_interests(match.id)
+        
+        matches_with_messages.append({
+            'user': match,
+            'unread_count': unread_count,
+            'fetishes': match_fetishes,
+            'interests': match_interests
+        })
+    
+    return render_template('matches.html', matches=matches_with_messages)
+
+@app.route('/chat/<int:recipient_id>')
+@login_required
+def chat(recipient_id):
+    """Chat with a specific user"""
+    # Check if this is a mutual match
+    mutual_matches = get_mutual_matches(int(current_user.id))
+    recipient = None
+    for match in mutual_matches:
+        if match.id == recipient_id:
+            recipient = match
+            break
+    
+    if not recipient:
+        flash('You can only chat with your matches')
+        return redirect(url_for('matches'))
+    
+    # Get chat history
+    messages = Message.query.filter(
+        db.or_(
+            db.and_(Message.sender_id == current_user.id, Message.recipient_id == recipient_id),
+            db.and_(Message.sender_id == recipient_id, Message.recipient_id == current_user.id)
+        )
+    ).order_by(Message.timestamp.asc()).all()
+    
+    # Mark messages from recipient as read
+    mark_messages_as_read(recipient_id, int(current_user.id))
+    
+    # Get recipient's info
+    recipient_fetishes = get_user_fetishes(recipient_id)
+    recipient_interests = get_user_interests(recipient_id)
+    
+    return render_template('chat.html', 
+                         recipient=recipient,
+                         messages=messages,
+                         fetishes=recipient_fetishes,
+                         interests=recipient_interests)
+
+@app.route('/api/send_message', methods=['POST'])
+@login_required
+def api_send_message():
+    """API endpoint to send a message"""
+    data = request.get_json()
+    recipient_id = data.get('recipient_id')
+    content = data.get('content')
+    
+    if not content or not recipient_id:
+        return jsonify({'error': 'Missing recipient or content'}), 400
+    
+    # Check if this is a mutual match
+    mutual_matches = get_mutual_matches(int(current_user.id))
+    is_match = any(match.id == int(recipient_id) for match in mutual_matches)
+    
+    if not is_match:
+        return jsonify({'error': 'You can only message your matches'}), 403
+    
+    # Send message
+    message = send_message(int(current_user.id), int(recipient_id), content)
+    
+    return jsonify({
+        'status': 'success',
+        'message': {
+            'id': message.id,
+            'content': message.content,
+            'timestamp': message.timestamp.isoformat(),
+            'sender_id': message.sender_id
+        }
+    })
+
+@app.route('/api/unread_count')
+@login_required
+def api_unread_count():
+    """API endpoint to get unread messages count"""
+    count = get_unread_messages_count(int(current_user.id))
+    return jsonify({'count': count})
 
 def create_tables():
     with app.app_context():

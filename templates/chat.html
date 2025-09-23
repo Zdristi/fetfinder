@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with {{ recipient.username }} - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="chat-header-content">
+                <a href="{{ url_for('matches') }}" class="back-link">
+                    <i class="fas fa-arrow-left"></i> Back to Matches
+                </a>
+                <div class="recipient-info">
+                    <div class="recipient-avatar" {% if recipient.photo %}style="background-image: url('/static/uploads/{{ recipient.photo }}'); background-size: cover;"{% else %}style="background: linear-gradient(135deg, var(--primary), var(--secondary));"{% endif %}>
+                        {% if not recipient.photo %}
+                            {{ recipient.username[0].upper() }}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h2>{{ recipient.username }}</h2>
+                        {% if recipient.city or recipient.country %}
+                            <p class="recipient-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                {{ recipient.city }}{% if recipient.city and recipient.country %}, {% endif %}{{ recipient.country }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chat-messages">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="message {% if message.sender_id == current_user.id %}sent{% else %}received{% endif %}" data-message-id="{{ message.id }}">
+                    <div class="message-content">
+                        {{ message.content }}
+                        <div class="message-time">{{ message.timestamp.strftime('%H:%M') }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-messages">
+                    <p>Start a conversation with {{ recipient.username }}!</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="chat-input-container">
+            <form id="message-form" class="chat-input-form">
+                <input type="hidden" id="recipient-id" value="{{ recipient.id }}">
+                <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off" required>
+                <button type="submit" class="btn send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    {% if fetishes or interests %}
+    <div class="card user-details-card">
+        <h3>About {{ recipient.username }}</h3>
+        
+        {% if fetishes %}
+        <div class="section">
+            <h4>Fetishes:</h4>
+            <div class="tags">
+                {% for fetish in fetishes %}
+                    <span class="badge badge-fetish">{{ fetish }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if interests %}
+        <div class="section">
+            <h4>Interests:</h4>
+            <div class="tags">
+                {% for interest in interests %}
+                    <span class="badge badge-interest">{{ interest }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px);
+    background: var(--card-bg);
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.chat-header {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    padding: 15px 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.chat-header-content {
+    display: flex;
+    align-items: center;
+}
+
+.back-link {
+    color: white;
+    text-decoration: none;
+    margin-right: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.back-link:hover {
+    opacity: 0.8;
+}
+
+.recipient-info {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.recipient-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-right: 15px;
+}
+
+.recipient-info h2 {
+    margin: 0;
+    color: white;
+}
+
+.recipient-location {
+    margin: 3px 0 0 0;
+    color: rgba(255,255,255,0.9);
+    font-size: 0.9rem;
+}
+
+.chat-messages {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.message {
+    max-width: 70%;
+    margin-bottom: 15px;
+    display: flex;
+}
+
+.message.sent {
+    align-self: flex-end;
+}
+
+.message.received {
+    align-self: flex-start;
+}
+
+.message-content {
+    padding: 12px 16px;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word;
+}
+
+.message.sent .message-content {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border-bottom-right-radius: 5px;
+}
+
+.message.received .message-content {
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-bottom-left-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.message-time {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    margin-top: 5px;
+    text-align: right;
+}
+
+.message.sent .message-time {
+    color: rgba(255,255,255,0.8);
+}
+
+.message.received .message-time {
+    color: var(--gray);
+}
+
+.no-messages {
+    text-align: center;
+    color: var(--gray);
+    margin: auto;
+    padding: 20px;
+}
+
+.chat-input-container {
+    padding: 15px;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+.chat-input-form {
+    display: flex;
+    gap: 10px;
+}
+
+#message-input {
+    flex-grow: 1;
+    padding: 12px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 30px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    outline: none;
+}
+
+#message-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(253, 41, 123, 0.1);
+}
+
+.send-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.user-details-card {
+    margin-top: 20px;
+}
+
+.user-details-card h3 {
+    margin-top: 0;
+    color: var(--text-color);
+}
+
+.section {
+    margin-bottom: 20px;
+}
+
+.section h4 {
+    margin: 0 0 10px 0;
+    color: var(--text-color);
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+@media (max-width: 768px) {
+    .chat-container {
+        height: calc(100vh - 150px);
+        border-radius: 0;
+    }
+    
+    .message {
+        max-width: 85%;
+    }
+    
+    .chat-header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .recipient-info {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    const chatMessages = document.getElementById('chat-messages');
+    const recipientId = document.getElementById('recipient-id').value;
+    
+    // Scroll to bottom of chat
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Handle form submission
+    messageForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const content = messageInput.value.trim();
+        if (!content) return;
+        
+        // Send message via AJAX
+        fetch('/api/send_message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                recipient_id: recipientId,
+                content: content
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Add message to chat
+                addMessageToChat(data.message, true);
+                messageInput.value = '';
+                messageInput.focus();
+            } else {
+                alert('Error sending message: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error sending message');
+        });
+    });
+    
+    // Function to add message to chat
+    function addMessageToChat(messageData, isSent) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+        messageDiv.dataset.messageId = messageData.id;
+        
+        const timestamp = new Date(messageData.timestamp);
+        const timeString = timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        messageDiv.innerHTML = `
+            <div class="message-content">
+                ${messageData.content}
+                <div class="message-time">${timeString}</div>
+            </div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // Poll for new messages every 5 seconds
+    setInterval(checkForNewMessages, 5000);
+    
+    function checkForNewMessages() {
+        // This would be implemented to check for new messages
+        // For now, we'll just scroll to bottom in case of new messages
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+});
+</script>
+{% endblock %}

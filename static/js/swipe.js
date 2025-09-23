@@ -293,6 +293,11 @@ function initSwipe() {
         .then(response => response.json())
         .then(data => {
             console.log('Match response:', data);
+            
+            // Show match notification if it's a mutual match
+            if (data.mutual_match) {
+                showMatchNotification(data.matched_user_name, data.matched_user_photo);
+            }
         })
         .catch(error => {
             console.error('Error sending match:', error);
@@ -328,6 +333,42 @@ function initSwipe() {
             }
         }, 300);
     }
+    
+    // Show match notification
+    function showMatchNotification(userName, userPhoto) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'match-notification';
+        notification.innerHTML = `
+            <div class="match-content">
+                <div class="match-icon">❤️</div>
+                <h3>It's a Match!</h3>
+                <p>You and ${userName} liked each other</p>
+                <div class="match-actions">
+                    <button class="btn btn-outline" onclick="closeNotification(this)">Continue Swiping</button>
+                    <a href="/matches" class="btn">View Matches</a>
+                </div>
+            </div>
+        `;
+        
+        // Add to body
+        document.body.appendChild(notification);
+        
+        // Auto close after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    // Close notification
+    window.closeNotification = function(button) {
+        const notification = button.closest('.match-notification');
+        if (notification) {
+            notification.remove();
+        }
+    };
     
     // Make swipeAction available globally
     window.swipeAction = function(action, button) {

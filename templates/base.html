@@ -19,7 +19,8 @@
                 
                 {% if current_user.is_authenticated %}
                     <a href="{{ url_for('profile') }}">{{ get_text('profile') }}</a>
-                    <a href="{{ url_for('users') }}">{{ get_text('all_users') }}</a>
+                    <a href="{{ url_for('swipe') }}">{{ get_text('discover') }}</a>
+                    <a href="{{ url_for('matches') }}">Matches</a>
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('admin') }}">Admin Panel</a>
                     {% endif %}

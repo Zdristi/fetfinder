@@ -582,6 +582,75 @@ input[type="file"].form-control {
   transform: rotate(30deg);
 }
 
+/* Match notification */
+.match-notification {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+}
+
+.match-content {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    max-width: 90%;
+    width: 400px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s ease;
+}
+
+.match-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.match-content h3 {
+    margin: 0 0 10px 0;
+    color: var(--text-color);
+    font-size: 2rem;
+}
+
+.match-content p {
+    margin: 0 0 25px 0;
+    color: var(--gray);
+    font-size: 1.1rem;
+}
+
+.match-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.match-actions .btn {
+    min-width: 120px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .header-content {
@@ -615,5 +684,14 @@ input[type="file"].form-control {
   
   .card-stack {
     height: 400px;
+  }
+  
+  .match-content {
+    width: 90%;
+    padding: 20px;
+  }
+  
+  .match-actions {
+    flex-direction: column;
   }
 }
