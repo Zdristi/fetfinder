@@ -11,26 +11,26 @@
     <form method="POST" enctype="multipart/form-data" id="profileForm">
         <div class="form-group">
             <label for="bio" class="form-label">{{ get_text('bio') }}</label>
-            <textarea id="bio" name="bio" class="form-control" placeholder="{{ get_text('bio') }}">{{ user_data.bio or '' }}</textarea>
+            <textarea id="bio" name="bio" class="form-control" placeholder="{{ get_text('bio') }}">{{ user.bio or '' }}</textarea>
         </div>
         
         <div class="form-group">
             <label for="country" class="form-label">{{ get_text('country') }}</label>
             <select id="country" name="country" class="form-control">
-                <option value="">{{ get_text('select_country') }}</option>
-                {% for country in countries %}
-                    <option value="{{ country }}" {% if user_data.country == country %}selected{% endif %}>{{ country }}</option>
-                {% endfor %}
-            </select>
+                    <option value="">{{ get_text('select_country') }}</option>
+                    {% for country in countries %}
+                        <option value="{{ country }}" {% if user.country == country %}selected{% endif %}>{{ country }}</option>
+                    {% endfor %}
+                </select>
         </div>
         
         <div class="form-group">
             <label for="city" class="form-label">{{ get_text('city') }}</label>
-            <select id="city" name="city" class="form-control" {% if not user_data.country %}disabled{% endif %}>
+            <select id="city" name="city" class="form-control" {% if not user.country %}disabled{% endif %}>
                 <option value="">{{ get_text('select_city') }}</option>
-                {% if user_data.country %}
-                    {% for city in COUNTRIES_CITIES.get(user_data.country, []) %}
-                        <option value="{{ city }}" {% if user_data.city == city %}selected{% endif %}>{{ city }}</option>
+                {% if user.country %}
+                    {% for city in COUNTRIES_CITIES.get(user.country, []) %}
+                        <option value="{{ city }}" {% if user.city == city %}selected{% endif %}>{{ city }}</option>
                     {% endfor %}
                 {% endif %}
             </select>
@@ -39,9 +39,9 @@
         <div class="form-group">
             <label for="photo" class="form-label">{{ get_text('photo') }}</label>
             <input type="file" id="photo" name="photo" class="form-control" accept="image/*">
-            {% if user_data.photo %}
+            {% if user.photo %}
                 <div style="margin-top: 10px;">
-                    <img src="{{ url_for('static', filename='uploads/' + user_data.photo) if user_data.photo and not user_data.photo.startswith('http') else user_data.photo }}" 
+                    <img src="{{ url_for('static', filename='uploads/' + user.photo) if user.photo and not user.photo.startswith('http') else user.photo }}" 
                          alt="Current photo" style="max-width: 100px; max-height: 100px; border-radius: 10px;">
                 </div>
             {% endif %}
@@ -57,7 +57,7 @@
                 {% for fetish in fetishes %}
                     <div class="checkbox-item">
                         <input type="checkbox" id="fetish_{{ loop.index }}" name="fetishes" value="{{ fetish }}" 
-                               {% if fetish in user_data.fetishes %}checked{% endif %}>
+                               {% if fetish in user.fetishes %}checked{% endif %}>
                         <label for="fetish_{{ loop.index }}">{{ fetish }}</label>
                     </div>
                 {% endfor %}
@@ -79,7 +79,7 @@
                 {% for interest in interests %}
                     <div class="checkbox-item">
                         <input type="checkbox" id="interest_{{ loop.index }}" name="interests" value="{{ interest }}" 
-                               {% if interest in user_data.interests %}checked{% endif %}>
+                               {% if interest in user.interests %}checked{% endif %}>
                         <label for="interest_{{ loop.index }}">{{ interest }}</label>
                     </div>
                 {% endfor %}

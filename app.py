@@ -251,11 +251,33 @@ def get_text(key):
 
 @app.context_processor
 def inject_language():
+    # Define countries and their cities
+    countries_cities = {
+        'Russia': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Yekaterinburg'],
+        'USA': ['New York', 'Los Angeles', 'Chicago', 'Houston'],
+        'UK': ['London', 'Birmingham', 'Manchester', 'Glasgow'],
+        'Germany': ['Berlin', 'Hamburg', 'Munich', 'Cologne'],
+        'France': ['Paris', 'Marseille', 'Lyon', 'Toulouse']
+    }
     return dict(
         get_text=get_text, 
         countries=['Russia', 'USA', 'UK', 'Germany', 'France'],
+        COUNTRIES_CITIES=countries_cities,
         SITE_NAME=SITE_NAME
     )
+
+
+@app.route('/get_cities/<country>')
+def get_cities(country):
+    countries_cities = {
+        'Russia': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Yekaterinburg'],
+        'USA': ['New York', 'Los Angeles', 'Chicago', 'Houston'],
+        'UK': ['London', 'Birmingham', 'Manchester', 'Glasgow'],
+        'Germany': ['Berlin', 'Hamburg', 'Munich', 'Cologne'],
+        'France': ['Paris', 'Marseille', 'Lyon', 'Toulouse']
+    }
+    cities = countries_cities.get(country, [])
+    return jsonify(cities)
 
 @app.route('/set_language/<lang>')
 def set_language(lang):
@@ -352,6 +374,79 @@ def profile():
     
     is_complete = bool(current_user.country and current_user.city)
     return render_template('profile.html', user_data=user_data, is_complete=is_complete)
+
+
+@app.route('/edit_profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    if request.method == 'POST':
+        # Update user profile information
+        current_user.country = request.form.get('country')
+        current_user.city = request.form.get('city')
+        current_user.bio = request.form.get('bio')
+        
+        # Handle photo upload
+        if 'photo' in request.files:
+            photo = request.files['photo']
+            if photo and photo.filename != '':
+                # Create unique filename
+                ext = photo.filename.split('.')[-1]
+                filename = f"{uuid.uuid4().hex}.{ext}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                photo.save(filepath)
+                current_user.photo = filename
+        
+        # Update user's fetishes
+        Fetish.query.filter_by(user_id=current_user.id).delete()  # Remove old fetishes
+        selected_fetishes = request.form.getlist('fetishes')  # Get all selected fetishes
+        for fetish_name in selected_fetishes:
+            fetish = Fetish(user_id=current_user.id, name=fetish_name)
+            db.session.add(fetish)
+        
+        # Add custom fetish if provided
+        custom_fetish = request.form.get('custom_fetish')
+        if custom_fetish:
+            fetish = Fetish(user_id=current_user.id, name=custom_fetish)
+            db.session.add(fetish)
+        
+        # Update user's interests
+        Interest.query.filter_by(user_id=current_user.id).delete()  # Remove old interests
+        selected_interests = request.form.getlist('interests')  # Get all selected interests
+        for interest_name in selected_interests:
+            interest = Interest(user_id=current_user.id, name=interest_name)
+            db.session.add(interest)
+        
+        # Add custom interest if provided
+        custom_interest = request.form.get('custom_interest')
+        if custom_interest:
+            interest = Interest(user_id=current_user.id, name=custom_interest)
+            db.session.add(interest)
+        
+        db.session.commit()
+        flash('Profile updated successfully!')
+        return redirect(url_for('profile'))
+    
+    # Get user's fetishes and interests
+    user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=current_user.id).all()]
+    user_interests = [i.name for i in Interest.query.filter_by(user_id=current_user.id).all()]
+    
+    # Get all available fetishes and interests
+    all_fetishes = [f.name for f in Fetish.query.distinct(Fetish.name)]
+    all_interests = [i.name for i in Interest.query.distinct(Interest.name)]
+    
+    user_data = {
+        'username': current_user.username,
+        'email': current_user.email,
+        'photo': current_user.photo,
+        'country': current_user.country,
+        'city': current_user.city,
+        'bio': current_user.bio,
+        'fetishes': user_fetishes,
+        'interests': user_interests,
+        'created_at': current_user.created_at.isoformat()
+    }
+    
+    return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
 
 @app.route('/swipe')
 @login_required
