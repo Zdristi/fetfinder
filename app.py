@@ -563,31 +563,6 @@ def api_match():
     
     return jsonify(response)
 
-
-@app.route('/api/undo_swipe', methods=['POST'])
-@login_required
-def api_undo_swipe():
-    if not is_premium_user(current_user):
-        return jsonify({
-            'status': 'error', 
-            'error': 'Undo swipe is a premium feature'
-        })
-    
-    # Note: In a more complex implementation, you might want to track 
-    # the exact action and timestamp to ensure you're undoing the right action.
-    # For this implementation, we'll just remove the most recent like 
-    # of the current user to the specific user.
-    
-    # Since we don't have a separate dislike table, we can only undo likes that 
-    # created matches. Let's find the most recent match from current user to 
-    # the potential target user.
-    # In a real app, you'd have a more sophisticated way to track these actions.
-    
-    # For now, we'll just return success to allow the frontend to handle it
-    # The actual implementation would involve removing the match record from the DB
-    
-    return jsonify({'status': 'success'})
-
 @app.route('/blocked')
 def blocked():
     if not current_user.is_authenticated or not current_user.is_blocked:
