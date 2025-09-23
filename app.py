@@ -7,10 +7,19 @@ from datetime import datetime
 import uuid
 from werkzeug.utils import secure_filename
 import hashlib
-from models import db, User as UserModel, Fetish, Interest, Match
+from models import db, User as UserModel, Fetish, Interest, Match, Message
 
+# Create Flask app
 app = Flask(__name__)
 app.config.from_pyfile('config.py', silent=True)
+
+# Ensure database tables are created
+with app.app_context():
+    try:
+        db.create_all()
+        print("Database tables created successfully!")
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
 
 # Set secret key if not configured
 if not app.config.get('SECRET_KEY'):
