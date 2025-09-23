@@ -296,6 +296,7 @@ function initSwipe() {
             
             // Show match notification if it's a mutual match
             if (data.mutual_match) {
+                console.log('Showing match notification for:', data.matched_user_name);
                 showMatchNotification(data.matched_user_name, data.matched_user_photo);
             }
         })
@@ -336,6 +337,8 @@ function initSwipe() {
     
     // Show match notification
     function showMatchNotification(userName, userPhoto) {
+        console.log('Creating match notification for:', userName);
+        
         // Create notification element
         const notification = document.createElement('div');
         notification.className = 'match-notification';
@@ -353,11 +356,13 @@ function initSwipe() {
         
         // Add to body
         document.body.appendChild(notification);
+        console.log('Notification added to DOM');
         
         // Auto close after 5 seconds
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.remove();
+                console.log('Notification removed');
             }
         }, 5000);
     }

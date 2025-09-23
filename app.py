@@ -260,6 +260,8 @@ def make_admin(user_id):
     return False
 
 def add_match(user_id, matched_user_id):
+    print(f"Adding match: user {user_id} -> user {matched_user_id}")
+    
     # Check if match already exists
     existing_match = Match.query.filter_by(
         user_id=user_id, 
@@ -273,6 +275,7 @@ def add_match(user_id, matched_user_id):
         )
         db.session.add(match)
         db.session.commit()
+        print(f"New match created: {match.id}")
         
         # Check if this is a mutual match
         reverse_match = Match.query.filter_by(
@@ -280,8 +283,15 @@ def add_match(user_id, matched_user_id):
             matched_user_id=user_id
         ).first()
         
+        is_mutual = reverse_match is not None
+        print(f"Reverse match exists: {reverse_match is not None}")
+        if reverse_match:
+            print(f"Reverse match ID: {reverse_match.id}")
+        
         # Return True if it's a mutual match
-        return reverse_match is not None
+        return is_mutual
+    else:
+        print("Match already exists")
     return False
 
 def get_other_users(current_user_id):
@@ -785,6 +795,8 @@ def api_match():
     user2 = data.get('user2')
     action = data.get('action')  # 'like' or 'dislike'
     
+    print(f"API match request: user {current_user.id} -> user {user2}, action: {action}")
+    
     is_mutual_match = False
     
     if action == 'like':
@@ -794,6 +806,7 @@ def api_match():
     
     # If it's a mutual match, add notification
     if is_mutual_match:
+        print(f"Mutual match detected! user {current_user.id} <-> user {user2}")
         response['mutual_match'] = True
         response['matched_user_id'] = user2
         # Get matched user info
@@ -802,6 +815,7 @@ def api_match():
             response['matched_user_name'] = matched_user.username
             response['matched_user_photo'] = matched_user.photo
     
+    print(f"API response: {response}")
     return jsonify(response)
 
 @app.route('/blocked')
