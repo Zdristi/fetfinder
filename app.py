@@ -73,22 +73,26 @@ class User(UserMixin):
 # User loader for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
-    user = UserModel.query.get(int(user_id))
-    if user:
-        # Create a User object compatible with our existing code
-        return User(
-            id=str(user.id),
-            username=user.username,
-            email=user.email,
-            photo=user.photo,
-            country=user.country,
-            city=user.city,
-            bio=user.bio,
-            is_admin=user.is_admin,
-            is_blocked=user.is_blocked,
-            blocked_reason=user.blocked_reason
-        )
-    return None
+    try:
+        user = UserModel.query.get(int(user_id))
+        if user:
+            # Create a User object compatible with our existing code
+            return User(
+                id=str(user.id),
+                username=user.username,
+                email=user.email,
+                photo=user.photo,
+                country=user.country,
+                city=user.city,
+                bio=user.bio,
+                is_admin=user.is_admin,
+                is_blocked=user.is_blocked,
+                blocked_reason=user.blocked_reason
+            )
+        return None
+    except ValueError:
+        # Handle UUID or other non-integer user IDs
+        return None
 
 # Country and city data
 COUNTRIES_CITIES = {
