@@ -829,7 +829,8 @@ def admin_make_admin(user_id):
 @app.route('/premium')
 @login_required
 def premium():
-    return render_template('premium.html', user=current_user)
+    from datetime import datetime
+    return render_template('premium.html', user=current_user, now=datetime.utcnow())
 
 
 @app.route('/subscribe_premium', methods=['POST'])

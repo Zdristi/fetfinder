@@ -67,7 +67,7 @@
         </h3>
         <p style="margin: 0 0 20px 0; color: var(--gray);">Cancel anytime</p>
         
-        {% if user.is_premium and user.premium_expires and user.premium_expires > now() %}
+        {% if user.is_premium and user.premium_expires and user.premium_expires > now %}
             <div style="background: var(--success); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                 <i class="fas fa-check-circle"></i> You're already a premium member!
                 <br>Expires: {{ user.premium_expires.strftime('%B %d, %Y') }}
@@ -79,6 +79,12 @@
                 </button>
             </form>
         {% else %}
+            {% if user.is_premium and user.premium_expires and user.premium_expires <= now %}
+                <!-- Subscription expired -->
+                <div style="background: var(--danger); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <i class="fas fa-exclamation-circle"></i> Your premium subscription has expired.
+                </div>
+            {% endif %}
             <form method="POST" action="{{ url_for('subscribe_premium') }}">
                 <button type="submit" class="btn" style="padding: 15px 40px; font-size: 1.2rem; background: linear-gradient(135deg, var(--primary), var(--secondary));">
                     <i class="fas fa-crown"></i> Get Premium Now
