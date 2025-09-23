@@ -356,23 +356,32 @@ def logout():
 @app.route('/profile')
 @login_required
 def profile():
+    return show_profile(current_user.id)
+
+
+@app.route('/profile/<int:user_id>')
+@login_required
+def show_profile(user_id):
+    # Get the specified user
+    user = UserModel.query.get_or_404(user_id)
+    
     # Get user's fetishes and interests
-    user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=current_user.id).all()]
-    user_interests = [i.name for i in Interest.query.filter_by(user_id=current_user.id).all()]
+    user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
+    user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
     
     user_data = {
-        'username': current_user.username,
-        'email': current_user.email,
-        'photo': current_user.photo,
-        'country': current_user.country,
-        'city': current_user.city,
-        'bio': current_user.bio,
+        'username': user.username,
+        'email': user.email,
+        'photo': user.photo,
+        'country': user.country,
+        'city': user.city,
+        'bio': user.bio,
         'fetishes': user_fetishes,
         'interests': user_interests,
-        'created_at': current_user.created_at.isoformat()
+        'created_at': user.created_at.isoformat()
     }
     
-    is_complete = bool(current_user.country and current_user.city)
+    is_complete = bool(user.country and user.city)
     return render_template('profile.html', user_data=user_data, is_complete=is_complete)
 
 
@@ -452,6 +461,28 @@ def edit_profile():
 @login_required
 def swipe():
     return render_template('swipe.html')
+
+@app.route('/users')
+@login_required
+def users():
+    db_users = UserModel.query.filter(UserModel.id != int(current_user.id)).all()
+    users_dict = {}
+    for user in db_users:
+        user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
+        user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+        users_dict[user.id] = {
+            'username': user.username,
+            'email': user.email,
+            'photo': user.photo,
+            'country': user.country,
+            'city': user.city,
+            'bio': user.bio,
+            'fetishes': user_fetishes,
+            'interests': user_interests,
+            'created_at': user.created_at.isoformat()
+        }
+    return render_template('users.html', users=users_dict)
+
 
 @app.route('/api/users')
 @login_required
