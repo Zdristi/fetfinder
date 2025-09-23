@@ -9,6 +9,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-produc
 
 # Database configuration
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///fetfinder.db')
+# Handle PostgreSQL URL format for SQLAlchemy
+if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 # Upload folder
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'static/uploads')

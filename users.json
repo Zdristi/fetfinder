@@ -1,0 +1,16 @@
+{
+  "1f25c4aa-0b69-4bcf-99c4-a403ca6e019c": {
+    "username": "Test1",
+    "email": "pelakhindriy@gmail.com",
+    "password": "0d672a4623db032e5b9a28f8fb2773f449063330de40b9cda8a65f62b58c4de4",
+    "photo": "",
+    "country": "",
+    "city": "",
+    "bio": "",
+    "fetishes": [],
+    "interests": [],
+    "is_admin": true,
+    "is_blocked": false,
+    "created_at": "2025-09-22T14:32:31.196819"
+  }
+}
