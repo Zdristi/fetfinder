@@ -445,6 +445,37 @@ def admin():
     users = UserModel.query.all()
     return render_template('admin.html', users=users)
 
+@app.route('/matches')
+@login_required
+def matches():
+    # Get mutual matches for current user
+    user_matches = Match.query.filter_by(user_id=int(current_user.id)).all()
+    match_user_ids = [match.matched_user_id for match in user_matches]
+    
+    # Get reverse matches (people who liked current user)
+    reverse_matches = Match.query.filter_by(matched_user_id=int(current_user.id)).all()
+    reverse_match_user_ids = [match.user_id for match in reverse_matches]
+    
+    # Mutual matches are intersection of both lists
+    mutual_match_ids = list(set(match_user_ids) & set(reverse_match_user_ids))
+    
+    # Get user objects for mutual matches
+    mutual_matches = UserModel.query.filter(UserModel.id.in_(mutual_match_ids)).all()
+    
+    # Add additional info for each match
+    matches_with_info = []
+    for match in mutual_matches:
+        match_fetishes = [f.name for f in Fetish.query.filter_by(user_id=match.id).all()]
+        match_interests = [i.name for i in Interest.query.filter_by(user_id=match.id).all()]
+        
+        matches_with_info.append({
+            'user': match,
+            'fetishes': match_fetishes,
+            'interests': match_interests
+        })
+    
+    return render_template('matches.html', matches=matches_with_info)
+
 def create_tables():
     with app.app_context():
         # Create all tables
