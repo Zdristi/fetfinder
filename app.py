@@ -476,6 +476,34 @@ def matches():
     
     return render_template('matches.html', matches=matches_with_info)
 
+@app.route('/test_match')
+@login_required
+def test_match():
+    """Test route to create a mutual match for testing"""
+    # Get another user (not the current user)
+    other_user = UserModel.query.filter(UserModel.id != int(current_user.id)).first()
+    if not other_user:
+        flash('No other users found')
+        return redirect(url_for('home'))
+    
+    # Create mutual matches
+    match1 = Match(user_id=int(current_user.id), matched_user_id=other_user.id)
+    match2 = Match(user_id=other_user.id, matched_user_id=int(current_user.id))
+    
+    # Check if matches already exist
+    existing1 = Match.query.filter_by(user_id=int(current_user.id), matched_user_id=other_user.id).first()
+    existing2 = Match.query.filter_by(user_id=other_user.id, matched_user_id=int(current_user.id)).first()
+    
+    if not existing1:
+        db.session.add(match1)
+    if not existing2:
+        db.session.add(match2)
+    
+    db.session.commit()
+    
+    flash(f'Created test mutual match with {other_user.username}')
+    return redirect(url_for('matches'))
+
 def create_tables():
     with app.app_context():
         # Create all tables
