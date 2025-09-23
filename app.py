@@ -50,8 +50,9 @@ login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
 
 # Data storage
-DATA_FILE = DATABASE_FILE
-MATCHES_FILE = MATCHES_FILE
+# These are kept for compatibility but not used with database
+DATA_FILE = 'users.json'
+MATCHES_FILE = 'matches.json'
 
 # User class for Flask-Login
 class User(UserMixin):
