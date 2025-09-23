@@ -33,11 +33,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for user_id, user in users.items() %}
+                    {% for user in users %}
                         <tr style="border-bottom: 1px solid #dee2e6;">
                             <td style="padding: 12px;">
                                 <strong>{{ user.username }}</strong>
-                                {% if user.get('is_admin', False) %}
+                                {% if user.is_admin %}
                                     <span class="badge" style="background-color: var(--accent);">Admin</span>
                                 {% endif %}
                             </td>
@@ -46,7 +46,7 @@
                                 {{ user.city }}{% if user.city and user.country %}, {% endif %}{{ user.country }}
                             </td>
                             <td style="padding: 12px;">
-                                {% if user.get('is_blocked', False) %}
+                                {% if user.is_blocked %}
                                     <span class="badge" style="background-color: var(--danger);">
                                         <i class="fas fa-ban"></i> Blocked
                                     </span>
@@ -57,15 +57,15 @@
                                 {% endif %}
                             </td>
                             <td style="padding: 12px;">
-                                {% if user_id != current_user.id %}
-                                    {% if user.get('is_blocked', False) %}
-                                        <form method="POST" action="{{ url_for('admin_unblock_user', user_id=user_id) }}" style="display: inline;">
+                                {% if user.id != current_user.id %}
+                                    {% if user.is_blocked %}
+                                        <form method="POST" action="{{ url_for('admin_unblock_user', user_id=user.id) }}" style="display: inline;">
                                             <button type="submit" class="btn" style="background-color: var(--success); padding: 5px 10px; font-size: 0.9rem;">
                                                 <i class="fas fa-unlock"></i> Unblock
                                             </button>
                                         </form>
                                     {% else %}
-                                        <form method="POST" action="{{ url_for('admin_block_user', user_id=user_id) }}" style="display: inline;">
+                                        <form method="POST" action="{{ url_for('admin_block_user', user_id=user.id) }}" style="display: inline;">
                                             <input type="hidden" name="reason" value="Violation of terms of service">
                                             <button type="submit" class="btn" style="background-color: var(--danger); padding: 5px 10px; font-size: 0.9rem;" 
                                                     onclick="return confirm('Are you sure you want to block this user?')">
@@ -74,15 +74,15 @@
                                         </form>
                                     {% endif %}
                                     
-                                    <form method="POST" action="{{ url_for('admin_delete_user', user_id=user_id) }}" style="display: inline;">
+                                    <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}" style="display: inline;">
                                         <button type="submit" class="btn" style="background-color: var(--gray); padding: 5px 10px; font-size: 0.9rem;" 
                                                 onclick="return confirm('Are you sure you want to DELETE this user? This cannot be undone!')">
                                             <i class="fas fa-trash"></i> Delete
                                         </button>
                                     </form>
                                     
-                                    {% if not user.get('is_admin', False) %}
-                                        <form method="POST" action="{{ url_for('admin_make_admin', user_id=user_id) }}" style="display: inline;">
+                                    {% if not user.is_admin %}
+                                        <form method="POST" action="{{ url_for('admin_make_admin', user_id=user.id) }}" style="display: inline;">
                                             <button type="submit" class="btn" style="background-color: var(--accent); padding: 5px 10px; font-size: 0.9rem;">
                                                 <i class="fas fa-crown"></i> Make Admin
                                             </button>
