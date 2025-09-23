@@ -1,6 +1,7 @@
 Flask==2.3.3
 Flask-Login==0.6.3
 Flask-OAuthlib==0.9.6
+psycopg2-binary==2.9.7
 SQLAlchemy==2.0.20
 Flask-SQLAlchemy==3.0.5
 gunicorn==21.2.0
