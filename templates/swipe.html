@@ -20,13 +20,20 @@
     </div>
     
     <div class="swipe-container" id="swipeContainer">
-        <div class="card" id="currentCard" style="display: none;">
+        <div class="card swipe-card" id="currentCard" style="display: none; position: relative;">
             <div class="user-avatar" id="userAvatar" style="background-size: cover; background-position: center;"></div>
             <div class="user-info">
                 <h2 id="username"></h2>
                 <p id="location"></p>
                 <p id="bio"></p>
                 <div id="tags" class="tags-container"></div>
+            </div>
+            
+            <div class="action-hint like-hint" id="likeHint">
+                <i class="fas fa-heart"></i> LIKE
+            </div>
+            <div class="action-hint dislike-hint" id="dislikeHint">
+                <i class="fas fa-times"></i> NOPE
             </div>
         </div>
         
@@ -62,11 +69,25 @@
     let currentIndex = 0;
     let swipeHistory = []; // To store swipe history for undo functionality
     const isPremiumUser = {{ 'true' if current_user.is_premium else 'false' }}; // Pass premium status to JS
-
+    let startX = 0;
+    let currentX = 0;
+    let isDragging = false;
+    
     // Load users on page load
     $(document).ready(function() {
         loadUsers();
         updateUndoButton();
+        
+        // Setup drag events
+        const card = document.getElementById('currentCard');
+        card.addEventListener('mousedown', startDrag);
+        card.addEventListener('touchstart', startDrag, { passive: false });
+        
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('touchmove', drag, { passive: false });
+        
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
     });
 
     function loadUsers() {
@@ -128,12 +149,95 @@
             });
         }
         
-        $('#currentCard').show();
+        // Reset card position
+        $('#currentCard').css('transform', 'translateX(0) rotate(0deg)')
+                        .css('transition', 'none')
+                        .show();
+                        
+        // Hide action hints
+        $('#likeHint').hide();
+        $('#dislikeHint').hide();
     }
-
-    function swipe(action) {
-        if (!currentUserId) return;
-
+    
+    function startDrag(e) {
+        isDragging = true;
+        if (e.type === 'touchstart') {
+            startX = e.touches[0].clientX;
+        } else {
+            startX = e.clientX;
+        }
+        
+        $('#currentCard').css('transition', 'none');
+    }
+    
+    function drag(e) {
+        if (!isDragging || !currentUserId) return;
+        
+        e.preventDefault(); // Prevent scrolling while dragging
+        
+        let clientX;
+        if (e.type === 'touchmove') {
+            clientX = e.touches[0].clientX;
+        } else {
+            clientX = e.clientX;
+        }
+        
+        currentX = clientX - startX;
+        
+        // Move the card
+        $('#currentCard').css('transform', `translateX(${currentX}px) rotate(${currentX * 0.1}deg)`);
+        
+        // Show action hints based on direction
+        if (currentX > 50) {
+            $('#likeHint').show();
+            $('#dislikeHint').hide();
+        } else if (currentX < -50) {
+            $('#dislikeHint').show();
+            $('#likeHint').hide();
+        } else {
+            $('#likeHint').hide();
+            $('#dislikeHint').hide();
+        }
+    }
+    
+    function endDrag(e) {
+        if (!isDragging || !currentUserId) return;
+        
+        isDragging = false;
+        
+        let clientX;
+        if (e.type === 'touchend' && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+        } else if (e.type === 'mouseup') {
+            clientX = e.clientX;
+        }
+        
+        const diffX = (clientX ? clientX : currentX + startX) - startX;
+        
+        // Reset transition for smooth animation
+        $('#currentCard').css('transition', 'transform 0.3s ease-out, opacity 0.3s ease-out');
+        
+        if (diffX > 100) {
+            // Like action
+            performSwipe('like');
+        } else if (diffX < -100) {
+            // Dislike action
+            performSwipe('dislike');
+        } else {
+            // Return to original position
+            $('#currentCard').css('transform', 'translateX(0) rotate(0deg)');
+            $('#likeHint').hide();
+            $('#dislikeHint').hide();
+        }
+    }
+    
+    function performSwipe(action) {
+        if (action === 'like') {
+            $('#currentCard').addClass('swipe-card-liked');
+        } else if (action === 'dislike') {
+            $('#currentCard').addClass('swipe-card-disliked');
+        }
+        
         // Record swipe in history for potential undo (only for premium users, max 5 per day)
         if (isPremiumUser) {
             // Limit undo history to 5 swipes per day
@@ -158,15 +262,27 @@
             success: function(response) {
                 currentIndex++;
                 if (response.mutual_match) {
-                    alert('{{ get_text('mutual_match_alert') }}' + response.matched_user_name + '{{ get_text('liked_you_too') }}!');
+                    alert('It\'s a match! ' + response.matched_user_name + ' liked you too!');
                 }
-                showNextUser();
-                updateUndoButton();
+                setTimeout(function() {
+                    showNextUser();
+                    updateUndoButton();
+                }, 300);
             },
             error: function() {
-                alert('{{ get_text('error_processing_swipe') }}');
+                alert('Error processing swipe');
+                // Return card to original position
+                $('#currentCard').removeClass('swipe-card-liked swipe-card-disliked')
+                                .css('transform', 'translateX(0) rotate(0deg)');
             }
         });
+    }
+
+    function swipe(action) {
+        // Function for button clicks
+        if (!currentUserId) return;
+
+        performSwipe(action);
     }
 
     function superlike() {
