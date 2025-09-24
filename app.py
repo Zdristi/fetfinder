@@ -490,14 +490,11 @@ def users():
 @app.route('/api/users')
 @login_required
 def api_users():
-    # Get all users except current user, blocked users, and users without completed profiles
+    # Get all users except current user and blocked users
+    # We'll show users even if they don't have complete profiles for testing
     db_users = UserModel.query.filter(
         UserModel.id != int(current_user.id),
-        UserModel.is_blocked == False,
-        UserModel.country != None,
-        UserModel.city != None,
-        UserModel.country != '',
-        UserModel.city != ''
+        UserModel.is_blocked == False
     ).all()
     
     users = []
@@ -510,12 +507,12 @@ def api_users():
                 'username': user.username,
                 'email': user.email,
                 'photo': user.photo,
-                'country': user.country,
-                'city': user.city,
-                'bio': user.bio,
+                'country': user.country or '',
+                'city': user.city or '',
+                'bio': user.bio or '',
                 'fetishes': user_fetishes,
                 'interests': user_interests,
-                'created_at': user.created_at.isoformat()
+                'created_at': user.created_at.isoformat() if user.created_at else ''
             }
         ])
     return jsonify(users)
