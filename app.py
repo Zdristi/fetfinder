@@ -491,18 +491,15 @@ def users():
 @login_required
 def api_users():
     try:
-        # Get all users except current user and blocked users
-        # We'll show users even if they don't have complete profiles for testing
+        # Simplified version - just return basic user info
         db_users = UserModel.query.filter(
-            UserModel.id != int(current_user.id),
-            UserModel.is_blocked == False
+            UserModel.id != int(current_user.id)
         ).all()
         
         users = []
         for user in db_users:
             try:
-                user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
-                user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+                # Just return basic user info without related data for now
                 users.append([
                     str(user.id),
                     {
@@ -512,13 +509,15 @@ def api_users():
                         'country': user.country or '',
                         'city': user.city or '',
                         'bio': user.bio or '',
-                        'fetishes': user_fetishes,
-                        'interests': user_interests,
+                        'fetishes': [],
+                        'interests': [],
                         'created_at': user.created_at.isoformat() if user.created_at else ''
                     }
                 ])
             except Exception as e:
                 print(f"Error processing user {user.id}: {e}")
+                import traceback
+                traceback.print_exc()
                 continue
         
         return jsonify(users)
@@ -526,7 +525,7 @@ def api_users():
         print(f"Error in api_users: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify([]), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/match', methods=['POST'])
 @login_required
