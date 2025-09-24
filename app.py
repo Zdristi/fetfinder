@@ -27,7 +27,7 @@ else:
 # Database configuration
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
-    DATABASE_URL = app.config.get('DATABASE_URL', 'sqlite:///fetfinder.db')
+    DATABASE_URL = app.config.get('DATABASE_URL', 'postgresql://fetfinder_db_user:yJXZDIUB3VRK7Qf7JxRdyddjiq3ngPEr@dpg-d38m518gjchc73d67m20-a.frankfurt-postgres.render.com/fetfinder_db')
 
 # Handle PostgreSQL URL format for SQLAlchemy
 if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
@@ -490,7 +490,16 @@ def users():
 @app.route('/api/users')
 @login_required
 def api_users():
-    db_users = UserModel.query.filter(UserModel.id != int(current_user.id)).all()
+    # Get all users except current user, blocked users, and users without completed profiles
+    db_users = UserModel.query.filter(
+        UserModel.id != int(current_user.id),
+        UserModel.is_blocked == False,
+        UserModel.country != None,
+        UserModel.city != None,
+        UserModel.country != '',
+        UserModel.city != ''
+    ).all()
+    
     users = []
     for user in db_users:
         user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
