@@ -38,20 +38,25 @@
         </div>
         
         <div class="swipe-actions">
-                {% if current_user.is_premium %}
-                <button id="undoBtn" class="btn btn-large btn-info" onclick="undoSwipe()" style="display: none;">
-                    <i class="fas fa-undo"></i>
-                </button>
-                {% endif %}
-                <button id="rejectBtn" class="btn btn-large btn-danger" onclick="swipe('dislike')">
-                    <i class="fas fa-times"></i>
-                </button>
-                <button id="superlikeBtn" class="btn btn-large btn-warning" onclick="superlike()">
-                    <i class="fas fa-star"></i>
-                </button>
-                <button id="likeBtn" class="btn btn-large btn-success" onclick="swipe('like')">
-                    <i class="fas fa-heart"></i>
-                </button>
+                <div class="actions-container">
+                    {% if current_user.is_premium %}
+                    <button id="undoBtn" class="btn btn-large btn-info" onclick="undoSwipe()" style="display: none;">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    {% endif %}
+                    <button id="rejectBtn" class="btn btn-large btn-danger" onclick="swipe('dislike')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <button id="messageBtn" class="btn btn-large btn-primary" onclick="messageUser()">
+                        <i class="fas fa-comment"></i>
+                    </button>
+                    <button id="superlikeBtn" class="btn btn-large btn-warning" onclick="superlike()">
+                        <i class="fas fa-star"></i>
+                    </button>
+                    <button id="likeBtn" class="btn btn-large btn-success" onclick="swipe('like')">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                </div>
             </div>
     </div>
     
@@ -324,7 +329,30 @@
             });
         }
 
-    function updateUndoButton() {
+    function messageUser() {
+            if (!currentUserId) return;
+            
+            // Check if user is premium or has remaining messages
+            if (!isPremiumUser) {
+                // For non-premium users, check daily message limit
+                // In a real app, you'd check against the backend
+                // For now, we'll just allow it but show a warning
+                const today = new Date().toISOString().split('T')[0]; // Get today's date
+                
+                // Check if user has already sent a message today
+                // This is a simplified check - in a real app you'd check against the backend
+                if (confirm("Free users can only send 1 message per day. Upgrade to Premium for unlimited messaging. Continue?")) {
+                    // Allow message to be sent but warn the user
+                } else {
+                    return; // User cancelled
+                }
+            }
+            
+            // Open chat with the user
+            window.location.href = '/chat/' + currentUserId;
+        }
+        
+        function updateUndoButton() {
             if (isPremiumUser) {
                 const undoBtn = $('#undoBtn');
                 if (swipeHistory.length > 0) {
@@ -334,5 +362,46 @@
                 }
             }
         }
+    <style>
+        .actions-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn.btn-large {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-size: 1.2em;
+        }
+        
+        .btn.btn-info { /* undo button */
+            background: #17a2b8;
+            border-color: #17a2b8;
+        }
+        
+        .btn.btn-info:hover {
+            background: #138496;
+            border-color: #117a8b;
+        }
+        
+        .btn.btn-primary { /* message button */
+            background: #007bff;
+            border-color: #007bff;
+        }
+        
+        .btn.btn-primary:hover {
+            background: #0069d9;
+            border-color: #0062cc;
+        }
+    </style>
 </script>
 {% endblock %}
