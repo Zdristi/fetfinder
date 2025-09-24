@@ -675,15 +675,15 @@ def chat(recipient_id):
     return render_template('chat.html', recipient=recipient, messages=messages)
 
 
-def messages_today(user_id, date=None):
+def messages_today(user_id, target_date=None):
     """Count messages sent by user today"""
     from datetime import datetime, date
-    if date is None:
-        date = datetime.utcnow().date()
+    if target_date is None:
+        target_date = datetime.utcnow().date()
     
     count = Message.query.filter(
         Message.sender_id == user_id,
-        db.func.date(Message.timestamp) == date
+        db.func.date(Message.timestamp) == target_date
     ).count()
     
     return count
