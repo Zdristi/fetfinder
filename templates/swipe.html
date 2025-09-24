@@ -98,30 +98,52 @@
     });
 
     function loadUsers() {
+        console.log('Loading users from API...');
         $.get('/api/users', function(data) {
+            console.log('Received users data:', data);
             users = data;
             currentIndex = 0;
             if (users.length > 0) {
+                console.log('Showing first user...');
                 showNextUser();
             } else {
+                console.log('No users to show');
                 $('#noUsersMessage').show();
                 $('#swipeContainer').hide();
             }
         }).fail(function(xhr, status, error) {
             console.error('Error loading users:', error);
+            console.error('Response:', xhr.responseText);
             alert('Error loading users: ' + error);
         });
     }
 
     function showNextUser() {
+        console.log('Showing user at index:', currentIndex);
+        console.log('Total users:', users.length);
+        
         if (currentIndex >= users.length) {
+            console.log('No more users to show');
             $('#noUsersMessage').show();
             $('#swipeContainer').hide();
             return;
         }
 
-        const user = users[currentIndex][1];
-        currentUserId = users[currentIndex][0];
+        const userData = users[currentIndex];
+        console.log('User data structure:', userData);
+        
+        // Check if data structure is correct
+        if (!userData || userData.length < 2) {
+            console.error('Invalid user data structure:', userData);
+            currentIndex++;
+            showNextUser(); // Try next user
+            return;
+        }
+        
+        const user = userData[1];
+        currentUserId = userData[0];
+        
+        console.log('Displaying user:', user);
         
         $('#username').text(user.username || 'Anonymous');
         $('#location').text((user.city || '') + (user.city && user.country ? ', ' : '') + (user.country || ''));

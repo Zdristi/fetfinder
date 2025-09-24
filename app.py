@@ -490,35 +490,44 @@ def users():
 @app.route('/api/users')
 @login_required
 def api_users():
-    # Get all users except current user, blocked users, and users without completed profiles
-    db_users = UserModel.query.filter(
-        UserModel.id != int(current_user.id),
-        UserModel.is_blocked == False,
-        UserModel.country != None,
-        UserModel.city != None,
-        UserModel.country != '',
-        UserModel.city != ''
-    ).all()
-    
-    users = []
-    for user in db_users:
-        user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
-        user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
-        users.append([
-            str(user.id),
-            {
-                'username': user.username,
-                'email': user.email,
-                'photo': user.photo,
-                'country': user.country or '',
-                'city': user.city or '',
-                'bio': user.bio or '',
-                'fetishes': user_fetishes,
-                'interests': user_interests,
-                'created_at': user.created_at.isoformat() if user.created_at else ''
-            }
-        ])
-    return jsonify(users)
+    try:
+        # Get all users except current user and blocked users
+        # For testing, we'll show all users, even those with incomplete profiles
+        db_users = UserModel.query.filter(
+            UserModel.id != int(current_user.id),
+            UserModel.is_blocked == False
+        ).all()
+        
+        users = []
+        for user in db_users:
+            try:
+                user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
+                user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+                users.append([
+                    str(user.id),
+                    {
+                        'username': user.username or 'Anonymous',
+                        'email': user.email or '',
+                        'photo': user.photo or '',
+                        'country': user.country or '',
+                        'city': user.city or '',
+                        'bio': user.bio or '',
+                        'fetishes': user_fetishes,
+                        'interests': user_interests,
+                        'created_at': user.created_at.isoformat() if user.created_at else ''
+                    }
+                ])
+            except Exception as e:
+                print(f"Error processing user {user.id}: {e}")
+                continue
+        
+        print(f"Returning {len(users)} users for swipe")
+        return jsonify(users)
+    except Exception as e:
+        print(f"Error in api_users: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify([]), 500
 
 @app.route('/api/match', methods=['POST'])
 @login_required
