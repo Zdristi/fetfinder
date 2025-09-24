@@ -1,1 +1,458 @@
-{% extends \"base.html\" %}\n\n{% block title %}{{ get_text('discover_matches') }} - {{ SITE_NAME }}{% endblock %}\n\n{% block content %}\n<div class=\"container\">\n    <div class=\"swipe-header\">\n        <a href=\"{{ url_for('home') }}\" class=\"btn btn-outline\">\n            <i class=\"fas fa-home\"></i>\n        </a>\n        <h1>{{ get_text('discover_matches') }}</h1>\n        {% if current_user.is_premium %}\n            <span class=\"premium-badge\" style=\"background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; margin-left: 10px;\">\n                <i class=\"fas fa-crown\"></i> PREMIUM\n            </span>\n        {% endif %}\n        <a href=\"{{ url_for('matches') }}\" class=\"btn btn-outline\">\n            <i class=\"fas fa-heart\"></i>\n        </a>\n    </div>\n    \n    <div class=\"swipe-container\" id=\"swipeContainer\" style=\"position: relative; min-height: 500px;\">\n        <div class=\"card swipe-card\" id=\"currentCard\" style=\"display: none; position: relative; margin: 20px auto; max-width: 400px;\">\n            <div class=\"user-avatar\" id=\"userAvatar\" style=\"width: 100%; height: 300px; background-size: cover; background-position: center; border-radius: 10px 10px 0 0;\"></div>\n            <div class=\"user-info\" style=\"padding: 20px;\">\n                <h2 id=\"username\"></h2>\n                <p id=\"location\"></p>\n                <p id=\"bio\"></p>\n                <div id=\"tags\" class=\"tags-container\" style=\"display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;\"></div>\n            </div>\n            \n            <div class=\"action-hint like-hint\" id=\"likeHint\">\n                <i class=\"fas fa-heart\"></i> LIKE\n            </div>\n            <div class=\"action-hint dislike-hint\" id=\"dislikeHint\">\n                <i class=\"fas fa-times\"></i> NOPE\n            </div>\n        </div>\n        \n        <div id=\"noUsersMessage\" style=\"display: none; text-align: center; padding: 50px;\">\n            <h2>{{ get_text('no_more_users_to_swipe') }}</h2>\n            <p>{{ get_text('check_back_later_for_new_users') }}</p>\n            <a href=\"{{ url_for('home') }}\" class=\"btn\">{{ get_text('go_home') }}</a>\n        </div>\n    </div>\n    \n    <div class=\"swipe-actions\" style=\"position: fixed; bottom: 30px; width: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); z-index: 1000;\">\n        <div class=\"actions-container\">\n            {% if current_user.is_premium %}\n            <button id=\"undoBtn\" class=\"btn btn-large btn-info\" onclick=\"undoSwipe()\" style=\"display: none;\">\n                <i class=\"fas fa-undo\"></i>\n            </button>\n            {% endif %}\n            <button id=\"rejectBtn\" class=\"btn btn-large btn-danger\" onclick=\"swipe('dislike')\">\n                <i class=\"fas fa-times\"></i>\n            </button>\n            <button id=\"messageBtn\" class=\"btn btn-large btn-primary\" onclick=\"messageUser()\">\n                <i class=\"fas fa-comment\"></i>\n            </button>\n            <button id=\"superlikeBtn\" class=\"btn btn-large btn-warning\" onclick=\"superlike()\">\n                <i class=\"fas fa-star\"></i>\n            </button>\n            <button id=\"likeBtn\" class=\"btn btn-large btn-success\" onclick=\"swipe('like')\">\n                <i class=\"fas fa-heart\"></i>\n            </button>\n        </div>\n    </div>\n</div>\n\n<script src=\"https://code.jquery.com/jquery-3.6.0.min.js\"></script>\n<script>\n    let currentUserId = null;\n    let users = [];\n    let currentIndex = 0;\n    let swipeHistory = []; // To store swipe history for undo functionality\n    const isPremiumUser = {{ 'true' if current_user.is_premium else 'false' }}; // Pass premium status to JS\n    let startX = 0;\n    let currentX = 0;\n    let isDragging = false;\n    \n    // Load users on page load\n    $(document).ready(function() {\n        loadUsers();\n        updateUndoButton();\n        \n        // Setup drag events\n        const card = document.getElementById('currentCard');\n        if (card) {\n            card.addEventListener('mousedown', startDrag);\n            card.addEventListener('touchstart', startDrag, { passive: false });\n            \n            document.addEventListener('mousemove', drag);\n            document.addEventListener('touchmove', drag, { passive: false });\n            \n            document.addEventListener('mouseup', endDrag);\n            document.addEventListener('touchend', endDrag);\n        }\n    });\n\n    function loadUsers() {\n        $.get('/api/users', function(data) {\n            users = data;\n            currentIndex = 0;\n            if (users.length > 0) {\n                showNextUser();\n            } else {\n                $('#noUsersMessage').show();\n                $('#swipeContainer').hide();\n            }\n        }).fail(function(xhr, status, error) {\n            console.error('Error loading users:', error);\n            alert('Error loading users: ' + error);\n        });\n    }\n\n    function showNextUser() {\n        if (currentIndex >= users.length) {\n            $('#noUsersMessage').show();\n            $('#swipeContainer').hide();\n            return;\n        }\n\n        const user = users[currentIndex][1];\n        currentUserId = users[currentIndex][0];\n        \n        $('#username').text(user.username || 'Anonymous');\n        $('#location').text((user.city || '') + (user.city && user.country ? ', ' : '') + (user.country || ''));\n        $('#bio').text(user.bio || 'No bio provided');\n        \n        // Set avatar\n        const avatarDiv = $('#userAvatar');\n        if (user.photo) {\n            if (user.photo.startsWith('http')) {\n                avatarDiv.css('background-image', 'url(\"' + user.photo + '\")');\n            } else {\n                avatarDiv.css('background-image', 'url(\"/static/uploads/' + user.photo + '\")');\n            }\n        } else {\n            avatarDiv.css('background-image', 'none');\n            avatarDiv.css('background', 'linear-gradient(135deg, #667eea, #764ba2)');\n            avatarDiv.text((user.username || '?')[0].toUpperCase());\n        }\n        \n        // Set tags\n        const tagsContainer = $('#tags');\n        tagsContainer.empty();\n        \n        if (user.fetishes && user.fetishes.length > 0) {\n            user.fetishes.slice(0, 5).forEach(function(fetish) { // Show max 5 fetishes\n                tagsContainer.append('<span class=\"badge badge-fetish\">' + fetish + '</span>');\n            });\n        }\n        \n        if (user.interests && user.interests.length > 0) {\n            user.interests.slice(0, 5).forEach(function(interest) { // Show max 5 interests\n                tagsContainer.append('<span class=\"badge badge-interest\">' + interest + '</span>');\n            });\n        }\n        \n        // Reset card position\n        $('#currentCard').css('transform', 'translateX(0) rotate(0deg)')\n                        .css('transition', 'none')\n                        .show();\n                        \n        // Hide action hints\n        $('#likeHint').hide();\n        $('#dislikeHint').hide();\n    }\n    \n    function startDrag(e) {\n        isDragging = true;\n        if (e.type === 'touchstart') {\n            startX = e.touches[0].clientX;\n        } else {\n            startX = e.clientX;\n        }\n        \n        $('#currentCard').css('transition', 'none');\n    }\n    \n    function drag(e) {\n        if (!isDragging || !currentUserId) return;\n        \n        e.preventDefault(); // Prevent scrolling while dragging\n        \n        let clientX;\n        if (e.type === 'touchmove') {\n            clientX = e.touches[0].clientX;\n        } else {\n            clientX = e.clientX;\n        }\n        \n        currentX = clientX - startX;\n        \n        // Move the card\n        $('#currentCard').css('transform', 'translateX(' + currentX + 'px) rotate(' + (currentX * 0.1) + 'deg)');\n        \n        // Show action hints based on direction\n        if (currentX > 50) {\n            $('#likeHint').show();\n            $('#dislikeHint').hide();\n        } else if (currentX < -50) {\n            $('#dislikeHint').show();\n            $('#likeHint').hide();\n        } else {\n            $('#likeHint').hide();\n            $('#dislikeHint').hide();\n        }\n    }\n    \n    function endDrag(e) {\n        if (!isDragging || !currentUserId) return;\n        \n        isDragging = false;\n        \n        let clientX;\n        if (e.type === 'touchend' && e.changedTouches.length > 0) {\n            clientX = e.changedTouches[0].clientX;\n        } else if (e.type === 'mouseup') {\n            clientX = e.clientX;\n        }\n        \n        const diffX = (clientX ? clientX : currentX + startX) - startX;\n        \n        // Reset transition for smooth animation\n        $('#currentCard').css('transition', 'transform 0.3s ease-out, opacity 0.3s ease-out');\n        \n        if (diffX > 100) {\n            // Like action\n            performSwipe('like');\n        } else if (diffX < -100) {\n            // Dislike action\n            performSwipe('dislike');\n        } else {\n            // Return to original position\n            $('#currentCard').css('transform', 'translateX(0) rotate(0deg)');\n            $('#likeHint').hide();\n            $('#dislikeHint').hide();\n        }\n    }\n    \n    function performSwipe(action) {\n        if (action === 'like') {\n            $('#currentCard').addClass('swipe-card-liked');\n        } else if (action === 'dislike') {\n            $('#currentCard').addClass('swipe-card-disliked');\n        }\n        \n        // Record swipe in history for potential undo (only for premium users, max 5 per day)\n        if (isPremiumUser) {\n            // Limit undo history to 5 swipes per day\n            if (swipeHistory.length >= 5) {\n                swipeHistory.shift(); // Remove oldest swipe\n            }\n            swipeHistory.push({\n                userId: currentUserId,\n                action: action,\n                index: currentIndex  // Store current index\n            });\n        }\n\n        $.ajax({\n            url: '/api/match',\n            method: 'POST',\n            contentType: 'application/json',\n            data: JSON.stringify({\n                user2: currentUserId,\n                action: action\n            }),\n            success: function(response) {\n                currentIndex++;\n                if (response.mutual_match) {\n                    alert('It\\'s a match! ' + response.matched_user_name + ' liked you too!');\n                }\n                setTimeout(function() {\n                    showNextUser();\n                    updateUndoButton();\n                }, 300);\n            },\n            error: function(xhr, status, error) {\n                console.error('Error processing swipe:', error);\n                alert('Error processing swipe: ' + error);\n                // Return card to original position\n                $('#currentCard').removeClass('swipe-card-liked swipe-card-disliked')\n                                .css('transform', 'translateX(0) rotate(0deg)');\n            }\n        });\n    }\n\n    function swipe(action) {\n        // Function for button clicks\n        if (!currentUserId) return;\n\n        performSwipe(action);\n    }\n\n    function superlike() {\n        // For now, superlike works the same as like\n        swipe('like');\n    }\n    \n    function messageUser() {\n        if (!currentUserId) return;\n        \n        // Check if user is premium or has remaining messages\n        if (!isPremiumUser) {\n            // For non-premium users, check daily message limit\n            // In a real app, you'd check against the backend\n            // For now, we'll just allow it but show a warning\n            if (confirm(\"Free users can only send 1 message per day. Upgrade to Premium for unlimited messaging. Continue?\")) {\n                // Allow message to be sent but warn the user\n            } else {\n                return; // User cancelled\n            }\n        }\n        \n        // Open chat with the user\n        window.location.href = '/chat/' + currentUserId;\n    }\n\n    function undoSwipe() {\n        if (!isPremiumUser) {\n            alert('Undo swipe is a premium feature! Upgrade to premium to use this feature.');\n            return;\n        }\n\n        if (swipeHistory.length === 0) {\n            alert('No swipes to undo!');\n            return;\n        }\n\n        // Get the last swipe\n        const lastSwipe = swipeHistory.pop();\n        \n        // Call the backend to undo the swipe\n        $.ajax({\n            url: '/api/undo_swipe',\n            method: 'POST',\n            success: function(response) {\n                if (response.status === 'success') {\n                    // Go back to the previous user\n                    currentIndex = lastSwipe.index;\n                    showNextUser();\n                    updateUndoButton();\n                } else {\n                    alert('Error undoing swipe: ' + response.error);\n                }\n            },\n            error: function(xhr, status, error) {\n                console.error('Error contacting server to undo swipe:', error);\n                alert('Error contacting server to undo swipe: ' + error);\n            }\n        });\n    }\n\n    function updateUndoButton() {\n        if (isPremiumUser) {\n            const undoBtn = $('#undoBtn');\n            if (swipeHistory.length > 0) {\n                undoBtn.show();\n            } else {\n                undoBtn.hide();\n            }\n        }\n    }\n</script>\n<style>\n    .swipe-card {\n        position: relative;\n        transition: transform 0.2s ease-out, opacity 0.2s ease-out;\n        cursor: grab;\n    }\n    \n    .swipe-card:active {\n        cursor: grabbing;\n    }\n    \n    .swipe-card-liked {\n        transform: translateX(150%) rotate(20deg);\n        opacity: 0;\n    }\n    \n    .swipe-card-disliked {\n        transform: translateX(-150%) rotate(-20deg);\n        opacity: 0;\n    }\n    \n    .action-hint {\n        position: absolute;\n        top: 20px;\n        background: rgba(255,255,255,0.9);\n        padding: 5px 10px;\n        border-radius: 15px;\n        font-size: 0.8em;\n        display: none;\n    }\n    \n    .like-hint {\n        right: 20px;\n        color: var(--success);\n    }\n    \n    .dislike-hint {\n        left: 20px;\n        color: var(--danger);\n    }\n    \n    .swipe-actions {\n        position: fixed;\n        bottom: 20px;\n        width: 100%;\n        max-width: 500px;\n        left: 50%;\n        transform: translateX(-50%);\n        z-index: 1000;\n    }\n    \n    .actions-container {\n        display: flex;\n        justify-content: center;\n        align-items: center;\n        gap: 15px;\n        padding: 20px;\n        flex-wrap: wrap;\n    }\n    \n    .btn.btn-large {\n        width: 60px;\n        height: 60px;\n        border-radius: 50%;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        padding: 0;\n        font-size: 1.2em;\n    }\n    \n    .btn.btn-info { /* undo button */\n        background: #17a2b8;\n        border-color: #17a2b8;\n    }\n    \n    .btn.btn-info:hover {\n        background: #138496;\n        border-color: #117a8b;\n    }\n    \n    .btn.btn-primary { /* message button */\n        background: #007bff;\n        border-color: #007bff;\n    }\n    \n    .btn.btn-primary:hover {\n        background: #0069d9;\n        border-color: #0062cc;\n    }\n</style>\n{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}{{ get_text('discover_matches') }} - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="swipe-header">
+        <a href="{{ url_for('home') }}" class="btn btn-outline">
+            <i class="fas fa-home"></i>
+        </a>
+        <h1>{{ get_text('discover_matches') }}</h1>
+        {% if current_user.is_premium %}
+            <span class="premium-badge" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; margin-left: 10px;">
+                <i class="fas fa-crown"></i> PREMIUM
+            </span>
+        {% endif %}
+        <a href="{{ url_for('matches') }}" class="btn btn-outline">
+            <i class="fas fa-heart"></i>
+        </a>
+    </div>
+    
+    <div class="swipe-container" id="swipeContainer" style="position: relative; min-height: 500px;">
+        <div class="card swipe-card" id="currentCard" style="display: none; position: relative; margin: 20px auto; max-width: 400px;">
+            <div class="user-avatar" id="userAvatar" style="width: 100%; height: 300px; background-size: cover; background-position: center; border-radius: 10px 10px 0 0;"></div>
+            <div class="user-info" style="padding: 20px;">
+                <h2 id="username"></h2>
+                <p id="location"></p>
+                <p id="bio"></p>
+                <div id="tags" class="tags-container" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;"></div>
+            </div>
+            
+            <div class="action-hint like-hint" id="likeHint">
+                <i class="fas fa-heart"></i> LIKE
+            </div>
+            <div class="action-hint dislike-hint" id="dislikeHint">
+                <i class="fas fa-times"></i> NOPE
+            </div>
+        </div>
+        
+        <div id="noUsersMessage" style="display: none; text-align: center; padding: 50px;">
+            <h2>{{ get_text('no_more_users_to_swipe') }}</h2>
+            <p>{{ get_text('check_back_later_for_new_users') }}</p>
+            <a href="{{ url_for('home') }}" class="btn">{{ get_text('go_home') }}</a>
+        </div>
+    </div>
+    
+    <div class="swipe-actions" style="position: fixed; bottom: 30px; width: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); z-index: 1000;">
+        <div class="actions-container">
+            {% if current_user.is_premium %}
+            <button id="undoBtn" class="btn btn-large btn-info" onclick="undoSwipe()" style="display: none;">
+                <i class="fas fa-undo"></i>
+            </button>
+            {% endif %}
+            <button id="rejectBtn" class="btn btn-large btn-danger" onclick="swipe('dislike')">
+                <i class="fas fa-times"></i>
+            </button>
+            <button id="messageBtn" class="btn btn-large btn-primary" onclick="messageUser()">
+                <i class="fas fa-comment"></i>
+            </button>
+            <button id="superlikeBtn" class="btn btn-large btn-warning" onclick="superlike()">
+                <i class="fas fa-star"></i>
+            </button>
+            <button id="likeBtn" class="btn btn-large btn-success" onclick="swipe('like')">
+                <i class="fas fa-heart"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let currentUserId = null;
+    let users = [];
+    let currentIndex = 0;
+    let swipeHistory = []; // To store swipe history for undo functionality
+    const isPremiumUser = {{ 'true' if current_user.is_premium else 'false' }}; // Pass premium status to JS
+    let startX = 0;
+    let currentX = 0;
+    let isDragging = false;
+    
+    // Load users on page load
+    $(document).ready(function() {
+        loadUsers();
+        updateUndoButton();
+        
+        // Setup drag events
+        const card = document.getElementById('currentCard');
+        if (card) {
+            card.addEventListener('mousedown', startDrag);
+            card.addEventListener('touchstart', startDrag, { passive: false });
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag, { passive: false });
+            
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+        }
+    });
+
+    function loadUsers() {
+        $.get('/api/users', function(data) {
+            users = data;
+            currentIndex = 0;
+            if (users.length > 0) {
+                showNextUser();
+            } else {
+                $('#noUsersMessage').show();
+                $('#swipeContainer').hide();
+            }
+        }).fail(function(xhr, status, error) {
+            console.error('Error loading users:', error);
+            alert('Error loading users: ' + error);
+        });
+    }
+
+    function showNextUser() {
+        if (currentIndex >= users.length) {
+            $('#noUsersMessage').show();
+            $('#swipeContainer').hide();
+            return;
+        }
+
+        const user = users[currentIndex][1];
+        currentUserId = users[currentIndex][0];
+        
+        $('#username').text(user.username || 'Anonymous');
+        $('#location').text((user.city || '') + (user.city && user.country ? ', ' : '') + (user.country || ''));
+        $('#bio').text(user.bio || 'No bio provided');
+        
+        // Set avatar
+        const avatarDiv = $('#userAvatar');
+        if (user.photo) {
+            if (user.photo.startsWith('http')) {
+                avatarDiv.css('background-image', 'url("' + user.photo + '")');
+            } else {
+                avatarDiv.css('background-image', 'url("/static/uploads/' + user.photo + '")');
+            }
+        } else {
+            avatarDiv.css('background-image', 'none');
+            avatarDiv.css('background', 'linear-gradient(135deg, #667eea, #764ba2)');
+            avatarDiv.text((user.username || '?')[0].toUpperCase());
+        }
+        
+        // Set tags
+        const tagsContainer = $('#tags');
+        tagsContainer.empty();
+        
+        if (user.fetishes && user.fetishes.length > 0) {
+            user.fetishes.slice(0, 5).forEach(function(fetish) { // Show max 5 fetishes
+                tagsContainer.append('<span class="badge badge-fetish">' + fetish + '</span>');
+            });
+        }
+        
+        if (user.interests && user.interests.length > 0) {
+            user.interests.slice(0, 5).forEach(function(interest) { // Show max 5 interests
+                tagsContainer.append('<span class="badge badge-interest">' + interest + '</span>');
+            });
+        }
+        
+        // Reset card position
+        $('#currentCard').css('transform', 'translateX(0) rotate(0deg)')
+                        .css('transition', 'none')
+                        .show();
+                        
+        // Hide action hints
+        $('#likeHint').hide();
+        $('#dislikeHint').hide();
+    }
+    
+    function startDrag(e) {
+        isDragging = true;
+        if (e.type === 'touchstart') {
+            startX = e.touches[0].clientX;
+        } else {
+            startX = e.clientX;
+        }
+        
+        $('#currentCard').css('transition', 'none');
+    }
+    
+    function drag(e) {
+        if (!isDragging || !currentUserId) return;
+        
+        e.preventDefault(); // Prevent scrolling while dragging
+        
+        let clientX;
+        if (e.type === 'touchmove') {
+            clientX = e.touches[0].clientX;
+        } else {
+            clientX = e.clientX;
+        }
+        
+        currentX = clientX - startX;
+        
+        // Move the card
+        $('#currentCard').css('transform', 'translateX(' + currentX + 'px) rotate(' + (currentX * 0.1) + 'deg)');
+        
+        // Show action hints based on direction
+        if (currentX > 50) {
+            $('#likeHint').show();
+            $('#dislikeHint').hide();
+        } else if (currentX < -50) {
+            $('#dislikeHint').show();
+            $('#likeHint').hide();
+        } else {
+            $('#likeHint').hide();
+            $('#dislikeHint').hide();
+        }
+    }
+    
+    function endDrag(e) {
+        if (!isDragging || !currentUserId) return;
+        
+        isDragging = false;
+        
+        let clientX;
+        if (e.type === 'touchend' && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+        } else if (e.type === 'mouseup') {
+            clientX = e.clientX;
+        }
+        
+        const diffX = (clientX ? clientX : currentX + startX) - startX;
+        
+        // Reset transition for smooth animation
+        $('#currentCard').css('transition', 'transform 0.3s ease-out, opacity 0.3s ease-out');
+        
+        if (diffX > 100) {
+            // Like action
+            performSwipe('like');
+        } else if (diffX < -100) {
+            // Dislike action
+            performSwipe('dislike');
+        } else {
+            // Return to original position
+            $('#currentCard').css('transform', 'translateX(0) rotate(0deg)');
+            $('#likeHint').hide();
+            $('#dislikeHint').hide();
+        }
+    }
+    
+    function performSwipe(action) {
+        if (action === 'like') {
+            $('#currentCard').addClass('swipe-card-liked');
+        } else if (action === 'dislike') {
+            $('#currentCard').addClass('swipe-card-disliked');
+        }
+        
+        // Record swipe in history for potential undo (only for premium users, max 5 per day)
+        if (isPremiumUser) {
+            // Limit undo history to 5 swipes per day
+            if (swipeHistory.length >= 5) {
+                swipeHistory.shift(); // Remove oldest swipe
+            }
+            swipeHistory.push({
+                userId: currentUserId,
+                action: action,
+                index: currentIndex  // Store current index
+            });
+        }
+
+        $.ajax({
+            url: '/api/match',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                user2: currentUserId,
+                action: action
+            }),
+            success: function(response) {
+                currentIndex++;
+                if (response.mutual_match) {
+                    alert('It\'s a match! ' + response.matched_user_name + ' liked you too!');
+                }
+                setTimeout(function() {
+                    showNextUser();
+                    updateUndoButton();
+                }, 300);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error processing swipe:', error);
+                alert('Error processing swipe: ' + error);
+                // Return card to original position
+                $('#currentCard').removeClass('swipe-card-liked swipe-card-disliked')
+                                .css('transform', 'translateX(0) rotate(0deg)');
+            }
+        });
+    }
+
+    function swipe(action) {
+        // Function for button clicks
+        if (!currentUserId) return;
+
+        performSwipe(action);
+    }
+
+    function superlike() {
+        // For now, superlike works the same as like
+        swipe('like');
+    }
+    
+    function messageUser() {
+        if (!currentUserId) return;
+        
+        // Check if user is premium or has remaining messages
+        if (!isPremiumUser) {
+            // For non-premium users, check daily message limit
+            // In a real app, you'd check against the backend
+            // For now, we'll just allow it but show a warning
+            if (confirm("Free users can only send 1 message per day. Upgrade to Premium for unlimited messaging. Continue?")) {
+                // Allow message to be sent but warn the user
+            } else {
+                return; // User cancelled
+            }
+        }
+        
+        // Open chat with the user
+        window.location.href = '/chat/' + currentUserId;
+    }
+
+    function undoSwipe() {
+        if (!isPremiumUser) {
+            alert('Undo swipe is a premium feature! Upgrade to premium to use this feature.');
+            return;
+        }
+
+        if (swipeHistory.length === 0) {
+            alert('No swipes to undo!');
+            return;
+        }
+
+        // Get the last swipe
+        const lastSwipe = swipeHistory.pop();
+        
+        // Call the backend to undo the swipe
+        $.ajax({
+            url: '/api/undo_swipe',
+            method: 'POST',
+            success: function(response) {
+                if (response.status === 'success') {
+                    // Go back to the previous user
+                    currentIndex = lastSwipe.index;
+                    showNextUser();
+                    updateUndoButton();
+                } else {
+                    alert('Error undoing swipe: ' + response.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error contacting server to undo swipe:', error);
+                alert('Error contacting server to undo swipe: ' + error);
+            }
+        });
+    }
+
+    function updateUndoButton() {
+        if (isPremiumUser) {
+            const undoBtn = $('#undoBtn');
+            if (swipeHistory.length > 0) {
+                undoBtn.show();
+            } else {
+                undoBtn.hide();
+            }
+        }
+    }
+</script>
+<style>
+    .swipe-card {
+        position: relative;
+        transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+        cursor: grab;
+    }
+    
+    .swipe-card:active {
+        cursor: grabbing;
+    }
+    
+    .swipe-card-liked {
+        transform: translateX(150%) rotate(20deg);
+        opacity: 0;
+    }
+    
+    .swipe-card-disliked {
+        transform: translateX(-150%) rotate(-20deg);
+        opacity: 0;
+    }
+    
+    .action-hint {
+        position: absolute;
+        top: 20px;
+        background: rgba(255,255,255,0.9);
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8em;
+        display: none;
+    }
+    
+    .like-hint {
+        right: 20px;
+        color: var(--success);
+    }
+    
+    .dislike-hint {
+        left: 20px;
+        color: var(--danger);
+    }
+    
+    .swipe-actions {
+        position: fixed;
+        bottom: 20px;
+        width: 100%;
+        max-width: 500px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+    }
+    
+    .actions-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .btn.btn-large {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        font-size: 1.2em;
+    }
+    
+    .btn.btn-info { /* undo button */
+        background: #17a2b8;
+        border-color: #17a2b8;
+    }
+    
+    .btn.btn-info:hover {
+        background: #138496;
+        border-color: #117a8b;
+    }
+    
+    .btn.btn-primary { /* message button */
+        background: #007bff;
+        border-color: #007bff;
+    }
+    
+    .btn.btn-primary:hover {
+        background: #0069d9;
+        border-color: #0062cc;
+    }
+</style>
+{% endblock %}
