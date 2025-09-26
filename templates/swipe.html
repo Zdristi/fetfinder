@@ -5,13 +5,7 @@
 {% block content %}
 <div class="container">
     <div class="swipe-header">
-        <a href="{{ url_for('home') }}" class="logo-link">
-            <div class="logo">
-                <i class="fas fa-heart"></i>
-                FetFinder
-            </div>
-        </a>
-        <h1>Метчи (обновлено)</h1>
+        <h1>{{ get_text('discover_matches') }}</h1>
         {% if current_user.is_premium %}
             <span class="premium-badge" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; margin-left: 10px;">
                 <i class="fas fa-crown"></i> PREMIUM
@@ -38,8 +32,8 @@
         </div>
         
         <div id="noUsersMessage" style="display: none; text-align: center; padding: 50px;">
-            <h2>К сожалению, больше нет доступных пользователей</h2>
-            <p>{{ get_text('check_back_later_for_new_users') }}</p>
+            <h2>{{ get_text('no_more_users') }}</h2>
+            <p>{{ get_text('check_later') }}</p>
         </div>
     </div>
     
