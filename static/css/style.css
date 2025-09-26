@@ -93,6 +93,11 @@ body {
   margin-right: 10px;
 }
 
+.logo a {
+  color: inherit;
+  text-decoration: none;
+}
+
 .nav-links {
   display: flex;
   gap: 20px;
