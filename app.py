@@ -11,6 +11,7 @@ import uuid
 from werkzeug.utils import secure_filename
 import hashlib
 from models import db, User as UserModel, Fetish, Interest, Match, Message
+import stripe
 
 # Create Flask app
 app = Flask(__name__)
@@ -871,17 +872,36 @@ def premium():
 @app.route('/subscribe_premium', methods=['POST'])
 @login_required
 def subscribe_premium():
-    # In a real application, you would integrate with a payment provider here
-    # For now, we'll just give the user premium status
+    # Настройка Stripe
+    stripe.api_key = app.config.get('STRIPE_SECRET_KEY')
     
-    # Set user as premium with a 1-month subscription
-    from datetime import datetime, timedelta
-    current_user.is_premium = True
-    current_user.premium_expires = datetime.utcnow() + timedelta(days=30)
-    
-    db.session.commit()
-    flash('Congratulations! You are now a premium member!')
-    
+    try:
+        # Создать сессию оплаты в Stripe
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price': app.config.get('STRIPE_PREMIUM_PRICE_ID'),  # Используем предварительно созданный ценник в Stripe
+                'quantity': 1,
+            }],
+            mode='subscription',  # Подписка с автоматическим продлением
+            success_url=url_for('premium_success', _external=True),
+            cancel_url=url_for('premium', _external=True),
+            customer_email=current_user.email,
+            metadata={
+                'user_id': current_user.id
+            }
+        )
+        
+        return redirect(session.url, code=303)
+    except Exception as e:
+        flash(f'Error creating payment session: {str(e)}')
+        return redirect(url_for('premium'))
+
+@app.route('/premium_success')
+@login_required
+def premium_success():
+    # После успешной оплаты пользователь будет обновлен через вебхук
+    # Но мы также можем показать страницу успеха
     return redirect(url_for('profile'))
 
 
@@ -912,6 +932,44 @@ def unsubscribe_premium():
     flash('Your premium subscription has been cancelled.')
     
     return redirect(url_for('profile'))
+
+@app.route('/stripe_webhook', methods=['POST'])
+def stripe_webhook():
+    """Обработка вебхуков от Stripe"""
+    payload = request.data
+    sig_header = request.headers.get('STRIPE_SIGNATURE')
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, app.config.get('STRIPE_ENDPOINT_SECRET')
+        )
+    except ValueError:
+        # Invalid payload
+        return 'Invalid payload', 400
+    except stripe.error.SignatureVerificationError:
+        # Invalid signature
+        return 'Invalid signature', 400
+
+    # Handle the event
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        
+        # Обновляем статус пользователя в зависимости от сессии оплаты
+        if session.get('mode') == 'payment' or session.get('mode') == 'subscription':
+            # Получаем email пользователя из сессии
+            user_email = session.get('customer_details', {}).get('email') or session.get('customer_email')
+            
+            if user_email:
+                user = UserModel.query.filter_by(email=user_email).first()
+                if user:
+                    from datetime import datetime, timedelta
+                    user.is_premium = True
+                    # Если это подписка, устанавливаем длительность на основе плана
+                    # Временно - 30 дней для тестирования
+                    user.premium_expires = datetime.utcnow() + timedelta(days=30)
+                    db.session.commit()
+                    
+    return '', 200
 
 
 def is_premium_user(user):
