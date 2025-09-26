@@ -126,7 +126,7 @@
             } else {
                 console.log('No users to show');
                 $('#noUsersMessage').show();
-                $('#swipeContainer').hide();
+                $('.swipe-container').hide();
             }
         }).fail(function(xhr, status, error) {
             console.error('Error loading users:', error);
@@ -142,7 +142,8 @@
         if (currentIndex >= users.length) {
             console.log('No more users to show');
             $('#noUsersMessage').show();
-            $('#swipeContainer').hide();
+            $('.swipe-container').hide();
+        }
             return;
         }
 
