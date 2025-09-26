@@ -10,12 +10,11 @@
 <body>
     <div class="header">
         <div class="header-content">
-            <div class="logo">
+            <a href="{{ url_for('home') }}" class="logo">
                 <i class="fas fa-heart"></i>
                 FetFinder
-            </div>
+            </a>
             <div class="nav-links">
-                <a href="{{ url_for('home') }}">{{ get_text('home') }}</a>
                 
                 {% if current_user.is_authenticated %}
                     <a href="{{ url_for('profile') }}">{{ get_text('profile') }}</a>
@@ -24,7 +23,6 @@
                     <a href="{{ url_for('premium') }}">Premium</a>
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('admin') }}">Admin Panel</a>
-                        <a href="{{ url_for('chat_list') }}">{{ get_text('chat') }}</a>
                     {% endif %}
                     <a href="{{ url_for('logout') }}">{{ get_text('logout') }} ({{ current_user.username }})</a>
                 {% else %}
