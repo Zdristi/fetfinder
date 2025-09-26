@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Premium Payment - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="fas fa-crown"></i> Premium Payment
+        </h2>
+    </div>
+    
+    <div class="card-body">
+        <h3>Processing your premium subscription payment...</h3>
+        <p>Please wait while we redirect you to the payment page.</p>
+        
+        {% if form_data %}
+            <form id="payment_form" name="payment_form" method="post" action="https://pay.interkassa.com/" accept-charset="utf-8">
+                {% for key, value in form_data.items() %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endfor %}
+            </form>
+            
+            <script>
+                // Автоматически отправляем форму после загрузки страницы
+                window.onload = function() {
+                    document.getElementById('payment_form').submit();
+                };
+            </script>
+        {% else %}
+            <p>Error: Payment form could not be created. Please try again.</p>
+            <a href="{{ url_for('premium') }}" class="btn">Back to Premium Page</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

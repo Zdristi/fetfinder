@@ -874,7 +874,6 @@ def premium():
 @login_required
 def subscribe_premium():
     from payment_config import InterKassaConfig
-    import uuid
     
     try:
         # Создаем экземпляр конфигурации InterKassa
@@ -895,29 +894,7 @@ def subscribe_premium():
         # Сохраняем ID заказа в сессии для последующей проверки
         session['pending_order_id'] = order_id
         
-        # Создаем HTML-форму для отправки данных в InterKassa
-        form_html = f"""
-        <html>
-            <head>
-                <title>Processing Payment...</title>
-            </head>
-            <body>
-                <p>Redirecting to payment page...</p>
-                <form name="payment_form" method="post" action="https://pay.interkassa.com/" accept-charset="utf-8">
-        """
-        
-        for key, value in form_data.items():
-            form_html += f'            <input type="hidden" name="{key}" value="{value}">\n'
-        
-        form_html += """
-                    <input type="submit" value="Pay Now" style="display:none;">
-                </form>
-                <script>document.payment_form.submit();</script>
-            </body>
-        </html>
-        """
-        
-        return form_html
+        return render_template('interkassa_payment.html', form_data=form_data)
         
     except Exception as e:
         flash(f'Error creating payment form: {str(e)}')
