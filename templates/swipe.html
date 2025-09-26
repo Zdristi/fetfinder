@@ -13,21 +13,23 @@
         {% endif %}
     </div>
     
-    <div class="swipe-container" id="swipeContainer" style="position: relative; min-height: 500px;">
-        <div class="card swipe-card" id="currentCard" style="display: none; position: relative; margin: 20px auto; max-width: 400px;">
-            <div class="user-avatar" id="userAvatar" style="width: 100%; height: 300px; background-size: cover; background-position: center; border-radius: 10px 10px 0 0;"></div>
-            <div class="user-info" style="padding: 20px;">
-                <h2 id="username"></h2>
-                <p id="location"></p>
-                <p id="bio"></p>
-                <div id="tags" class="tags-container" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;"></div>
-            </div>
-            
-            <div class="action-hint like-hint" id="likeHint">
-                <i class="fas fa-heart"></i> LIKE
-            </div>
-            <div class="action-hint dislike-hint" id="dislikeHint">
-                <i class="fas fa-times"></i> NOPE
+    <div id="swipeContainer" style="position: relative; min-height: 500px;">
+        <div class="swipe-container">
+            <div class="card swipe-card" id="currentCard" style="display: none; position: relative; margin: 20px auto; max-width: 400px;">
+                <div class="user-avatar" id="userAvatar" style="width: 100%; height: 300px; background-size: cover; background-position: center; border-radius: 10px 10px 0 0;"></div>
+                <div class="user-info" style="padding: 20px;">
+                    <h2 id="username"></h2>
+                    <p id="location"></p>
+                    <p id="bio"></p>
+                    <div id="tags" class="tags-container" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;"></div>
+                </div>
+                
+                <div class="action-hint like-hint" id="likeHint">
+                    <i class="fas fa-heart"></i> LIKE
+                </div>
+                <div class="action-hint dislike-hint" id="dislikeHint">
+                    <i class="fas fa-times"></i> NOPE
+                </div>
             </div>
         </div>
         
