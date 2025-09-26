@@ -6,12 +6,13 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 from werkzeug.utils import secure_filename
 import hashlib
 from models import db, User as UserModel, Fetish, Interest, Match, Message
-import stripe
+import hmac
+import hashlib
 
 # Create Flask app
 app = Flask(__name__)
@@ -872,36 +873,62 @@ def premium():
 @app.route('/subscribe_premium', methods=['POST'])
 @login_required
 def subscribe_premium():
-    # Настройка Stripe
-    stripe.api_key = app.config.get('STRIPE_SECRET_KEY')
+    from payment_config import InterKassaConfig
+    import uuid
     
     try:
-        # Создать сессию оплаты в Stripe
-        session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price': app.config.get('STRIPE_PREMIUM_PRICE_ID'),  # Используем предварительно созданный ценник в Stripe
-                'quantity': 1,
-            }],
-            mode='subscription',  # Подписка с автоматическим продлением
-            success_url=url_for('premium_success', _external=True),
-            cancel_url=url_for('premium', _external=True),
-            customer_email=current_user.email,
-            metadata={
-                'user_id': current_user.id
-            }
+        # Создаем экземпляр конфигурации InterKassa
+        ik_config = InterKassaConfig()
+        
+        # Генерируем уникальный ID заказа
+        order_id = f"premium_{current_user.id}_{int(datetime.utcnow().timestamp())}"
+        
+        # Создаем данные для формы оплаты
+        form_data = ik_config.create_payment_form(
+            order_id=order_id,
+            amount=4.99,  # Стоимость премиум-подписки
+            description="Premium subscription for FetFinder",
+            user_email=current_user.email,
+            user_id=current_user.id
         )
         
-        return redirect(session.url, code=303)
+        # Сохраняем ID заказа в сессии для последующей проверки
+        session['pending_order_id'] = order_id
+        
+        # Создаем HTML-форму для отправки данных в InterKassa
+        form_html = f"""
+        <html>
+            <head>
+                <title>Processing Payment...</title>
+            </head>
+            <body>
+                <p>Redirecting to payment page...</p>
+                <form name="payment_form" method="post" action="https://pay.interkassa.com/" accept-charset="utf-8">
+        """
+        
+        for key, value in form_data.items():
+            form_html += f'            <input type="hidden" name="{key}" value="{value}">\n'
+        
+        form_html += """
+                    <input type="submit" value="Pay Now" style="display:none;">
+                </form>
+                <script>document.payment_form.submit();</script>
+            </body>
+        </html>
+        """
+        
+        return form_html
+        
     except Exception as e:
-        flash(f'Error creating payment session: {str(e)}')
+        flash(f'Error creating payment form: {str(e)}')
         return redirect(url_for('premium'))
 
 @app.route('/premium_success')
 @login_required
 def premium_success():
-    # После успешной оплаты пользователь будет обновлен через вебхук
-    # Но мы также можем показать страницу успеха
+    # Эта страница показывается после успешного возврата из InterKassa
+    # Но подписка устанавливается через вебхук
+    flash('Payment successful! Your premium status will be updated shortly.')
     return redirect(url_for('profile'))
 
 
@@ -933,43 +960,41 @@ def unsubscribe_premium():
     
     return redirect(url_for('profile'))
 
-@app.route('/stripe_webhook', methods=['POST'])
-def stripe_webhook():
-    """Обработка вебхуков от Stripe"""
-    payload = request.data
-    sig_header = request.headers.get('STRIPE_SIGNATURE')
-
+@app.route('/interkassa_webhook', methods=['POST'])
+def interkassa_webhook():
+    """Обработка вебхуков от InterKassa"""
+    from payment_config import InterKassaConfig
+    
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, app.config.get('STRIPE_ENDPOINT_SECRET')
-        )
-    except ValueError:
-        # Invalid payload
-        return 'Invalid payload', 400
-    except stripe.error.SignatureVerificationError:
-        # Invalid signature
-        return 'Invalid signature', 400
-
-    # Handle the event
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
+        # Проверяем подпись
+        ik_config = InterKassaConfig()
+        is_valid = ik_config.verify_payment(request.form)
         
-        # Обновляем статус пользователя в зависимости от сессии оплаты
-        if session.get('mode') == 'payment' or session.get('mode') == 'subscription':
-            # Получаем email пользователя из сессии
-            user_email = session.get('customer_details', {}).get('email') or session.get('customer_email')
-            
-            if user_email:
-                user = UserModel.query.filter_by(email=user_email).first()
-                if user:
-                    from datetime import datetime, timedelta
-                    user.is_premium = True
-                    # Если это подписка, устанавливаем длительность на основе плана
-                    # Временно - 30 дней для тестирования
-                    user.premium_expires = datetime.utcnow() + timedelta(days=30)
-                    db.session.commit()
-                    
-    return '', 200
+        if not is_valid:
+            print("Invalid signature from InterKassa webhook")
+            return 'Invalid signature', 400
+        
+        # Получаем данные из запроса
+        order_id = request.form.get('ik_inv_id')
+        user_id = request.form.get('user_id')
+        status = request.form.get('ik_inv_st', 'pending')  # Статус заказа
+        
+        if status == 'success' and user_id:
+            # Обновляем статус пользователя
+            user = UserModel.query.get(int(user_id))
+            if user:
+                user.is_premium = True
+                user.premium_expires = datetime.utcnow() + timedelta(days=30)  # 30 дней премиум
+                db.session.commit()
+                
+                print(f"Premium status updated for user {user_id}")
+        
+        # Возвращаем ответ, подтверждающий получение вебхука
+        return 'OK', 200
+        
+    except Exception as e:
+        print(f"Error processing InterKassa webhook: {str(e)}")
+        return 'Error', 500
 
 
 def is_premium_user(user):

@@ -28,8 +28,8 @@ GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 HOST = '0.0.0.0'
 PORT = int(os.environ.get('PORT', 5000))
 
-# Stripe configuration
-STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_your_stripe_secret_key_here')
-STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', 'pk_test_your_stripe_publishable_key_here')
-STRIPE_PREMIUM_PRICE_ID = os.environ.get('STRIPE_PREMIUM_PRICE_ID', 'price_your_premium_price_id_here')
-STRIPE_ENDPOINT_SECRET = os.environ.get('STRIPE_ENDPOINT_SECRET', 'whsec_your_webhook_secret_here')
+# InterKassa configuration
+INTERKASSA_SHOP_ID = os.environ.get('INTERKASSA_SHOP_ID', 'your_interkassa_shop_id_here')
+INTERKASSA_SECRET_KEY = os.environ.get('INTERKASSA_SECRET_KEY', 'your_interkassa_secret_key_here')
+INTERKASSA_TEST_KEY = os.environ.get('INTERKASSA_TEST_KEY', 'your_interkassa_test_key_here')
+INTERKASSA_TEST_MODE = os.environ.get('INTERKASSA_TEST_MODE', 'True').lower() == 'true'
