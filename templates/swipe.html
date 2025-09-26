@@ -5,18 +5,18 @@
 {% block content %}
 <div class="container">
     <div class="swipe-header">
-        <a href="{{ url_for('home') }}" class="btn btn-outline">
-            <i class="fas fa-home"></i>
+        <a href="{{ url_for('home') }}" class="logo-link">
+            <div class="logo">
+                <i class="fas fa-heart"></i>
+                FetFinder
+            </div>
         </a>
-        <h1>{{ get_text('discover_matches') }}</h1>
+        <h1>Метчи</h1>
         {% if current_user.is_premium %}
             <span class="premium-badge" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; margin-left: 10px;">
                 <i class="fas fa-crown"></i> PREMIUM
             </span>
         {% endif %}
-        <a href="{{ url_for('chat_list') }}" class="btn btn-outline">
-            <i class="fas fa-comment"></i>
-        </a>
     </div>
     
     <div class="swipe-container" id="swipeContainer" style="position: relative; min-height: 500px;">
@@ -38,9 +38,8 @@
         </div>
         
         <div id="noUsersMessage" style="display: none; text-align: center; padding: 50px;">
-            <h2>{{ get_text('no_more_users_to_swipe') }}</h2>
+            <h2>К сожалению, больше нет доступных пользователей</h2>
             <p>{{ get_text('check_back_later_for_new_users') }}</p>
-            <a href="{{ url_for('home') }}" class="btn">{{ get_text('go_home') }}</a>
         </div>
     </div>
     
@@ -565,6 +564,25 @@
     .btn.btn-primary:hover {
         background: #0069d9;
         border-color: #0062cc;
+    }
+    
+    .logo-link {
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        align-items: center;
+    }
+    
+    .logo {
+        display: flex;
+        align-items: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: inherit;
+    }
+    
+    .logo i {
+        margin-right: 8px;
     }
 </style>
 {% endblock %}
