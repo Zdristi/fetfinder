@@ -14,8 +14,8 @@
                 <i class="fas fa-crown"></i> PREMIUM
             </span>
         {% endif %}
-        <a href="{{ url_for('matches') }}" class="btn btn-outline">
-            <i class="fas fa-heart"></i>
+        <a href="{{ url_for('chat_list') }}" class="btn btn-outline">
+            <i class="fas fa-comment"></i>
         </a>
     </div>
     
@@ -54,7 +54,7 @@
             <button id="rejectBtn" class="btn btn-large btn-danger" onclick="swipe('dislike')">
                 <i class="fas fa-times"></i>
             </button>
-            <button id="messageBtn" class="btn btn-large btn-primary" onclick="messageUser()">
+            <button id="messageBtn" class="btn btn-large btn-primary" onclick="openMessageModal()">
                 <i class="fas fa-comment"></i>
             </button>
             <button id="superlikeBtn" class="btn btn-large btn-warning" onclick="superlike()">
@@ -63,6 +63,28 @@
             <button id="likeBtn" class="btn btn-large btn-success" onclick="swipe('like')">
                 <i class="fas fa-heart"></i>
             </button>
+        </div>
+    </div>
+    
+    <!-- Message Modal -->
+    <div id="messageModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: var(--card-bg); padding: 20px; border-radius: 10px; width: 90%; max-width: 500px; position: relative;">
+            <span class="close" onclick="closeMessageModal()" style="position: absolute; top: 10px; right: 15px; font-size: 28px; cursor: pointer; color: var(--text-color);">&times;</span>
+            
+            <h3>Send a message instead of just liking</h3>
+            
+            {% if not current_user.is_premium %}
+                <div class="message-limit-info" style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ffeaa7;">
+                    <strong>Note:</strong> You have 1 free message per day. Upgrade to Premium for unlimited messaging.
+                </div>
+            {% endif %}
+            
+            <textarea id="messageInput" placeholder="Write your message here..." style="width: 100%; height: 120px; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; background: var(--bg-color); color: var(--text-color); resize: vertical; margin-bottom: 15px;"></textarea>
+            
+            <div class="modal-actions" style="display: flex; justify-content: space-between;">
+                <button class="btn btn-outline" onclick="closeMessageModal()">Cancel</button>
+                <button id="sendMessageBtn" class="btn btn-success" onclick="sendMessageInsteadOfLike()">Send Message</button>
+            </div>
         </div>
     </div>
 </div>
@@ -319,6 +341,74 @@
     function superlike() {
         // For now, superlike works the same as like
         swipe('like');
+    }
+    
+    function openMessageModal() {
+        if (!currentUserId) return;
+        
+        // Check if user is premium or has remaining messages
+        if (!isPremiumUser) {
+            // Check daily message limit via AJAX
+            $.get('/api/message_limit_check', function(response) {
+                if (response.status === 'error' && response.limit_reached) {
+                    alert('Free users can only send 1 message per day. Upgrade to Premium for unlimited messaging!');
+                    return;
+                } else {
+                    $('#messageModal').show();
+                    $('#messageInput').focus();
+                }
+            }).fail(function() {
+                // If API call fails, proceed with old confirmation method
+                if (confirm("Free users can only send 1 message per day. Upgrade to Premium for unlimited messaging. Continue?")) {
+                    $('#messageModal').show();
+                    $('#messageInput').focus();
+                }
+            });
+        } else {
+            // Premium users can always send messages
+            $('#messageModal').show();
+            $('#messageInput').focus();
+        }
+    }
+    
+    function closeMessageModal() {
+        $('#messageModal').hide();
+        $('#messageInput').val('');
+    }
+    
+    function sendMessageInsteadOfLike() {
+        if (!currentUserId) return;
+        
+        const messageContent = $('#messageInput').val().trim();
+        if (!messageContent) {
+            alert('Please enter a message');
+            return;
+        }
+        
+        // Send the message via AJAX
+        $.ajax({
+            url: '/api/send_message',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                recipient_id: currentUserId,
+                content: messageContent
+            }),
+            success: function(response) {
+                if (response.status === 'success') {
+                    // Message sent successfully, now also like the user
+                    performSwipe('like');
+                    closeMessageModal();
+                    alert('Message sent successfully!');
+                } else {
+                    alert('Error sending message: ' + response.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error sending message:', error);
+                alert('Error sending message: ' + error);
+            }
+        });
     }
     
     function messageUser() {

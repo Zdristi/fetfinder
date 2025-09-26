@@ -7,8 +7,8 @@
     <div class="chat-container">
         <div class="chat-header">
             <div class="chat-header-content">
-                <a href="{{ url_for('matches') }}" class="back-link">
-                    <i class="fas fa-arrow-left"></i> Back to Matches
+                <a href="{{ url_for('chat_list') }}" class="back-link">
+                    <i class="fas fa-arrow-left"></i> Back to Chat
                 </a>
                 <div class="recipient-info">
                     <div class="recipient-avatar" {% if recipient.photo %}style="background-image: url('/static/uploads/{{ recipient.photo }}'); background-size: cover;"{% else %}style="background: linear-gradient(135deg, var(--primary), var(--secondary));"{% endif %}>

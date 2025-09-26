@@ -112,7 +112,7 @@ LANGUAGES = {
         'login': 'Login',
         'logout': 'Logout',
         'swipe_feature': 'Swipe through potential matches',
-        'chat': 'Start meaningful conversations',
+        'chat': 'Chat',
         'get_started': 'Get Started',
         'how_works': 'How It Works',
         'step1': 'Sign Up',
@@ -155,6 +155,7 @@ LANGUAGES = {
         'like': 'Like',
         'home': 'Home',
         'profile': 'Profile',
+        'chat': 'Chat',
         'language': 'Language',
         'english': 'English',
         'russian': 'Русский',
@@ -226,6 +227,7 @@ LANGUAGES = {
         'like': 'Лайк',
         'home': 'Главная',
         'profile': 'Профиль',
+        'chat': 'Чат',
         'language': 'Язык',
         'english': 'English',
         'russian': 'Русский',
@@ -597,10 +599,10 @@ def admin():
     users = UserModel.query.all()
     return render_template('admin.html', users=users)
 
-@app.route('/matches')
+@app.route('/chat')
 @login_required
-def matches():
-    # Get mutual matches for current user
+def chat_list():
+    # Get mutual matches for current user (these are the users they can chat with)
     user_matches = Match.query.filter_by(user_id=int(current_user.id)).all()
     match_user_ids = [match.matched_user_id for match in user_matches]
     
@@ -747,6 +749,21 @@ def api_send_message():
             'sender_id': message.sender_id
         }
     })
+
+
+@app.route('/api/message_limit_check')
+@login_required
+def api_message_limit_check():
+    """Check if user has reached their daily message limit"""
+    if is_premium_user(current_user):
+        return jsonify({'status': 'success', 'limit_reached': False})
+    
+    # Check how many messages user has sent today
+    messages_today_count = messages_today(current_user.id)
+    if messages_today_count >= 1:
+        return jsonify({'status': 'error', 'limit_reached': True, 'message': 'Daily message limit reached'})
+    
+    return jsonify({'status': 'success', 'limit_reached': False})
 
 
 @app.route('/api/user_info/<int:user_id>')
