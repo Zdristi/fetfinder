@@ -446,8 +446,27 @@ def edit_profile():
     user_interests = [i.name for i in Interest.query.filter_by(user_id=current_user.id).all()]
     
     # Get all available fetishes and interests
-    all_fetishes = [f.name for f in Fetish.query.distinct(Fetish.name)]
-    all_interests = [i.name for i in Interest.query.distinct(Interest.name)]
+    db_fetishes = [f.name for f in Fetish.query.distinct(Fetish.name)]
+    db_interests = [i.name for i in Interest.query.distinct(Interest.name)]
+    
+    # Predefined popular fetishes and interests
+    predefined_fetishes = [
+        'Leather', 'Latex', 'Bondage', 'Dominance', 'Submission', 
+        'Roleplay', 'Age Play', 'Water Sports', 'Pain Play', 'Exhibitionism',
+        'Furry', 'Age Fetish', 'Giantess', 'Pet Play', 'Chastity', 
+        'Forced Orgasm', 'Sensation Play', 'Impact Play', 'Humiliation'
+    ]
+    
+    predefined_interests = [
+        'Hiking', 'Photography', 'Cooking', 'Travel', 'Reading', 
+        'Music', 'Movies', 'Gaming', 'Art', 'Dancing',
+        'Sports', 'Yoga', 'Meditation', 'Gardening', 'Fishing',
+        'Cycling', 'Swimming', 'Running', 'Diving', 'Technology'
+    ]
+    
+    # Combine database values with predefined values
+    all_fetishes = list(set(db_fetishes + predefined_fetishes))
+    all_interests = list(set(db_interests + predefined_interests))
     
     user_data = {
         'username': current_user.username,
