@@ -4,7 +4,7 @@
 {% if current_user.is_authenticated %}
     <!-- For logged in users, show swipe interface -->
     <div style="text-align: center; max-width: 800px; margin: 0 auto;">
-        <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: var(--dark);">
+        <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: var(--dark);" class="welcome-back">
             {{ get_text('welcome_back') }}, {{ current_user.username }}!
         </h1>
         <p style="font-size: 1.2rem; color: var(--gray); margin-bottom: 30px;">
