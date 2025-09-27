@@ -53,12 +53,12 @@
             </h3>
             <p style="color: var(--gray);">{{ get_text('add_fetish') }}:</p>
             
-            <div class="checkbox-grid">
+            <div class="checkbox-grid" id="fetishes-grid">
                 {% for fetish in fetishes %}
-                    <div class="checkbox-item">
+                    <div class="fetish-item">
                         <input type="checkbox" id="fetish_{{ loop.index }}" name="fetishes" value="{{ fetish }}" 
                                {% if fetish in user.fetishes %}checked{% endif %}>
-                        <label for="fetish_{{ loop.index }}">{{ fetish }}</label>
+                        <label for="fetish_{{ loop.index }}" class="fetish-btn">{{ fetish }}</label>
                     </div>
                 {% endfor %}
             </div>
@@ -75,12 +75,12 @@
             </h3>
             <p style="color: var(--gray);">{{ get_text('add_interest') }}:</p>
             
-            <div class="checkbox-grid">
+            <div class="checkbox-grid" id="interests-grid">
                 {% for interest in interests %}
-                    <div class="checkbox-item">
+                    <div class="interest-item">
                         <input type="checkbox" id="interest_{{ loop.index }}" name="interests" value="{{ interest }}" 
                                {% if interest in user.interests %}checked{% endif %}>
-                        <label for="interest_{{ loop.index }}">{{ interest }}</label>
+                        <label for="interest_{{ loop.index }}" class="interest-btn">{{ interest }}</label>
                     </div>
                 {% endfor %}
             </div>
@@ -121,5 +121,63 @@
             citySelect.disabled = true;
         }
     });
+    
+    // Add event listeners to update button styles when checkboxes are checked
+    document.querySelectorAll('input[name="fetishes"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const label = document.querySelector(`label[for="${this.id}"]`);
+            label.classList.toggle('selected', this.checked);
+        });
+    });
+    
+    document.querySelectorAll('input[name="interests"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const label = document.querySelector(`label[for="${this.id}"]`);
+            label.classList.toggle('selected', this.checked);
+        });
+    });
 </script>
+
+<style>
+    .fetish-btn, .interest-btn {
+        display: block;
+        padding: 10px 15px;
+        margin: 5px;
+        background-color: var(--card-bg);
+        color: var(--text-color);
+        border: 2px solid var(--border-color);
+        border-radius: 20px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+    
+    .fetish-btn:hover, .interest-btn:hover {
+        background-color: var(--bg-color);
+        border-color: var(--primary);
+    }
+    
+    .fetish-btn.selected, .interest-btn.selected {
+        background-color: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    
+    [data-theme="dark"] .fetish-btn.selected, [data-theme="dark"] .interest-btn.selected {
+        background-color: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    
+    .fetish-item, .interest-item {
+        display: block;
+        margin: 0;
+    }
+    
+    .fetish-item input[type="checkbox"], .interest-item input[type="checkbox"] {
+        display: none;
+    }
+</style>
+
 {% endblock %}
