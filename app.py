@@ -249,7 +249,7 @@ LANGUAGES = {
         'quick_actions': 'Быстрые действия',
         'edit_profile': 'Редактировать профиль',
         'notifications': 'Уведомления',
-        'mark_all_read': 'Отметить все как прочитанные',
+        'mark_all_read': 'Прочитать',
         'no_notifications': 'Пока нет уведомлений'
     }
 }
