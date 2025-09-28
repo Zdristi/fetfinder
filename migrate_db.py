@@ -8,11 +8,13 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from app import app, db
 from models import User
 
-def migrate_database():
-    """Add missing columns to user table"""
+def check_and_add_columns():
+    """Add missing columns to user table if they don't exist"""
     with app.app_context():
         # Get the database engine
         engine = db.engine
+        
+        print("Checking and adding missing columns to user table...")
         
         # List of columns that need to be added
         columns_to_add = [
@@ -46,14 +48,15 @@ def migrate_database():
                     alter_query = text(f"ALTER TABLE \"user\" ADD COLUMN {column_name} {column_type};")
                     db.session.execute(alter_query)
                     db.session.commit()
-                    print(f"Successfully added column {column_name}")
+                    print(f"✓ Successfully added column {column_name}")
                 except Exception as e:
-                    print(f"Error adding column {column_name}: {e}")
+                    print(f"✗ Error adding column {column_name}: {e}")
                     db.session.rollback()
             else:
-                print(f"Column {column_name} already exists")
+                print(f"✓ Column {column_name} already exists")
         
-        print("Database migration completed!")
+        print("\nDatabase migration completed!")
+        return True
 
 if __name__ == '__main__':
-    migrate_database()
+    check_and_add_columns()

@@ -1081,6 +1081,17 @@ with app.app_context():
         import traceback
         traceback.print_exc()
 
+# Run database migrations to add missing columns if they don't exist
+with app.app_context():
+    try:
+        from migrate_db import check_and_add_columns
+        check_and_add_columns()
+        print("Database migrations completed successfully!")
+    except Exception as e:
+        print(f"Error running database migrations: {e}")
+        import traceback
+        traceback.print_exc()
+
 # For Render and other hosting platforms
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
