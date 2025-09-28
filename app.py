@@ -172,7 +172,10 @@ LANGUAGES = {
         'no_account': 'Don\'t have an account?',
         'required_field': 'This field is required',
         'quick_actions': 'Quick Actions',
-        'edit_profile': 'Edit Profile'
+        'edit_profile': 'Edit Profile',
+        'notifications': 'Notifications',
+        'mark_all_read': 'Mark all read',
+        'no_notifications': 'No notifications yet'
     },
     'ru': {
         'welcome': 'Добро пожаловать в FetFinder!',
@@ -244,7 +247,10 @@ LANGUAGES = {
         'no_account': 'Нет аккаунта?',
         'required_field': 'Это поле обязательно для заполнения',
         'quick_actions': 'Быстрые действия',
-        'edit_profile': 'Редактировать профиль'
+        'edit_profile': 'Редактировать профиль',
+        'notifications': 'Уведомления',
+        'mark_all_read': 'Отметить все как прочитанные',
+        'no_notifications': 'Пока нет уведомлений'
     }
 }
 
