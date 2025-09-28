@@ -421,6 +421,14 @@ def edit_profile():
         # Add custom fetish if provided
         custom_fetish = request.form.get('custom_fetish')
         if custom_fetish:
+            # Check if fetish already exists in the database, if not, add it
+            existing_fetish = Fetish.query.filter_by(name=custom_fetish).first()
+            if not existing_fetish:
+                # Add to the global list of fetishes so it appears for all users
+                global_fetish = Fetish(user_id=None, name=custom_fetish)  # user_id=None for global
+                db.session.add(global_fetish)
+            
+            # Add to current user's profile
             fetish = Fetish(user_id=current_user.id, name=custom_fetish)
             db.session.add(fetish)
         
@@ -434,6 +442,14 @@ def edit_profile():
         # Add custom interest if provided
         custom_interest = request.form.get('custom_interest')
         if custom_interest:
+            # Check if interest already exists in the database, if not, add it
+            existing_interest = Interest.query.filter_by(name=custom_interest).first()
+            if not existing_interest:
+                # Add to the global list of interests so it appears for all users
+                global_interest = Interest(user_id=None, name=custom_interest)  # user_id=None for global
+                db.session.add(global_interest)
+            
+            # Add to current user's profile
             interest = Interest(user_id=current_user.id, name=custom_interest)
             db.session.add(interest)
         
@@ -449,20 +465,38 @@ def edit_profile():
     db_fetishes = [f.name for f in Fetish.query.distinct(Fetish.name)]
     db_interests = [i.name for i in Interest.query.distinct(Interest.name)]
     
-    # Predefined popular fetishes and interests
-    predefined_fetishes = [
-        'Leather', 'Latex', 'Bondage', 'Dominance', 'Submission', 
-        'Roleplay', 'Age Play', 'Water Sports', 'Pain Play', 'Exhibitionism',
-        'Furry', 'Age Fetish', 'Giantess', 'Pet Play', 'Chastity', 
-        'Forced Orgasm', 'Sensation Play', 'Impact Play', 'Humiliation'
-    ]
+    # Get current language
+    current_language = session.get('language', 'en')
     
-    predefined_interests = [
-        'Hiking', 'Photography', 'Cooking', 'Travel', 'Reading', 
-        'Music', 'Movies', 'Gaming', 'Art', 'Dancing',
-        'Sports', 'Yoga', 'Meditation', 'Gardening', 'Fishing',
-        'Cycling', 'Swimming', 'Running', 'Diving', 'Technology'
-    ]
+    # Predefined popular fetishes and interests with translations
+    if current_language == 'ru':
+        predefined_fetishes = [
+            'Кожа', 'Латекс', 'Бондаж', 'Доминирование', 'Подчинение', 
+            'Ролевые игры', 'Игра на возраст', 'Водные игры', 'Игра с болью', 'Экспозиционизм',
+            'Фурри', 'Возрастной фетиш', 'Гигантизм', 'Игра с животными', 'Целомудрие', 
+            'Принудительный оргазм', 'Игра с ощущениями', 'Игра с ударами', 'Оскорбление'
+        ]
+        
+        predefined_interests = [
+            'Пешие прогулки', 'Фотография', 'Кулинария', 'Путешествия', 'Чтение', 
+            'Музыка', 'Фильмы', 'Игры', 'Искусство', 'Танцы',
+            'Спорт', 'Йога', 'Медитация', 'Садоводство', 'Рыбалка',
+            'Велоспорт', 'Плавание', 'Бег', 'Дайвинг', 'Технологии'
+        ]
+    else:  # English
+        predefined_fetishes = [
+            'Leather', 'Latex', 'Bondage', 'Dominance', 'Submission', 
+            'Roleplay', 'Age Play', 'Water Sports', 'Pain Play', 'Exhibitionism',
+            'Furry', 'Age Fetish', 'Giantess', 'Pet Play', 'Chastity', 
+            'Forced Orgasm', 'Sensation Play', 'Impact Play', 'Humiliation'
+        ]
+        
+        predefined_interests = [
+            'Hiking', 'Photography', 'Cooking', 'Travel', 'Reading', 
+            'Music', 'Movies', 'Gaming', 'Art', 'Dancing',
+            'Sports', 'Yoga', 'Meditation', 'Gardening', 'Fishing',
+            'Cycling', 'Swimming', 'Running', 'Diving', 'Technology'
+        ]
     
     # Combine database values with predefined values
     all_fetishes = list(set(db_fetishes + predefined_fetishes))
