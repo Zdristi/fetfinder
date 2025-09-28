@@ -143,7 +143,131 @@
         }
         
         // Close menu when clicking outside
-        window.onclick = function(event) {\n            const menu = document.getElementById('languageMenu');\n            const button = event.target.closest('.language-switcher');\n            if (menu && !button) {\n                menu.style.display = 'none';\n            }\n            \n            // Close notification dropdown when clicking outside\n            const notificationDropdown = document.getElementById('notificationDropdown');\n            const notificationButton = event.target.closest('.notification-dropdown');\n            if (notificationDropdown && !notificationButton) {\n                notificationDropdown.style.display = 'none';\n            }\n        }\n        \n        // Notification functions\n        function toggleNotifications() {\n            const dropdown = document.getElementById('notificationDropdown');\n            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';\n            \n            if(dropdown.style.display === 'block') {\n                loadNotifications();\n            }\n        }\n        \n        function loadNotifications() {\n            fetch('/api/notifications')\n                .then(response => response.json())\n                .then(data => {\n                    const notificationsList = document.getElementById('notifications-list');\n                    const notificationCount = document.getElementById('notification-count');\n                    \n                    // Clear current notifications\n                    notificationsList.innerHTML = '';\n                    \n                    if(data.length > 0) {\n                        // Show notification count\n                        notificationCount.textContent = data.length;\n                        notificationCount.style.display = 'flex';\n                        \n                        // Add each notification to the list\n                        data.forEach(notification => {\n                            const notificationDiv = document.createElement('div');\n                            notificationDiv.className = 'notification-item';\n                            notificationDiv.style.padding = '10px 15px';\n                            notificationDiv.style.borderBottom = '1px solid var(--border-color)';\n                            notificationDiv.style.cursor = 'pointer';\n                            notificationDiv.style.background = notification.is_read ? 'transparent' : 'var(--bg-color)';\n                            \n                            notificationDiv.innerHTML = `\n                                <div style=\"display: flex; justify-content: space-between; align-items: flex-start;\">\n                                    <div style=\"flex: 1;\">\n                                        <div style=\"font-weight: bold; margin-bottom: 5px;\">${notification.title}</div>\n                                        <div style=\"font-size: 0.9rem; color: var(--gray); margin-bottom: 5px;\">${notification.content}</div>\n                                        <div style=\"font-size: 0.8rem; color: var(--gray);\">${new Date(notification.timestamp).toLocaleString()}</div>\n                                    </div>\n                                </div>\n                            `;\n                            \n                            if (!notification.is_read) {\n                                notificationDiv.style.fontWeight = 'bold';\n                            }\n                            \n                            notificationDiv.onclick = function() {\n                                markNotificationAsRead(notification.id);\n                                if (notification.url) {\n                                    window.location.href = notification.url;\n                                }\n                                notificationDiv.style.background = 'transparent';\n                                notificationDiv.style.fontWeight = 'normal';\n                            };\n                            \n                            notificationsList.appendChild(notificationDiv);\n                        });\n                    } else {\n                        // No notifications message\n                        notificationCount.style.display = 'none';\n                        notificationsList.innerHTML = '<div style=\"padding: 15px; text-align: center; color: var(--gray);\">{{ get_text(\\'no_notifications\\') or \\'No notifications yet\\' }}</div>';\n                    }\n                })\n                .catch(error => console.error('Error loading notifications:', error));\n        }\n        \n        function markNotificationAsRead(notificationId) {\n            fetch(`/api/notifications/${notificationId}/read`, {\n                method: 'POST',\n                headers: {\n                    'Content-Type': 'application/json'\n                }\n            })\n            .then(response => response.json())\n            .then(data => {\n                if(data.status === 'success') {\n                    // Reload notifications to update the count\n                    setTimeout(loadNotifications, 500);\n                }\n            })\n            .catch(error => console.error('Error marking notification as read:', error));\n        }\n        \n        function markAllNotificationsAsRead() {\n            fetch('/api/notifications/read-all', {\n                method: 'POST',\n                headers: {\n                    'Content-Type': 'application/json'\n                }\n            })\n            .then(response => response.json())\n            .then(data => {\n                if(data.status === 'success') {\n                    document.getElementById('notification-count').style.display = 'none';\n                    loadNotifications();\n                }\n            })\n            .catch(error => console.error('Error marking all notifications as read:', error));\n        }\n        \n        // Check for new notifications every 30 seconds\n        setInterval(function() {\n            if(document.visibilityState === 'visible') {\n                loadNotifications();\n            }\n        }, 30000);\n    </script>
+        window.onclick = function(event) {
+            const menu = document.getElementById('languageMenu');
+            const button = event.target.closest('.language-switcher');
+            if (menu && !button) {
+                menu.style.display = 'none';
+            }
+            
+            // Close notification dropdown when clicking outside
+            const notificationDropdown = document.getElementById('notificationDropdown');
+            const notificationButton = event.target.closest('.notification-dropdown');
+            if (notificationDropdown && !notificationButton) {
+                notificationDropdown.style.display = 'none';
+            }
+        }
+        
+        // Notification functions
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            
+            if(dropdown.style.display === 'block') {
+                loadNotifications();
+            }
+        }
+        
+        function loadNotifications() {
+            fetch('/api/notifications')
+                .then(response => response.json())
+                .then(data => {
+                    const notificationsList = document.getElementById('notifications-list');
+                    const notificationCount = document.getElementById('notification-count');
+                    
+                    // Clear current notifications
+                    notificationsList.innerHTML = '';
+                    
+                    if(data.length > 0) {
+                        // Show notification count
+                        notificationCount.textContent = data.length;
+                        notificationCount.style.display = 'flex';
+                        
+                        // Add each notification to the list
+                        data.forEach(notification => {
+                            const notificationDiv = document.createElement('div');
+                            notificationDiv.className = 'notification-item';
+                            notificationDiv.style.padding = '10px 15px';
+                            notificationDiv.style.borderBottom = '1px solid var(--border-color)';
+                            notificationDiv.style.cursor = 'pointer';
+                            notificationDiv.style.background = notification.is_read ? 'transparent' : 'var(--bg-color)';
+                            
+                            notificationDiv.innerHTML = `
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: bold; margin-bottom: 5px;">${notification.title}</div>
+                                        <div style="font-size: 0.9rem; color: var(--gray); margin-bottom: 5px;">${notification.content}</div>
+                                        <div style="font-size: 0.8rem; color: var(--gray);">${new Date(notification.timestamp).toLocaleString()}</div>
+                                    </div>
+                                    ${!notification.is_read ? '<div style="width: 8px; height: 8px; background: var(--primary); border-radius: 50%; margin-left: 10px;"></div>' : ''}
+                                </div>
+                            `;
+                            
+                            if (!notification.is_read) {
+                                notificationDiv.style.fontWeight = 'bold';
+                            }
+                            
+                            notificationDiv.onclick = function() {
+                                markNotificationAsRead(notification.id);
+                                if (notification.url) {
+                                    window.location.href = notification.url;
+                                }
+                                notificationDiv.style.background = 'transparent';
+                                notificationDiv.style.fontWeight = 'normal';
+                            };
+                            
+                            notificationsList.appendChild(notificationDiv);
+                        });
+                    } else {
+                        // No notifications message
+                        notificationCount.style.display = 'none';
+                        notificationsList.innerHTML = '<div style="padding: 15px; text-align: center; color: var(--gray);">{{ get_text('no_notifications') or 'No notifications yet' }}</div>';
+                    }
+                })
+                .catch(error => console.error('Error loading notifications:', error));
+        }
+        
+        function markNotificationAsRead(notificationId) {
+            fetch(`/api/notifications/${notificationId}/read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    // Reload notifications to update the count
+                    setTimeout(loadNotifications, 500);
+                }
+            })
+            .catch(error => console.error('Error marking notification as read:', error));
+        }
+        
+        function markAllNotificationsAsRead() {
+            fetch('/api/notifications/read-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    document.getElementById('notification-count').style.display = 'none';
+                    loadNotifications();
+                }
+            })
+            .catch(error => console.error('Error marking all notifications as read:', error));
+        }
+        
+        // Check for new notifications every 30 seconds
+        setInterval(function() {
+            if(document.visibilityState === 'visible') {
+                loadNotifications();
+            }
+        }, 30000);
+    </script>
     
     <style>
         [data-theme="dark"] .welcome-back {
@@ -152,6 +276,47 @@
         
         [data-theme="dark"] .section-title-text {
             color: white !important;
+        }
+        
+        /* Styling for fetish and interest buttons */
+        .fetish-btn, .interest-btn {
+            display: inline-block;
+            padding: 8px 15px;
+            margin: 5px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .fetish-btn:hover, .interest-btn:hover {
+            background-color: var(--bg-color);
+            border-color: var(--primary);
+        }
+        
+        .fetish-btn.selected, .interest-btn.selected {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        [data-theme="dark"] .fetish-btn.selected, [data-theme="dark"] .interest-btn.selected {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .fetish-item, .interest-item {
+            display: inline-block;
+            margin: 0;
+        }
+        
+        .fetish-item input[type="checkbox"], .interest-item input[type="checkbox"] {
+            display: none;
         }
     </style>
 </body>
