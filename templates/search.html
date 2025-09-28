@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}{{ get_text('search') or 'Search' }} - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">{{ get_text('search') or 'Search' }}</h2>
+    </div>
+    
+    <div class="search-filters">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label class="form-label">{{ get_text('search_query') or 'Search' }}</label>
+                <input type="text" id="searchQuery" class="form-control" placeholder="{{ get_text('search_placeholder') or 'Search users...' }}">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">{{ get_text('country') or 'Country' }}</label>
+                <select id="countryFilter" class="form-control">
+                    <option value="">{{ get_text('select_country') or 'Select Country' }}</option>
+                    {% for country in countries %}
+                        <option value="{{ country }}">{{ country }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">{{ get_text('city') or 'City' }}</label>
+                <select id="cityFilter" class="form-control" disabled>
+                    <option value="">{{ get_text('select_city') or 'Select City' }}</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label class="form-label">{{ get_text('age_range') or 'Age Range' }}</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="number" id="minAge" class="form-control" placeholder="{{ get_text('min_age') or 'Min' }}" min="18" max="100" style="width: 100%;">
+                    <span style="white-space: nowrap;">{{ get_text('to') or 'to' }}</span>
+                    <input type="number" id="maxAge" class="form-control" placeholder="{{ get_text('max_age') or 'Max' }}" min="18" max="100" style="width: 100%;">
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label class="form-label">{{ get_text('fetishes') or 'Fetishes' }}</label>
+            <div class="checkbox-grid">
+                {% for fetish in fetishes %}
+                <div class="checkbox-item">
+                    <input type="checkbox" id="fetish_{{ loop.index }}" value="{{ fetish }}">
+                    <label for="fetish_{{ loop.index }}">{{ fetish }}</label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label class="form-label">{{ get_text('interests') or 'Interests' }}</label>
+            <div class="checkbox-grid">
+                {% for interest in interests %}
+                <div class="checkbox-item">
+                    <input type="checkbox" id="interest_{{ loop.index }}" value="{{ interest }}">
+                    <label for="interest_{{ loop.index }}">{{ interest }}</label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button id="searchBtn" class="btn" style="padding: 12px 30px; font-size: 1.1rem;">
+                <i class="fas fa-search"></i> {{ get_text('search') or 'Search' }}
+            </button>
+            <button id="clearBtn" class="btn btn-outline" style="padding: 12px 30px; font-size: 1.1rem; margin-left: 10px;">
+                <i class="fas fa-eraser"></i> {{ get_text('clear_filters') or 'Clear Filters' }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="searchResults" style="margin-top: 20px;">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">{{ get_text('search_results') or 'Search Results' }}</h2>
+        </div>
+        <div id="usersList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+            <!-- Search results will be loaded here -->
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--gray);">
+                <i class="fas fa-search fa-3x" style="margin-bottom: 15px;"></i>
+                <p>{{ get_text('search_instructions') or 'Use the filters above to search for users' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Load cities based on selected country
+    document.getElementById('countryFilter').addEventListener('change', function() {
+        const country = this.value;
+        const citySelect = document.getElementById('cityFilter');
+        citySelect.innerHTML = '<option value="">{{ get_text('select_city') or 'Select City' }}</option>';
+        
+        if (country) {
+            // Fetch cities for selected country
+            fetch(`/get_cities/${country}`)
+                .then(response => response.json())
+                .then(cities => {
+                    cities.forEach(city => {
+                        const option = document.createElement('option');
+                        option.value = city;
+                        option.textContent = city;
+                        citySelect.appendChild(option);
+                    });
+                    citySelect.disabled = false;
+                });
+        } else {
+            citySelect.disabled = true;
+        }
+    });
+    
+    // Search button event
+    document.getElementById('searchBtn').addEventListener('click', performSearch);
+    
+    // Clear filters button event
+    document.getElementById('clearBtn').addEventListener('click', function() {
+        document.getElementById('searchQuery').value = '';
+        document.getElementById('countryFilter').value = '';
+        document.getElementById('cityFilter').value = '';
+        document.getElementById('minAge').value = '';
+        document.getElementById('maxAge').value = '';
+        
+        // Uncheck all fetish and interest checkboxes
+        document.querySelectorAll('#searchResults input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        citySelect.disabled = true;
+        
+        // Perform search with all filters cleared
+        performSearch();
+    });
+    
+    // Perform search function
+    function performSearch() {
+        // Get filter values
+        const searchQuery = document.getElementById('searchQuery').value;
+        const country = document.getElementById('countryFilter').value;
+        const city = document.getElementById('cityFilter').value;
+        const minAge = document.getElementById('minAge').value;
+        const maxAge = document.getElementById('maxAge').value;
+        
+        // Get selected fetishes and interests
+        const selectedFetishes = [];
+        document.querySelectorAll('#searchResults input[type="checkbox"]:checked').forEach(checkbox => {
+            if (checkbox.id.startsWith('fetish_')) {
+                selectedFetishes.push(checkbox.value);
+            }
+        });
+        
+        const selectedInterests = [];
+        document.querySelectorAll('#searchResults input[type="checkbox"]:checked').forEach(checkbox => {
+            if (checkbox.id.startsWith('interest_')) {
+                selectedInterests.push(checkbox.value);
+            }
+        });
+        
+        // Build query string
+        let queryString = '?';
+        if (searchQuery) queryString += `q=${encodeURIComponent(searchQuery)}&`;
+        if (country) queryString += `country=${encodeURIComponent(country)}&`;
+        if (city) queryString += `city=${encodeURIComponent(city)}&`;
+        if (minAge) queryString += `min_age=${encodeURIComponent(minAge)}&`;
+        if (maxAge) queryString += `max_age=${encodeURIComponent(maxAge)}&`;
+        if (selectedFetishes.length > 0) queryString += `fetish=${encodeURIComponent(selectedFetishes.join(','))}&`;
+        if (selectedInterests.length > 0) queryString += `interest=${encodeURIComponent(selectedInterests.join(','))}&`;
+        
+        // Remove trailing &
+        if (queryString.endsWith('&')) {
+            queryString = queryString.slice(0, -1);
+        }
+        
+        // Fetch search results
+        fetch('/api/users' + queryString)
+            .then(response => response.json())
+            .then(users => {
+                const usersList = document.getElementById('usersList');
+                
+                if (users.length > 0) {
+                    usersList.innerHTML = '';
+                    
+                    users.forEach(userItem => {
+                        const userId = userItem[0];
+                        const user = userItem[1];
+                        
+                        const userCard = document.createElement('div');
+                        userCard.className = 'user-card';
+                        userCard.innerHTML = `
+                            <div style="display: flex; padding: 20px; margin-bottom: 15px; border-radius: 12px; background: var(--card-bg); box-shadow: 0 3px 10px rgba(0,0,0,0.08); transition: transform 0.3s, background-color 0.3s ease, color 0.3s ease;">
+                                <div class="user-avatar" style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.8rem; font-weight: bold; margin-right: 20px; flex-shrink: 0; object-fit: cover;">
+                                    ${user.photo ? '<img src="/static/uploads/' + user.photo + '" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%;">' : user.username[0].toUpperCase()}
+                                </div>
+                                
+                                <div class="user-info" style="flex-grow: 1;">
+                                    <h3 style="margin: 0 0 10px 0; color: var(--dark);">${user.username}</h3>
+                                    <p style="margin: 5px 0; color: var(--gray);">${user.city ? user.city + (user.country && user.city ? ', ' : '') : ''}${user.country || ''}</p>
+                                    <p style="margin: 5px 0; color: var(--gray);">${user.bio || '{{ get_text('no_bio') or 'No bio provided' }}'}</p>
+                                    
+                                    <div style="margin-top: 10px;">
+                                        ${user.fetishes.slice(0, 3).map(fetish => `
+                                            <span class="badge badge-fetish" style="margin: 5px 5px 5px 0; display: inline-block;">${fetish}</span>
+                                        `).join('')}
+                                        ${user.interests.slice(0, 3).map(interest => `
+                                            <span class="badge badge-interest" style="margin: 5px 5px 5px 0; display: inline-block;">${interest}</span>
+                                        `).join('')}
+                                    </div>
+                                    
+                                    <div style="margin-top: 15px;">
+                                        <a href="/profile/${userId}" class="btn btn-outline" style="padding: 8px 15px; font-size: 0.9rem; margin-right: 10px;">
+                                            <i class="fas fa-user"></i> {{ get_text('view_profile') or 'View Profile' }}
+                                        </a>
+                                        <a href="/chat/${userId}" class="btn btn-outline" style="padding: 8px 15px; font-size: 0.9rem;">
+                                            <i class="fas fa-comment"></i> {{ get_text('send_message') or 'Send Message' }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        usersList.appendChild(userCard);
+                    });
+                } else {
+                    usersList.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--gray);">
+                            <i class="fas fa-search fa-3x" style="margin-bottom: 15px;"></i>
+                            <p>{{ get_text('no_users_found') or 'No users found matching your criteria' }}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching search results:', error);
+                document.getElementById('usersList').innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--danger);">
+                        <i class="fas fa-exclamation-triangle fa-3x" style="margin-bottom: 15px;"></i>
+                        <p>{{ get_text('search_error') or 'Error loading search results' }}</p>
+                    </div>
+                `;
+            });
+    }
+</script>
+{% endblock %}

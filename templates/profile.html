@@ -67,23 +67,240 @@
     {% if user_data.interests %}
         <div>
             {% for interest in user_data.interests %}
-                <span class="badge badge-interest">{{ interest }}</span>
+                <span class=\"badge badge-interest\">{{ interest }}</span>
             {% endfor %}
         </div>
     {% else %}
         <p>{{ get_text('no_interests') }}</p>
     {% endif %}
     
-    <div style="margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap;">
-        <a href="{{ url_for('swipe') }}" class="btn">
-            <i class="fas fa-heart"></i> {{ get_text('swipe_now') }}
+    <!-- User Reviews Section -->
+    <div class=\"section-title\">
+        <h2><i class=\"fas fa-star\"></i> {{ get_text('user_reviews') }}</h2>
+    </div>
+    
+    <!-- Average Rating Display -->
+    <div style=\"display: flex; align-items: center; margin-bottom: 15px;\">
+        <div style=\"font-size: 2rem; margin-right: 15px; color: var(--primary);\">
+            {{ \"%.1f\"|format(user_data.avg_rating|float) }}
+        </div>
+        <div>
+            <div class=\"rating-display\" style=\"color: var(--primary); margin-bottom: 5px;\">
+                {% for i in range(5) %}
+                    {% if i < (user_data.avg_rating|round(0, 'floor')) %}
+                        <i class=\"fas fa-star\"></i>
+                    {% else %}
+                        <i class=\"far fa-star\"></i>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div style=\"color: var(--gray); font-size: 0.9rem;\">
+                {{ user_data.total_reviews }} {{ get_text('reviews') or 'reviews' }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leave Review Form (only for other users, not for the profile owner) -->
+    {% if current_user.id != user_data.id %}
+        <div style=\"background: var(--card-bg); padding: 20px; border-radius: 10px; margin: 20px 0; border: 1px solid var(--border-color);\">
+            <h3 style=\"margin-top: 0; color: var(--text-color);\">{{ get_text('write_review') }}</h3>
+            
+            <!-- Rating Input -->
+            <div style=\"margin-bottom: 15px;\">
+                <label class=\"form-label\">{{ get_text('rating') }}:</label>
+                <div id=\"rating-input\" style=\"display: flex; justify-content: flex-start; gap: 5px;\">
+                    {% for i in range(1, 6) %}
+                        <span class=\"star-rating\" data-rating=\"{{ i }}\" style=\"font-size: 1.5rem; cursor: pointer; color: var(--gray);\">
+                            <i class=\"far fa-star\"></i>
+                        </span>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Comment Input -->
+            <div class=\"form-group\" style=\"margin-bottom: 15px;\">
+                <label class=\"form-label\">{{ get_text('review_comment') }}:</label>
+                <textarea id=\"review-comment\" class=\"form-control\" rows=\"3\" placeholder=\"{{ get_text('review_comment') }}...\"></textarea>
+            </div>
+            
+            <!-- Submit Button -->
+            <button id=\"submit-review-btn\" class=\"btn\" style=\"padding: 10px 20px;\">
+                {{ get_text('submit_review') }}
+            </button>
+        </div>
+    {% endif %}
+    
+    <!-- Reviews List -->
+    <div id=\"reviews-list\">
+        {% if user_data.total_reviews > 0 %}
+            {% for review in [review for review in []] %} {# This is just a placeholder #}
+            {% endfor %}
+            <!-- Reviews will be loaded dynamically via JavaScript -->
+        {% else %}
+            <p style=\"color: var(--gray);\">{{ get_text('no_reviews_yet') }}</p>
+        {% endif %}
+    </div>
+    
+    <div style=\"margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap;\">
+        <a href=\"{{ url_for('swipe') }}\" class=\"btn\">
+            <i class=\"fas fa-heart\"></i> {{ get_text('swipe_now') }}
         </a>
-        <a href="{{ url_for('users') }}" class="btn btn-outline">
-            <i class="fas fa-users"></i> {{ get_text('all_users') }}
+        <a href=\"{{ url_for('users') }}\" class=\"btn btn-outline\">
+            <i class=\"fas fa-users\"></i> {{ get_text('all_users') }}
         </a>
-        <a href="{{ url_for('edit_profile') }}" class="btn btn-outline">
-            <i class="fas fa-edit"></i> {{ get_text('edit_profile') }}
+        <a href=\"{{ url_for('edit_profile') }}\" class=\"btn btn-outline\">
+            <i class=\"fas fa-edit\"></i> {{ get_text('edit_profile') }}
         </a>
     </div>
 </div>
+
+<script>
+    // Star rating functionality
+    document.querySelectorAll('.star-rating').forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = this.getAttribute('data-rating');
+            
+            // Update all stars before this one
+            document.querySelectorAll('.star-rating').forEach((s, index) => {
+                const starIcon = s.querySelector('i');
+                if(index < rating) {
+                    starIcon.className = 'fas fa-star';
+                } else {
+                    starIcon.className = 'far fa-star';
+                }
+            });
+            
+            // Store the selected rating
+            document.getElementById('submit-review-btn').setAttribute('data-rating', rating);
+        });
+        
+        // Hover effect
+        star.addEventListener('mouseenter', function() {
+            const rating = this.getAttribute('data-rating');
+            
+            // Temporarily update stars on hover
+            document.querySelectorAll('.star-rating').forEach((s, index) => {
+                const starIcon = s.querySelector('i');
+                if(index < rating) {
+                    starIcon.className = 'fas fa-star';
+                } else {
+                    starIcon.className = 'far fa-star';
+                }
+            });
+        });
+        
+        star.addEventListener('mouseleave', function() {
+            // Reset stars to actual selected rating
+            const selectedRating = document.getElementById('submit-review-btn').getAttribute('data-rating') || 0;
+            
+            document.querySelectorAll('.star-rating').forEach((s, index) => {
+                const starIcon = s.querySelector('i');
+                if(index < selectedRating) {
+                    starIcon.className = 'fas fa-star';
+                } else {
+                    starIcon.className = 'far fa-star';
+                }
+            });
+        });
+    });
+    
+    // Load reviews from API
+    function loadReviews() {
+        const userId = {{ user_data.id }}; // Pass the user ID from template
+        
+        fetch(`/api/reviews/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                const reviewsList = document.getElementById('reviews-list');
+                
+                if(data.reviews.length > 0) {
+                    let reviewsHtml = '<div style=\"margin-top: 20px;\">';
+                    
+                    data.reviews.forEach(review => {
+                        reviewsHtml += `
+                            <div style=\"background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border-color);\">
+                                <div style=\"display: flex; justify-content: space-between; align-items: flex-start;\">
+                                    <div style=\"display: flex; align-items: center; margin-bottom: 10px;\">
+                                        <div style=\"width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 10px;\">
+                                            \${review.reviewer.username[0].toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <strong>\${review.reviewer.username}</strong>
+                                            <div style=\"color: var(--primary); font-size: 0.9rem;\">
+                                                \${'★'.repeat(review.rating) + '☆'.repeat(5-review.rating)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style=\"font-size: 0.8rem; color: var(--gray);\">
+                                        \${new Date(review.timestamp).toLocaleDateString()}
+                                    </div>
+                                </div>
+                                \${review.comment ? \`<p style=\"margin: 10px 0 0 0;\">\${review.comment}</p>\` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    reviewsHtml += '</div>';
+                    reviewsList.innerHTML = reviewsHtml;
+                } else {
+                    reviewsList.innerHTML = `<p style=\"color: var(--gray);\">{{ get_text('no_reviews_yet') }}</p>`;
+                }
+            })
+            .catch(error => console.error('Error loading reviews:', error));
+    }
+    
+    // Submit review
+    document.getElementById('submit-review-btn').addEventListener('click', function() {
+        const rating = this.getAttribute('data-rating');
+        const comment = document.getElementById('review-comment').value;
+        
+        if(!rating) {
+            alert('{{ get_text('please_select_rating') or 'Please select a rating' }}');
+            return;
+        }
+        
+        if(comment.trim().length < 10) {
+            alert('{{ get_text('review_too_short') or 'Review should be at least 10 characters' }}');
+            return;
+        }
+        
+        fetch('/api/review', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                reviewed_user_id: {{ user_data.id }},
+                rating: parseInt(rating),
+                comment: comment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'success') {
+                alert('{{ get_text('review_submitted_successfully') or 'Review submitted successfully' }}');
+                document.getElementById('review-comment').value = '';
+                
+                // Reset stars
+                document.querySelectorAll('.star-rating i').forEach(star => {
+                    star.className = 'far fa-star';
+                });
+                
+                // Reload reviews list
+                loadReviews();
+            } else {
+                alert('{{ get_text('error_submitting_review') or 'Error submitting review' }}');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('{{ get_text('error_submitting_review') or 'Error submitting review' }}');
+        });
+    });
+    
+    // Load reviews when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadReviews();
+    });
+</script>
 {% endblock %}
