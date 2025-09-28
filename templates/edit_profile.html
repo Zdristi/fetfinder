@@ -166,11 +166,7 @@
                 <small style=\"color: var(--gray);\">{{ get_text('ctrl_click_multiple') or 'Ctrl+Click to select multiple files' }}</small>
             </div>
             
-            {% if user.photos and user.photos|length > 0 %}
-            <div style=\"margin-top: 20px;\">
-                <h4>{{ get_text('current_photos') or 'Current Photos' }}</h4>
-                <div style=\"display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;\">
-                    {% for photo in user.photos %}
+            {% if user.user_photos and user.user_photos|length > 0 %}\n            <div style=\"margin-top: 20px;\">\n                <h4>{{ get_text('current_photos') or 'Current Photos' }}</h4>\n                <div style=\"display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;\">\n                    {% for photo in user.user_photos %}
                     <div style=\"position: relative; border: 2px solid {% if photo.is_primary %}var(--primary){% else %}var(--border-color){% endif %}; border-radius: 10px; overflow: hidden;\">
                         <img src=\"{{ url_for('static', filename='uploads/' + photo.photo_path) }}\" 
                              alt=\"User photo\" 

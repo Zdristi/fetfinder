@@ -159,7 +159,7 @@ class UserPhoto(db.Model):
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship
-    user = db.relationship('User', backref=db.backref('photos', lazy=True))
+    user = db.relationship('User', backref=db.backref('user_photos', lazy=True))
     
     def __repr__(self):
         return f'<UserPhoto {self.photo_path} for user {self.user_id}>'
