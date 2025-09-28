@@ -11,3 +11,4 @@
 "*.log" 
 "static/uploads/*" 
 "!static/uploads/.gitkeep" 
+"__pycache__/" 
