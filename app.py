@@ -172,56 +172,8 @@ LANGUAGES = {
         'no_account': 'Don\'t have an account?',
         'required_field': 'This field is required',
         'quick_actions': 'Quick Actions',
-        'edit_profile': 'Edit Profile',
-        'notifications': 'Notifications',
-        'mark_all_read': 'Mark all read',
-        'no_notifications': 'No notifications yet',
-        'search': 'Search',
-        'search_query': 'Search Query',
-        'search_placeholder': 'Search users...',
-        'age_range': 'Age Range',
-        'min_age': 'Min Age',
-        'max_age': 'Max Age',
-        'to': 'to',
-        'clear_filters': 'Clear Filters',
-        'search_results': 'Search Results',
-        'search_instructions': 'Use the filters above to search for users',
-        'no_users_found': 'No users found matching your criteria',
-        'search_error': 'Error loading search results',
-        'send_message': 'Send Message',
-        'view_profile': 'View Profile',
-        'leave_review': 'Leave a Review',
-        'write_review': 'Write a Review',
-        'rating': 'Rating',
-        'review_comment': 'Your Comment',
-        'submit_review': 'Submit Review',
-        'user_reviews': 'User Reviews',
-        'no_reviews_yet': 'No reviews yet',
-        'average_rating': 'Average Rating',
-        'your_review': 'Your Review',
-        'edit_review': 'Edit Review',
-        'delete_review': 'Delete Review',
-        'reviews': 'reviews',
-        'please_select_rating': 'Please select a rating',
-        'review_too_short': 'Review should be at least 10 characters',
-        'review_submitted_successfully': 'Review submitted successfully',
-        'error_submitting_review': 'Error submitting review',
-        'about_me_video': 'Video about me',
-        'relationship_goals': 'Relationship goals',
-        'lifestyle': 'Lifestyle',
-        'diet': 'Diet',
-        'smoking': 'Smoking',
-        'drinking': 'Drinking',
-        'occupation': 'Occupation',
-        'education': 'Education',
-        'children': 'Children',
-        'pets': 'Pets',
-        'additional_photos': 'Additional Photos',
-        'upload_photos': 'Upload Photos',
-        'set_primary_photo': 'Set as primary',
-        'delete_photo': 'Delete',
-        'premium_photos': 'Premium Photos',
-        'premium_photos_desc': 'These photos will only be visible to premium users',\n        'add_photo_description': 'Add photo description',\n        'save_changes': 'Save Changes',\n        'extended_profile': 'Extended Profile',\n        'select_option': 'Select option',\n        'long_term_relationship': 'Long-term relationship',\n        'short_term_fun': 'Short-term fun',\n        'marriage': 'Marriage',\n        'friends': 'Friends',\n        'open_relationship': 'Open relationship',\n        'active': 'Active',\n        'sedentary': 'Sedentary',\n        'moderate': 'Moderate',\n        'very_active': 'Very Active',\n        'vegetarian': 'Vegetarian',\n        'vegan': 'Vegan',\n        'omnivore': 'Omnivore',\n        'pescatarian': 'Pescatarian',\n        'keto': 'Keto',\n        'paleo': 'Paleo',\n        'never': 'Never',\n        'occasionally': 'Occasionally',\n        'socially': 'Socially',\n        'regularly': 'Regularly',\n        'none': 'None',\n        'yes': 'Yes',\n        'want_someday': 'Want someday',\n        'dont_want': 'Don\'t want',\n        'comma_separated': 'comma separated',\n        'ctrl_click_multiple': 'Ctrl+Click to select multiple files',\n        'current_photos': 'Current Photos',\n        'primary': 'Primary',\n        'premium': 'Premium',\n        'update_profile': 'Update Profile'\n    },
+        'edit_profile': 'Edit Profile'
+    },
     'ru': {
         'welcome': 'Добро пожаловать в FetFinder!',
         'find_match': 'Найдите свою идеальную пару',
@@ -292,115 +244,7 @@ LANGUAGES = {
         'no_account': 'Нет аккаунта?',
         'required_field': 'Это поле обязательно для заполнения',
         'quick_actions': 'Быстрые действия',
-        'edit_profile': 'Редактировать профиль',
-        'notifications': 'Уведомления',
-        'mark_all_read': 'Отметить все как прочитанные',
-        'no_notifications': 'Пока нет уведомлений',
-        'search': 'Поиск',
-        'search_query': 'Поисковый запрос',
-        'search_placeholder': 'Поиск пользователей...',
-        'age_range': 'Возрастной диапазон',
-        'min_age': 'Мин. возраст',
-        'max_age': 'Макс. возраст',
-        'to': 'до',
-        'clear_filters': 'Очистить фильтры',
-        'search_results': 'Результаты поиска',
-        'search_instructions': 'Используйте фильтры выше для поиска пользователей',
-        'no_users_found': 'Не найдено пользователей, соответствующих критериям',
-        'search_error': 'Ошибка при загрузке результатов поиска',
-        'send_message': 'Отправить сообщение',
-        'view_profile': 'Просмотреть профиль',
-        'leave_review': 'Оставить отзыв',
-        'write_review': 'Написать отзыв',
-        'rating': 'Рейтинг',
-        'review_comment': 'Ваш комментарий',
-        'submit_review': 'Отправить отзыв',
-        'user_reviews': 'Отзывы пользователя',
-        'no_reviews_yet': 'Пока нет отзывов',
-        'average_rating': 'Средний рейтинг',
-        'your_review': 'Ваш отзыв',
-        'edit_review': 'Редактировать отзыв',
-        'delete_review': 'Удалить отзыв',
-        'reviews': 'отзывов',
-        'please_select_rating': 'Пожалуйста, выберите рейтинг',
-        'review_too_short': 'Отзыв должен содержать не менее 10 символов',
-        'review_submitted_successfully': 'Отзыв успешно отправлен',
-        'error_submitting_review': 'Ошибка при отправке отзыва',
-        'about_me_video': 'Видео о себе',
-        'relationship_goals': 'Цели в отношениях',
-        'lifestyle': 'Образ жизни',
-        'diet': 'Питание',
-        'smoking': 'Курение',
-        'drinking': 'Употребление алкоголя',
-        'occupation': 'Род занятий',
-        'education': 'Образование',
-        'children': 'Дети',
-        'pets': 'Домашние животные',
-        'additional_photos': 'Дополнительные фото',
-        'upload_photos': 'Загрузить фото',
-        'set_primary_photo': 'Сделать основным',
-        'delete_photo': 'Удалить',
-        'premium_photos': 'Премиум-фото',
-        'premium_photos_desc': 'Эти фото будут видны только премиум-пользователям',
-        'add_photo_description': 'Добавить описание к фото',
-        'save_changes': 'Сохранить изменения',
-        'extended_profile': 'Расширенный профиль',
-        'select_option': 'Выберите вариант',
-        'long_term_relationship': 'Долгосрочные отношения',
-        'short_term_fun': 'Краткосрочное веселье',
-        'marriage': 'Брак',
-        'friends': 'Дружба',
-        'open_relationship': 'Открытые отношения',
-        'active': 'Активный',
-        'sedentary': 'Малоподвижный',
-        'moderate': 'Умеренный',
-        'very_active': 'Очень активный',
-        'vegetarian': 'Вегетарианец',
-        'vegan': 'Веган',
-        'omnivore': 'Всеядный',
-        'pescatarian': 'Пескатарианец',
-        'keto': 'Кето',
-        'paleo': 'Палео',
-        'never': 'Никогда',
-        'occasionally': 'Иногда',
-        'socially': 'По случаю',
-        'regularly': 'Регулярно',
-        'none': 'Нет',
-        'yes': 'Да',
-        'want_someday': 'Хочу когда-нибудь',
-        'dont_want': 'Не хочу',
-        'comma_separated': 'через запятую',
-        'ctrl_click_multiple': 'Ctrl+Клик для выбора нескольких файлов',
-        'current_photos': 'Текущие фото',
-        'primary': 'Основное',
-        'premium': 'Премиум',
-        'update_profile': 'Обновить профиль',
-        'primary_photo_set': 'Основное фото установлено',
-        'error_setting_primary_photo': 'Ошибка при установке основного фото',
-        'confirm_delete_photo': 'Вы уверены, что хотите удалить это фото?',
-        'photo_deleted': 'Фото успешно удалено',
-        'error_deleting_photo': 'Ошибка при удалении фото',
-        'gift_shop': 'Магазин подарков',
-        'available_gifts': 'Доступные подарки',
-        'send_gift': 'Отправить подарок',
-        'gift_message': 'Сообщение к подарку',
-        'send_anonymously': 'Отправить анонимно',
-        'your_coins': 'Ваши монеты',
-        'buy_coins': 'Купить монеты',
-        'gift_sent_successfully': 'Подарок успешно отправлен!',
-        'error_sending_gift': 'Ошибка при отправке подарка',
-        'not_enough_coins': 'Недостаточно монет для отправки этого подарка',
-        'my_gifts': 'Мои подарки',
-        'received_gifts': 'Полученные подарки',
-        'sent_gifts': 'Отправленные подарки',
-        'no_gifts_yet': 'Пока нет подарков',
-        'view_all_gifts': 'Посмотреть все подарки',
-        'gift_categories': 'Категории подарков',
-        'all_categories': 'Все категории',
-        'free_gifts': 'Бесплатные подарки',
-        'premium_gifts': 'Премиум-подарки'
-    },
-        'current_photos': 'Текущие фото'
+        'edit_profile': 'Редактировать профиль'
     }
 }
 
@@ -530,16 +374,6 @@ def show_profile(user_id):
     user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
     user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
     
-    # Get user's reviews
-    user_reviews = Review.query.filter_by(reviewed_user_id=user.id).all()
-    avg_rating = sum(r.rating for r in user_reviews) / len(user_reviews) if user_reviews else 0
-    
-    # Check if current user has reviewed this user
-    current_user_review = Review.query.filter_by(
-        reviewer_id=current_user.id,
-        reviewed_user_id=user.id
-    ).first()
-    
     user_data = {
         'username': user.username,
         'email': user.email,
@@ -548,12 +382,9 @@ def show_profile(user_id):
         'city': user.city,
         'bio': user.bio,
         'fetishes': user_fetishes,
-        'interests': user.interests,
+        'interests': user_interests,
         'created_at': user.created_at.isoformat(),
-        'is_premium': is_premium_user(user),
-        'avg_rating': round(avg_rating, 1),
-        'total_reviews': len(user_reviews),
-        'current_review': current_user_review
+        'is_premium': is_premium_user(user)
     }
     
     is_complete = bool(user.country and user.city)
@@ -569,18 +400,6 @@ def edit_profile():
         current_user.city = request.form.get('city')
         current_user.bio = request.form.get('bio')
         
-        # Update extended profile fields
-        current_user.about_me_video = request.form.get('about_me_video')
-        current_user.relationship_goals = request.form.get('relationship_goals')
-        current_user.lifestyle = request.form.get('lifestyle')
-        current_user.diet = request.form.get('diet')
-        current_user.smoking = request.form.get('smoking')
-        current_user.drinking = request.form.get('drinking')
-        current_user.occupation = request.form.get('occupation')
-        current_user.education = request.form.get('education')
-        current_user.children = request.form.get('children')
-        current_user.pets = request.form.get('pets')
-        
         # Handle photo upload
         if 'photo' in request.files:
             photo = request.files['photo']
@@ -591,25 +410,6 @@ def edit_profile():
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 photo.save(filepath)
                 current_user.photo = filename
-        
-        # Handle additional photos upload
-        if 'additional_photos' in request.files:
-            photos = request.files.getlist('additional_photos')
-            for photo in photos:
-                if photo and photo.filename != '':
-                    # Create unique filename
-                    ext = photo.filename.split('.')[-1]
-                    filename = f"{uuid.uuid4().hex}.{ext}"
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    photo.save(filepath)
-                    
-                    # Create UserPhoto record
-                    user_photo = UserPhoto(
-                        user_id=current_user.id,
-                        photo_path=filename,
-                        is_primary=False  # First uploaded photo will be set as primary below
-                    )
-                    db.session.add(user_photo)
         
         # Update user's fetishes
         Fetish.query.filter_by(user_id=current_user.id).delete()  # Remove old fetishes
@@ -646,9 +446,6 @@ def edit_profile():
     # Get user's fetishes and interests
     user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=current_user.id).all()]
     user_interests = [i.name for i in Interest.query.filter_by(user_id=current_user.id).all()]
-    
-    # Get user's additional photos
-    user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
     
     # Get all available fetishes and interests
     db_fetishes = [f.name for f in Fetish.query.distinct(Fetish.name)]
@@ -701,18 +498,7 @@ def edit_profile():
         'fetishes': user_fetishes,
         'interests': user_interests,
         'created_at': current_user.created_at.isoformat(),
-        'is_premium': is_premium_user(current_user),
-        'about_me_video': current_user.about_me_video,
-        'relationship_goals': current_user.relationship_goals,
-        'lifestyle': current_user.lifestyle,
-        'diet': current_user.diet,
-        'smoking': current_user.smoking,
-        'drinking': current_user.drinking,
-        'occupation': current_user.occupation,
-        'education': current_user.education,
-        'children': current_user.children,
-        'pets': current_user.pets,
-        'photos': user_photos
+        'is_premium': is_premium_user(current_user)
     }
     
     return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
@@ -744,89 +530,22 @@ def users():
     return render_template('users.html', users=users_dict)
 
 
-@app.route('/search')
-@login_required
-def search():
-    # Get all countries and cities for filter options
-    countries_cities = {
-        'Russia': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Yekaterinburg'],
-        'USA': ['New York', 'Los Angeles', 'Chicago', 'Houston'],
-        'UK': ['London', 'Birmingham', 'Manchester', 'Glasgow'],
-        'Germany': ['Berlin', 'Hamburg', 'Munich', 'Cologne'],
-        'France': ['Paris', 'Marseille', 'Lyon', 'Toulouse']
-    }
-    
-    # Get all available fetishes and interests for filter options
-    all_fetishes = [f.name for f in Fetish.query.distinct(Fetish.name)]
-    all_interests = [i.name for i in Interest.query.distinct(Interest.name)]
-    
-    return render_template('search.html', 
-                          countries=countries_cities.keys(), 
-                          cities_by_country=countries_cities,
-                          fetishes=all_fetishes,
-                          interests=all_interests)
-
-
 @app.route('/api/users')
 @login_required
 def api_users():
     try:
-        # Get query parameters for filtering
-        min_age = request.args.get('min_age', type=int)
-        max_age = request.args.get('max_age', type=int)
-        country = request.args.get('country')
-        city = request.args.get('city')
-        fetish_filter = request.args.get('fetish')
-        interest_filter = request.args.get('interest')
-        search_query = request.args.get('q', '')  # For general search
-        
-        # Start with base query
-        query = UserModel.query.filter(
+        # Get all users except current user and blocked users
+        # For testing, we'll show all users, even those with incomplete profiles
+        db_users = UserModel.query.filter(
             UserModel.id != int(current_user.id),
             UserModel.is_blocked == False
-        )
-        
-        # Apply age filter
-        if min_age or max_age:
-            # Assuming we have a birth_date field or calculate age from registration date
-            # For now using a simplified approach based on registration date
-            from datetime import datetime, timedelta
-            if min_age:
-                min_date = datetime.utcnow() - timedelta(days=min_age*365)
-                query = query.filter(UserModel.created_at <= min_date)
-            if max_age:
-                max_date = datetime.utcnow() - timedelta(days=max_age*365)
-                query = query.filter(UserModel.created_at >= max_date)
-        
-        # Apply location filters
-        if country:
-            query = query.filter(UserModel.country == country)
-        if city:
-            query = query.filter(UserModel.city == city)
-        
-        # Apply search query
-        if search_query:
-            query = query.filter(
-                db.or_(
-                    UserModel.username.contains(search_query),
-                    UserModel.bio.contains(search_query)
-                )
-            )
-        
-        db_users = query.all()
+        ).all()
         
         users = []
         for user in db_users:
             try:
                 user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
                 user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
-                
-                # Apply fetish and interest filters after getting all users
-                if fetish_filter and fetish_filter not in user_fetishes:
-                    continue
-                if interest_filter and interest_filter not in user_interests:
-                    continue
-                
                 users.append([
                     str(user.id),
                     {
@@ -845,7 +564,7 @@ def api_users():
                 print(f"Error processing user {user.id}: {e}")
                 continue
         
-        print(f"Returning {len(users)} users for search")
+        print(f"Returning {len(users)} users for swipe")
         return jsonify(users)
     except Exception as e:
         print(f"Error in api_users: {e}")
@@ -1362,333 +1081,7 @@ with app.app_context():
         import traceback
         traceback.print_exc()
 
-@app.route('/api/notifications')
-@login_required
-def api_notifications():
-    """Получение уведомлений пользователя"""
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
-    unread_only = request.args.get('unread_only', 'false').lower() == 'true'
-    
-    query = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.timestamp.desc())
-    
-    if unread_only:
-        query = query.filter_by(is_read=False)
-    
-    notifications = query.paginate(page=page, per_page=per_page, error_out=False)
-    
-    return jsonify([{
-        'id': n.id,
-        'type': n.type,
-        'title': n.title,
-        'content': n.content,
-        'is_read': n.is_read,
-        'timestamp': n.timestamp.isoformat(),
-        'url': n.url,
-        'sender': {
-            'id': n.sender.id,
-            'username': n.sender.username,
-            'photo': n.sender.photo
-        } if n.sender else None
-    } for n in notifications.items])
-
-
-@app.route('/api/notifications/<int:notification_id>/read', methods=['POST'])
-@login_required
-def mark_notification_read(notification_id):
-    """Отметить уведомление как прочитанное"""
-    notification = Notification.query.filter_by(id=notification_id, user_id=current_user.id).first_or_404()
-    notification.is_read = True
-    db.session.commit()
-    return jsonify({'status': 'success'})
-
-
-@app.route('/api/notifications/read-all', methods=['POST'])
-@login_required
-def mark_all_notifications_read():
-    """Отметить все уведомления как прочитанные"""
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).all()
-    for notification in notifications:
-        notification.is_read = True
-    db.session.commit()
-    return jsonify({'status': 'success'})
-
-
-@app.route('/api/photo/<int:photo_id>/set_primary', methods=['POST'])
-@login_required
-def set_primary_photo(photo_id):
-    """Установить фото как основное"""
-    photo = UserPhoto.query.filter_by(id=photo_id, user_id=current_user.id).first_or_404()
-    
-    # Сбросить все другие фото как неосновные
-    UserPhoto.query.filter_by(user_id=current_user.id).update({'is_primary': False})
-    
-    # Установить выбранное фото как основное
-    photo.is_primary = True
-    db.session.commit()
-    
-    # Также обновить основную фотографию пользователя
-    current_user.photo = photo.photo_path
-    db.session.commit()
-    
-    return jsonify({'status': 'success'})
-
-
-@app.route('/api/photo/<int:photo_id>/delete', methods=['POST'])
-@login_required
-def delete_photo(photo_id):
-    """Удалить фото"""
-    photo = UserPhoto.query.filter_by(id=photo_id, user_id=current_user.id).first_or_404()
-    
-    # Удалить файл с диска
-    photo_path = os.path.join(app.config['UPLOAD_FOLDER'], photo.photo_path)
-    if os.path.exists(photo_path):
-        os.remove(photo_path)
-    
-    # Удалить запись из базы данных
-    db.session.delete(photo)
-    db.session.commit()
-    
-    return jsonify({'status': 'success'})
-
-
-@app.route('/api/reviews/<int:user_id>')
-@login_required
-def api_user_reviews(user_id):
-    """Получить отзывы о пользователе"""
-    reviews = Review.query.filter_by(reviewed_user_id=user_id).all()
-    
-    reviews_data = []
-    for review in reviews:
-        reviews_data.append({
-            'id': review.id,
-            'reviewer': {
-                'id': review.reviewer.id,
-                'username': review.reviewer.username,
-                'photo': review.reviewer.photo
-            },
-            'rating': review.rating,
-            'comment': review.comment,
-            'timestamp': review.timestamp.isoformat()
-        })
-    
-    # Calculate average rating
-    avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
-    
-    return jsonify({
-        'reviews': reviews_data,
-        'average_rating': round(avg_rating, 1),
-        'total_reviews': len(reviews)
-    })
-
-
-@app.route('/api/review', methods=['POST'])
-@login_required
-def api_create_review():
-    """Создать или обновить отзыв"""
-    data = request.get_json()
-    reviewed_user_id = data.get('reviewed_user_id')
-    rating = data.get('rating')
-    comment = data.get('comment')
-    
-    if not reviewed_user_id or not rating or not 1 <= rating <= 5:
-        return jsonify({'error': 'Invalid data'}), 400
-    
-    # Check if user is trying to review themselves
-    if int(reviewed_user_id) == current_user.id:
-        return jsonify({'error': 'Cannot review yourself'}), 400
-    
-    # Check if review already exists
-    existing_review = Review.query.filter_by(
-        reviewer_id=current_user.id,
-        reviewed_user_id=reviewed_user_id
-    ).first()
-    
-    if existing_review:
-        existing_review.rating = rating
-        existing_review.comment = comment
-    else:
-        review = Review(
-            reviewer_id=current_user.id,
-            reviewed_user_id=reviewed_user_id,
-            rating=rating,
-            comment=comment
-        )
-        db.session.add(review)
-    
-    db.session.commit()
-    
-    return jsonify({'status': 'success'})
-
-
-@app.route('/api/review/<int:review_id>', methods=['DELETE'])
-@login_required
-def api_delete_review(review_id):
-    """Удалить отзыв"""
-    review = Review.query.filter_by(id=review_id, reviewer_id=current_user.id).first_or_404()
-    db.session.delete(review)
-    db.session.commit()
-    return jsonify({'status': 'success'})
-
-
-@app.route('/api/photo/<int:photo_id>/set_primary', methods=['POST'])
-@login_required
-def set_primary_photo(photo_id):
-    """Установить фото как основное"""
-    photo = UserPhoto.query.filter_by(id=photo_id, user_id=current_user.id).first_or_404()
-    
-    # Сбросить все другие фото как неосновные
-    UserPhoto.query.filter_by(user_id=current_user.id).update({'is_primary': False})
-    
-    # Установить выбранное фото как основное
-    photo.is_primary = True
-    db.session.commit()
-    
-    # Также обновить основную фотографию пользователя
-    current_user.photo = photo.photo_path
-    db.session.commit()
-    
-    return jsonify({'status': 'success'})
-
-
-@app.route('/api/photo/<int:photo_id>/delete', methods=['POST'])
-@login_required
-def delete_photo(photo_id):
-    """Удалить фото"""
-    photo = UserPhoto.query.filter_by(id=photo_id, user_id=current_user.id).first_or_404()
-    
-    # Удалить файл с диска
-    photo_path = os.path.join(app.config['UPLOAD_FOLDER'], photo.photo_path)
-    if os.path.exists(photo_path):
-        os.remove(photo_path)
-    
-    # Удалить запись из базы данных
-    db.session.delete(photo)
-    db.session.commit()
-    
-    return jsonify({'status': 'success'})
-
-
-@app.route('/gifts')
-@login_required
-def gift_shop():
-    """Магазин подарков"""
-    # Получить все доступные подарки
-    gifts = Gift.query.filter_by(is_active=True).all()
-    
-    # Получить категории подарков
-    categories = db.session.query(Gift.category).filter(Gift.is_active == True).distinct().all()
-    categories = [c[0] for c in categories if c[0]]  # Извлечь категории из кортежей
-    
-    # Получить количество монет пользователя
-    user_coins = current_user.coins
-    
-    return render_template('gift_shop.html', 
-                          gifts=gifts, 
-                          categories=categories, 
-                          user_coins=user_coins)
-
-
-@app.route('/api/gifts')
-@login_required
-def api_gifts():
-    """API для получения подарков"""
-    category = request.args.get('category')
-    min_price = request.args.get('min_price', type=int)
-    max_price = request.args.get('max_price', type=int)
-    
-    query = Gift.query.filter_by(is_active=True)
-    
-    if category:
-        query = query.filter_by(category=category)
-    
-    if min_price is not None:
-        query = query.filter(Gift.price_coins >= min_price)
-    
-    if max_price is not None:
-        query = query.filter(Gift.price_coins <= max_price)
-    
-    gifts = query.all()
-    
-    return jsonify([{
-        'id': gift.id,
-        'name': gift.name,
-        'description': gift.description,
-        'image_url': gift.image_url,
-        'price_coins': gift.price_coins,
-        'category': gift.category,
-        'is_premium_only': gift.is_premium_only
-    } for gift in gifts])
-
-
-@app.route('/api/send_gift', methods=['POST'])
-@login_required
-def api_send_gift():
-    """API для отправки подарка"""
-    data = request.get_json()
-    recipient_id = data.get('recipient_id')
-    gift_id = data.get('gift_id')
-    message = data.get('message', '')
-    is_anonymous = data.get('is_anonymous', False)
-    
-    if not recipient_id or not gift_id:
-        return jsonify({'error': 'Missing recipient_id or gift_id'}), 400
-    
-    # Проверить, существует ли получатель
-    recipient = UserModel.query.get(recipient_id)
-    if not recipient:
-        return jsonify({'error': 'Recipient not found'}), 404
-    
-    # Проверить, существует ли подарок
-    gift = Gift.query.get(gift_id)
-    if not gift:
-        return jsonify({'error': 'Gift not found'}), 404
-    
-    # Проверить, достаточно ли монет у отправителя
-    if current_user.coins < gift.price_coins:
-        return jsonify({'error': 'Not enough coins'}), 400
-    
-    # Списать монеты у отправителя
-    current_user.coins -= gift.price_coins
-    
-    # Создать запись о подарке
-    user_gift = UserGift(
-        sender_id=current_user.id,
-        recipient_id=recipient_id,
-        gift_id=gift_id,
-        message=message,
-        is_anonymous=is_anonymous
-    )
-    
-    db.session.add(user_gift)
-    db.session.commit()
-    
-    # Создать уведомление для получателя
-    create_notification(
-        user_id=recipient_id,
-        sender_id=current_user.id,
-        type='gift',
-        title='New Gift Received',
-        content=f'You received a gift from {current_user.username if not is_anonymous else "Anonymous"}',
-        url=url_for('my_gifts')
-    )
-    
-    return jsonify({'status': 'success'})
-
-
-@app.route('/my_gifts')
-@login_required
-def my_gifts():
-    """Мои подарки (полученные и отправленные)"""
-    # Получить полученные подарки
-    received_gifts = UserGift.query.filter_by(recipient_id=current_user.id).order_by(UserGift.timestamp.desc()).all()
-    
-    # Получить отправленные подарки
-    sent_gifts = UserGift.query.filter_by(sender_id=current_user.id).order_by(UserGift.timestamp.desc()).all()
-    
-    return render_template('my_gifts.html', 
-                          received_gifts=received_gifts, 
-                          sent_gifts=sent_gifts)
-
-
-# Existing functions continue here...
+# For Render and other hosting platforms
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
