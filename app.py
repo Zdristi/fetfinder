@@ -374,6 +374,12 @@ def show_profile(user_id):
     user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
     user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
     
+    # Calculate user's average rating and total reviews
+    from models import Review
+    reviews = Review.query.filter_by(reviewed_user_id=user.id).all()
+    total_reviews = len(reviews)
+    avg_rating = sum(review.rating for review in reviews) / total_reviews if total_reviews > 0 else None
+    
     user_data = {
         'username': user.username,
         'email': user.email,
@@ -384,7 +390,9 @@ def show_profile(user_id):
         'fetishes': user_fetishes,
         'interests': user_interests,
         'created_at': user.created_at.isoformat(),
-        'is_premium': is_premium_user(user)
+        'is_premium': is_premium_user(user),
+        'avg_rating': avg_rating,
+        'total_reviews': total_reviews
     }
     
     is_complete = bool(user.country and user.city)
