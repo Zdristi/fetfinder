@@ -41,7 +41,7 @@ class User(UserMixin, db.Model):
     # Relationship with fetishes and interests
     fetishes = db.relationship('Fetish', backref='user', lazy=True)
     interests = db.relationship('Interest', backref='user', lazy=True)
-    photos = db.relationship('UserPhoto', backref='user', lazy=True)
+    photos = db.relationship('UserPhoto')  # Removed backref to avoid conflict - handled explicitly in UserPhoto
     matches = db.relationship('Match', foreign_keys='Match.user_id', backref='user', lazy=True)
     
     def set_password(self, password):
@@ -158,7 +158,7 @@ class UserPhoto(db.Model):
     is_premium = db.Column(db.Boolean, default=False)  # Только для премиум-пользователей
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationship
+    # Relationship - this creates the 'user_photos' backref accessible from User objects
     user = db.relationship('User', backref=db.backref('user_photos', lazy=True))
     
     def __repr__(self):
