@@ -80,64 +80,64 @@
     </div>
     
     <!-- Average Rating Display -->
-    <div style=\"display: flex; align-items: center; margin-bottom: 15px;\">
-        <div style=\"font-size: 2rem; margin-right: 15px; color: var(--primary);\">
-            {{ \"%.1f\"|format(user_data.avg_rating|float) }}
+    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+        <div style="font-size: 2rem; margin-right: 15px; color: var(--primary);">
+            {{ "%.1f"|format(user_data.avg_rating|float) if user_data.avg_rating else "0.0" }}
         </div>
         <div>
-            <div class=\"rating-display\" style=\"color: var(--primary); margin-bottom: 5px;\">
+            <div class="rating-display" style="color: var(--primary); margin-bottom: 5px;">
                 {% for i in range(5) %}
-                    {% if i < (user_data.avg_rating|round(0, 'floor')) %}
-                        <i class=\"fas fa-star\"></i>
+                    {% if i < (user_data.avg_rating|round(0, 'floor') if user_data.avg_rating else 0) %}
+                        <i class="fas fa-star"></i>
                     {% else %}
-                        <i class=\"far fa-star\"></i>
+                        <i class="far fa-star"></i>
                     {% endif %}
                 {% endfor %}
             </div>
-            <div style=\"color: var(--gray); font-size: 0.9rem;\">
-                {{ user_data.total_reviews }} {{ get_text('reviews') or 'reviews' }}
+            <div style="color: var(--gray); font-size: 0.9rem;">
+                {{ user_data.total_reviews if user_data.total_reviews else 0 }} {{ get_text('reviews') or 'reviews' }}
             </div>
         </div>
     </div>
     
     <!-- Leave Review Form (only for other users, not for the profile owner) -->
     {% if current_user.id != user_data.id %}
-        <div style=\"background: var(--card-bg); padding: 20px; border-radius: 10px; margin: 20px 0; border: 1px solid var(--border-color);\">
-            <h3 style=\"margin-top: 0; color: var(--text-color);\">{{ get_text('write_review') }}</h3>
+        <div style="background: var(--card-bg); padding: 20px; border-radius: 10px; margin: 20px 0; border: 1px solid var(--border-color);">
+            <h3 style="margin-top: 0; color: var(--text-color);">{{ get_text('write_review') }}</h3>
             
             <!-- Rating Input -->
-            <div style=\"margin-bottom: 15px;\">
-                <label class=\"form-label\">{{ get_text('rating') }}:</label>
-                <div id=\"rating-input\" style=\"display: flex; justify-content: flex-start; gap: 5px;\">
+            <div style="margin-bottom: 15px;">
+                <label class="form-label">{{ get_text('rating') }}:</label>
+                <div id="rating-input" style="display: flex; justify-content: flex-start; gap: 5px;">
                     {% for i in range(1, 6) %}
-                        <span class=\"star-rating\" data-rating=\"{{ i }}\" style=\"font-size: 1.5rem; cursor: pointer; color: var(--gray);\">
-                            <i class=\"far fa-star\"></i>
+                        <span class="star-rating" data-rating="{{ i }}" style="font-size: 1.5rem; cursor: pointer; color: var(--gray);">
+                            <i class="far fa-star"></i>
                         </span>
                     {% endfor %}
                 </div>
             </div>
             
             <!-- Comment Input -->
-            <div class=\"form-group\" style=\"margin-bottom: 15px;\">
-                <label class=\"form-label\">{{ get_text('review_comment') }}:</label>
-                <textarea id=\"review-comment\" class=\"form-control\" rows=\"3\" placeholder=\"{{ get_text('review_comment') }}...\"></textarea>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label class="form-label">{{ get_text('review_comment') }}:</label>
+                <textarea id="review-comment" class="form-control" rows="3" placeholder="{{ get_text('review_comment') }}..."></textarea>
             </div>
             
             <!-- Submit Button -->
-            <button id=\"submit-review-btn\" class=\"btn\" style=\"padding: 10px 20px;\">
+            <button id="submit-review-btn" class="btn" style="padding: 10px 20px;">
                 {{ get_text('submit_review') }}
             </button>
         </div>
     {% endif %}
     
     <!-- Reviews List -->
-    <div id=\"reviews-list\">
+    <div id="reviews-list">
         {% if user_data.total_reviews > 0 %}
             {% for review in [review for review in []] %} {# This is just a placeholder #}
             {% endfor %}
             <!-- Reviews will be loaded dynamically via JavaScript -->
         {% else %}
-            <p style=\"color: var(--gray);\">{{ get_text('no_reviews_yet') }}</p>
+            <p style="color: var(--gray);">{{ get_text('no_reviews_yet') }}</p>
         {% endif %}
     </div>
     
