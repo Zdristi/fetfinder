@@ -1088,9 +1088,16 @@ with app.app_context():
         check_and_add_columns()
         print("Database migrations completed successfully!")
     except Exception as e:
-        print(f"Error running database migrations: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"Error running Python-based database migrations: {e}")
+        print("Attempting psql-based migration instead...")
+        try:
+            from psql_migration import run_psql_migration
+            run_psql_migration()
+            print("Psql-based database migrations completed successfully!")
+        except Exception as e2:
+            print(f"Error running psql-based database migrations: {e2}")
+            import traceback
+            traceback.print_exc()
 
 # For Render and other hosting platforms
 if __name__ == '__main__':
