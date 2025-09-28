@@ -133,8 +133,6 @@
     <!-- Reviews List -->
     <div id="reviews-list">
         {% if user_data.total_reviews > 0 %}
-            {% for review in [review for review in []] %} {# This is just a placeholder #}
-            {% endfor %}
             <!-- Reviews will be loaded dynamically via JavaScript -->
         {% else %}
             <p style="color: var(--gray);">{{ get_text('no_reviews_yet') }}</p>
