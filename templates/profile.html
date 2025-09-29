@@ -77,11 +77,11 @@
     <!-- Star Rating Form (only for other users, not for the profile owner) -->
     {% if current_user.id != user_data.id %}
         <div class="section-title">
-            <h2 class="section-title-text"><i class="fas fa-star"></i> Rate This User</h2>
+            <h2 class="section-title-text"><i class="fas fa-star"></i> {{ get_text('rate_this_user') or 'Rate This User' }}</h2>
         </div>
         <div style="background: var(--card-bg); padding: 20px; border-radius: 10px; margin: 20px 0; border: 1px solid var(--border-color);">
             <div style="margin-bottom: 15px;">
-                <label class="form-label">Your Rating:</label>
+                <label class="form-label">{{ get_text('your_rating') or 'Your Rating:' }}</label>
                 <div id="rating-input" style="display: flex; justify-content: flex-start; gap: 5px;">
                     {% for i in range(1, 6) %}
                         <span class="star-rating" data-rating="{{ i }}" style="font-size: 2rem; cursor: pointer; color: var(--gray);">
@@ -93,16 +93,10 @@
             
             <!-- Submit Button -->
             <button id="submit-rating-btn" class="btn" style="padding: 10px 20px; display: none;">
-                Submit Rating
+                {{ get_text('submit_rating') or 'Submit Rating' }}
             </button>
         </div>
     {% endif %}
-    
-    <!-- Star Rating Form (only for other users, not for the profile owner) -->
-    {% if current_user.id != user_data.id %}
-        <div class="section-title">
-            <h2 class="section-title-text"><i class="fas fa-star"></i> Rate This User</h2>
-        </div>
         <div style="background: var(--card-bg); padding: 20px; border-radius: 10px; margin: 20px 0; border: 1px solid var(--border-color);">
             <div style="margin-bottom: 15px;">
                 <label class="form-label">Your Rating:</label>
@@ -191,17 +185,51 @@
             .then(response => response.json())
             .then(data => {
                 if(data.status === 'success') {
-                    alert('Rating submitted successfully!');
+                    showMessage('Rating submitted successfully!', 'success');
                     // Hide submit button after successful submission
                     submitBtn.style.display = 'none';
                 } else {
-                    alert('Error submitting rating: ' + data.message);
+                    showMessage('Error submitting rating: ' + data.message, 'error');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error submitting rating');
+                showMessage('Error submitting rating: ' + error.message, 'error');
             });
+        }
+        
+        // Function to show message
+        function showMessage(text, type) {
+            // Create message element
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = text;
+            messageDiv.style.padding = '10px';
+            messageDiv.style.margin = '10px 0';
+            messageDiv.style.borderRadius = '5px';
+            messageDiv.style.textAlign = 'center';
+            
+            if(type === 'success') {
+                messageDiv.style.backgroundColor = '#d4edda';
+                messageDiv.style.color = '#155724';
+                messageDiv.style.borderColor = '#c3e6cb';
+            } else {
+                messageDiv.style.backgroundColor = '#f8d7da';
+                messageDiv.style.color = '#721c24';
+                messageDiv.style.borderColor = '#f5c6cb';
+            }
+            
+            messageDiv.style.border = '1px solid';
+            
+            // Insert message before the rating form
+            const ratingForm = document.querySelector('.section-title').nextElementSibling;
+            ratingForm.parentNode.insertBefore(messageDiv, ratingForm);
+            
+            // Remove message after 3 seconds
+            setTimeout(() => {
+                if(messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 3000);
         }
     });
 </script>

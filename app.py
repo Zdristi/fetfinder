@@ -175,7 +175,10 @@ LANGUAGES = {
         'edit_profile': 'Edit Profile',
         'notifications': 'Notifications',
         'mark_all_read': 'Mark all read',
-        'no_notifications': 'No notifications yet'
+        'no_notifications': 'No notifications yet',
+        'rate_this_user': 'Rate This User',
+        'your_rating': 'Your Rating:',
+        'submit_rating': 'Submit Rating'
     },
     'ru': {
         'welcome': 'Добро пожаловать в FetDate!',
@@ -250,7 +253,10 @@ LANGUAGES = {
         'edit_profile': 'Редактировать профиль',
         'notifications': 'Уведомления',
         'mark_all_read': 'Прочитать',
-        'no_notifications': 'Пока нет уведомлений'
+        'no_notifications': 'Пока нет уведомлений',
+        'rate_this_user': 'Оцените этого пользователя',
+        'your_rating': 'Ваша оценка:',
+        'submit_rating': 'Отправить оценку'
     }
 }
 
