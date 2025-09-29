@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function sendMessage() {
         const content = messageInput.value.trim();
         if (content) {
-            // Add user message
+            // Add user message immediately for better UX
             addMessage(content, true);
             
             // Clear input
@@ -115,19 +115,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     content: content
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.status === 'success') {
                     // Message sent successfully
                     console.log('Message sent successfully');
                 } else {
                     // Error sending message
-                    addMessage('{{ get_text("error_sending_message") or "Error sending message. Please try again." }}', false);
+                    addMessage('{{ get_text("error_sending_message") or "Error sending message. Please try again." }}: ' + (data.message || ''), false);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                addMessage('{{ get_text("error_sending_message") or "Error sending message. Please try again." }}', false);
+                addMessage('{{ get_text("error_sending_message") or "Error sending message. Please try again." }}: ' + error.message, false);
             });
         }
     }

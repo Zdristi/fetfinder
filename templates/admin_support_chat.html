@@ -76,17 +76,22 @@ function loadTickets() {
     ticketsList.innerHTML = '<div style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> {{ get_text("loading") or "Loading..." }}</div>';
     
     fetch('/api/admin/support/tickets')
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.status === 'success') {
             displayTickets(data.tickets);
         } else {
-            ticketsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">{{ get_text("error_loading_tickets") or "Error loading tickets" }}</div>';
+            ticketsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">{{ get_text("error_loading_tickets") or "Error loading tickets: " }} ' + (data.message || '') + '</div>';
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        ticketsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">{{ get_text("error_loading_tickets") or "Error loading tickets" }}</div>';
+        ticketsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">{{ get_text("error_loading_tickets") or "Error loading tickets" }}: ' + error.message + '</div>';
     });
 }
 

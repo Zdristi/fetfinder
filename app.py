@@ -1191,7 +1191,9 @@ def api_support_send_message():
     except Exception as e:
         db.session.rollback()
         print(f"Error sending support message: {e}")
-        return jsonify({'status': 'error', 'message': 'Error sending message'})
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'message': f'Error sending message: {str(e)}'})
 
 
 @app.route('/api/admin/support/tickets')
@@ -1218,15 +1220,17 @@ def api_admin_support_tickets():
                 },
                 'subject': ticket.subject,
                 'status': ticket.status,
-                'created_at': ticket.created_at.isoformat(),
-                'updated_at': ticket.updated_at.isoformat()
+                'created_at': ticket.created_at.isoformat() if ticket.created_at else None,
+                'updated_at': ticket.updated_at.isoformat() if ticket.updated_at else None
             })
         
         return jsonify({'status': 'success', 'tickets': tickets_data})
         
     except Exception as e:
         print(f"Error getting support tickets: {e}")
-        return jsonify({'status': 'error', 'message': 'Error loading tickets'})
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'message': f'Error loading tickets: {str(e)}'})
 
 
 @app.route('/api/admin/support/ticket/<int:ticket_id>/messages')
@@ -1257,7 +1261,7 @@ def api_admin_support_ticket_messages(ticket_id):
                 },
                 'content': message.content,
                 'is_admin': message.is_admin,
-                'timestamp': message.timestamp.isoformat(),
+                'timestamp': message.timestamp.isoformat() if message.timestamp else None,
                 'is_read': message.is_read
             })
         
@@ -1265,7 +1269,9 @@ def api_admin_support_ticket_messages(ticket_id):
         
     except Exception as e:
         print(f"Error getting ticket messages: {e}")
-        return jsonify({'status': 'error', 'message': 'Error loading messages'})
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'message': f'Error loading messages: {str(e)}'})
 
 
 @app.route('/api/admin/support/send_message', methods=['POST'])
@@ -1307,7 +1313,9 @@ def api_admin_support_send_message():
     except Exception as e:
         db.session.rollback()
         print(f"Error sending admin support message: {e}")
-        return jsonify({'status': 'error', 'message': 'Error sending message'})
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'message': f'Error sending message: {str(e)}'})
 
 
 @app.route('/test_match')
