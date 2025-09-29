@@ -23,7 +23,7 @@
                     <a href="{{ url_for('profile') }}">{{ get_text('profile') }}</a>
                     <a href="{{ url_for('swipe') }}">{{ get_text('discover') }}</a>
                     <a href="{{ url_for('chat_list') }}">{{ get_text('chat') }}</a>
-                    <a href="{{ url_for('premium') }}">Premium</a>
+
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('admin') }}">Admin Panel</a>
                     {% endif %}

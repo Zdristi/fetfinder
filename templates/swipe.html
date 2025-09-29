@@ -6,11 +6,7 @@
 <div class="container">
     <div class="swipe-header">
         <h1>{{ get_text('discover_matches') }}</h1>
-        {% if current_user.is_premium %}
-            <span class="premium-badge" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; margin-left: 10px;">
-                <i class="fas fa-crown"></i> PREMIUM
-            </span>
-        {% endif %}
+
     </div>
     
     <div id="swipeContainer" style="position: relative; min-height: 500px;">
@@ -41,7 +37,7 @@
     
     <div class="swipe-actions" style="position: fixed; bottom: 30px; width: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); z-index: 1000;">
         <div class="actions-container">
-            {% if current_user.is_premium %}
+
             <button id="undoBtn" class="btn btn-large btn-info" onclick="undoSwipe()" style="display: none;">
                 <i class="fas fa-undo"></i>
             </button>
@@ -68,7 +64,7 @@
             
             <h3>Send a message instead of just liking</h3>
             
-            {% if not current_user.is_premium %}
+
                 <div class="message-limit-info" style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ffeaa7;">
                     <strong>Note:</strong> You have 1 free message per day. Upgrade to Premium for unlimited messaging.
                 </div>
@@ -90,7 +86,7 @@
     let users = [];
     let currentIndex = 0;
     let swipeHistory = []; // To store swipe history for undo functionality
-    const isPremiumUser = {{ 'true' if current_user.is_premium else 'false' }}; // Pass premium status to JS
+    const isPremiumUser = false; // Premium functionality removed
     let startX = 0;
     let currentX = 0;
     let isDragging = false;

@@ -280,7 +280,7 @@ def inject_language():
         countries=['Russia', 'USA', 'UK', 'Germany', 'France'],
         COUNTRIES_CITIES=countries_cities,
         SITE_NAME=SITE_NAME,
-        is_premium_user=is_premium_user
+
     )
 
 
@@ -396,7 +396,7 @@ def show_profile(user_id):
         'fetishes': user_fetishes,
         'interests': user_interests,
         'created_at': user.created_at.isoformat(),
-        'is_premium': is_premium_user(user)
+        'is_premium': False
     }
     
     is_complete = bool(user.country and user.city)
@@ -510,7 +510,7 @@ def edit_profile():
         'fetishes': user_fetishes,
         'interests': user_interests,
         'created_at': current_user.created_at.isoformat(),
-        'is_premium': is_premium_user(current_user)
+        'is_premium': False
     }
     
     return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
@@ -591,15 +591,7 @@ def api_match():
     user2 = data.get('user2')
     action = data.get('action')  # 'like' or 'dislike'
     
-    # For non-premium users, check if they have reached their daily like limit
-    if action == 'like' and not is_premium_user(current_user):
-        likes_today_count = likes_today(current_user.id)
-        # Free users are limited to 1 interaction (like) per day
-        if likes_today_count >= 1:
-            return jsonify({
-                'status': 'error', 
-                'error': 'Free users can only like 1 profile per day. Upgrade to Premium for unlimited interactions!'
-            })
+
     
     is_mutual_match = False
     
@@ -771,11 +763,7 @@ def messages_today(user_id, target_date=None):
 @app.route('/api/undo_swipe', methods=['POST'])
 @login_required
 def api_undo_swipe():
-    if not is_premium_user(current_user):
-        return jsonify({
-            'status': 'error', 
-            'error': 'Undo swipe is a premium feature'
-        })
+
     
     # In a full implementation, you would:
     # 1. Check if user has used their undo quota for the day (e.g., 5 undos per day)
@@ -936,48 +924,15 @@ def premium():
 
 
 
-@app.route('/remove_premium/<int:user_id>', methods=['POST'])
-@login_required
-def remove_premium(user_id):
-    if not current_user.is_admin:
-        flash('Access denied')
-        return redirect(url_for('home'))
-    
-    user = UserModel.query.get_or_404(user_id)
-    user.is_premium = False
-    user.premium_expires = None
-    db.session.commit()
-    flash(f'Premium status removed from user {user.username}')
-    
-    return redirect(url_for('admin'))
-
-
-@app.route('/unsubscribe_premium', methods=['POST'])
-@login_required
-def unsubscribe_premium():
-    # In a real application, you would handle cancellation with a payment provider
-    # For now, we'll just remove the premium status
-    current_user.is_premium = False
-    current_user.premium_expires = None
-    db.session.commit()
-    flash('Your premium subscription has been cancelled.')
-    
-    return redirect(url_for('profile'))
 
 
 
 
-def is_premium_user(user):
-    """Check if user has an active premium subscription"""
-    if not user.is_premium:
-        return False
-    if user.premium_expires and user.premium_expires < datetime.utcnow():
-        # Subscription has expired, remove premium status
-        user.is_premium = False
-        user.premium_expires = None
-        db.session.commit()
-        return False
-    return True
+
+
+
+
+
 
 @app.route('/test_match')
 @login_required

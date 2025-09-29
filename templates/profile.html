@@ -16,11 +16,7 @@
         <div class="profile-info">
             <h1>
                 {{ user_data.username or 'Anonymous' }}
-                {% if user_data.is_premium %}
-                    <span class="premium-badge" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 3px 8px; border-radius: 10px; font-size: 0.8rem; margin-left: 10px;">
-                        <i class="fas fa-crown"></i> PREMIUM
-                    </span>
-                {% endif %}
+
             </h1>
             {% if user_data.country or user_data.city %}
                 <p>
