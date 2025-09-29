@@ -11,20 +11,22 @@
                     <i class="fas fa-arrow-left"></i> Back to Chat
                 </a>
                 <div class="recipient-info">
-                    <div class="recipient-avatar" {% if recipient.photo %}style="background-image: url('/static/uploads/{{ recipient.photo }}'); background-size: cover;"{% else %}style="background: linear-gradient(135deg, var(--primary), var(--secondary));"{% endif %}>
-                        {% if not recipient.photo %}
-                            {{ recipient.username[0].upper() }}
-                        {% endif %}
-                    </div>
-                    <div>
-                        <h2>{{ recipient.username }}</h2>
-                        {% if recipient.city or recipient.country %}
-                            <p class="recipient-location">
-                                <i class="fas fa-map-marker-alt"></i>
-                                {{ recipient.city }}{% if recipient.city and recipient.country %}, {% endif %}{{ recipient.country }}
-                            </p>
-                        {% endif %}
-                    </div>
+                    <a href="{{ url_for('show_profile', user_id=recipient.id) }}" style="text-decoration: none; color: inherit;">
+                        <div class="recipient-avatar" {% if recipient.photo %}style="background-image: url('/static/uploads/{{ recipient.photo }}'); background-size: cover;"{% else %}style="background: linear-gradient(135deg, var(--primary), var(--secondary));"{% endif %}>
+                            {% if not recipient.photo %}
+                                {{ recipient.username[0].upper() }}
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h2>{{ recipient.username }}</h2>
+                            {% if recipient.city or recipient.country %}
+                                <p class="recipient-location">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    {{ recipient.city }}{% if recipient.city and recipient.country %}, {% endif %}{{ recipient.country }}
+                                </p>
+                            {% endif %}
+                        </div>
+                    </a>
                 </div>
             </div>
         </div>

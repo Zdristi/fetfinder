@@ -20,7 +20,7 @@
                             {% endif %}
                         </div>
                         <div class="match-info">
-                            <h3>{{ match.user.username }}</h3>
+                            <h3><a href="{{ url_for('show_profile', user_id=match.user.id) }}" style="text-decoration: none; color: inherit;">{{ match.user.username }}</a></h3>
                             <div class="user-rating">
                                 <!-- Звездочки рейтинга -->
                                 <span class="rating-stars"></span>
@@ -193,6 +193,24 @@
     .match-actions {
         margin-left: 0;
     }
+}
+</style>
+
+<style>
+/* Style for profile link */
+.match-info h3 a {
+    color: var(--text-color);
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.match-info h3 a:hover {
+    color: var(--primary);
+}
+
+/* Style for rating display */
+.user-rating {
+    margin: 5px 0;
 }
 </style>
 
