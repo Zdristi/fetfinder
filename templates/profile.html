@@ -207,10 +207,6 @@
             ratingForm.parentNode.insertBefore(messageDiv, ratingForm);
             
             // Remove message after 3 seconds
-            setTimeout(() => {
-                if(messageDiv.parentNode) {
-                    messageDiv.parentNode.removeChild(messageDiv);
-                }
             }, 3000);
         }
     });
