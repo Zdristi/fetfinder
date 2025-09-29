@@ -92,7 +92,7 @@
             </div>
             
             <!-- Submit Button -->
-            <button id="submit-rating-btn" class="btn" style="padding: 10px 20px; display: none;">
+            <button id="submit-rating-btn" class="btn" style="padding: 10px 20px; display: none;" data-user-id="{{ user_data.id }}">
                 {{ get_text('submit_rating') or 'Submit Rating' }}
             </button>
         </div>
@@ -146,9 +146,11 @@
         // Submit rating button handler
         if (submitBtn) {
             submitBtn.addEventListener('click', function() {
-                console.log('Submit button clicked, selected rating: ' + selectedRating);
-                if(selectedRating > 0) {
-                    submitRating({{ user_data.id }}, selectedRating);
+                // Get user ID from data attribute or template variable as fallback
+                const userId = submitBtn.dataset.userId || {{ user_data.id or 0 }};
+                console.log('Submit button clicked, selected rating: ' + selectedRating + ', userId: ' + userId);
+                if(selectedRating > 0 && userId && userId != 0) {
+                    submitRating(userId, selectedRating);
                 } else {
                     showMessage('Please select a rating first', 'error');
                 }
