@@ -962,6 +962,18 @@ def unsubscribe_premium():
     return redirect(url_for('profile'))
 
 
+@app.route('/subscribe_premium', methods=['POST'])
+@login_required
+def subscribe_premium():
+    # Grant premium status to user
+    current_user.is_premium = True
+    current_user.premium_expires = datetime.utcnow() + timedelta(days=30)  # 30 days premium
+    db.session.commit()
+    
+    flash('Congratulations! You are now a premium member.')
+    return redirect(url_for('profile'))
+
+
 @app.route('/test_match')
 @login_required
 def test_match():
