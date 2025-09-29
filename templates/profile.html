@@ -103,151 +103,114 @@
     
 
 <script>
-    // Star rating functionality
+    // Simple star rating functionality
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM loaded, attempting to initialize star rating functionality');
+        console.log('Simple star rating system loaded');
         const stars = document.querySelectorAll('.star-rating');
         const submitBtn = document.getElementById('submit-rating-btn');
         let selectedRating = 0;
         
-        console.log('Star rating functionality loaded. Found ' + stars.length + ' stars.');
-        console.log('Submit button found: ' + (submitBtn !== null));
-        
-        // Function to update star display
-        function updateStarDisplay(rating) {
-            console.log('Updating star display for rating: ' + rating);
-            stars.forEach((star, index) => {
-                const starIcon = star.querySelector('i');
-                if(index < rating) {
-                    starIcon.className = 'fas fa-star';
-                    // Use more specific colors in case CSS variables are not defined
-                    star.style.color = '#ffc107'; // Standard yellow for stars
-                } else {
-                    starIcon.className = 'far fa-star';
-                    star.style.color = '#ccc'; // Standard gray for unselected stars
-                }
-            });
-        }
-        
-        // Function to submit rating via AJAX
-        function submitRating(userId, stars) {
-            fetch('/api/rating', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest' // Common header for AJAX requests
-                },
-                body: JSON.stringify({
-                    rated_user_id: userId,
-                    stars: stars
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('HTTP error! status: ' + response.status);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if(data.status === 'success') {
-                    showMessage(data.message || 'Rating submitted successfully!', 'success');
-                    // Hide submit button after successful submission
-                    if (submitBtn) {
-                        submitBtn.style.display = 'none';
-                    }
-                } else {
-                    showMessage('Error submitting rating: ' + (data.message || 'Unknown error'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showMessage('Error submitting rating: ' + error.message, 'error');
-            });
-        }
-        
-        // Function to show message
-        function showMessage(text, type) {
-            // Create message element
-            const messageDiv = document.createElement('div');
-            messageDiv.textContent = text;
-            messageDiv.style.padding = '10px';
-            messageDiv.style.margin = '10px 0';
-            messageDiv.style.borderRadius = '5px';
-            messageDiv.style.textAlign = 'center';
-            
-            if(type === 'success') {
-                messageDiv.style.backgroundColor = '#d4edda';
-                messageDiv.style.color = '#155724';
-                messageDiv.style.borderColor = '#c3e6cb';
-            } else {
-                messageDiv.style.backgroundColor = '#f8d7da';
-                messageDiv.style.color = '#721c24';
-                messageDiv.style.borderColor = '#f5c6cb';
-            }
-            
-            messageDiv.style.border = '1px solid';
-            
-            // Insert message in a safe location - add to the rating section div
-            const ratingSection = document.querySelector('#rating-input')?.closest('div') ||
-                                 document.querySelector('#submit-rating-btn')?.parentElement;
-            
-            if(ratingSection) {
-                ratingSection.parentNode.insertBefore(messageDiv, ratingSection);
-            } else {
-                // Fallback: add to the beginning of the main content area
-                document.querySelector('.card').prepend(messageDiv);
-            }
-            
-            // Remove message after 3 seconds
-            setTimeout(() => {
-                messageDiv.remove();
-            }, 3000);
-        }
+        console.log('Found ' + stars.length + ' star elements');
+        console.log('Submit button exists: ' + (submitBtn !== null));
         
         // Add click handlers to stars if they exist
         if (stars.length > 0) {
-            stars.forEach(star => {
+            console.log('Adding event listeners to stars');
+            
+            stars.forEach((star, index) => {
+                // Click event
                 star.addEventListener('click', function() {
                     selectedRating = parseInt(this.getAttribute('data-rating'));
-                    console.log('Star clicked, rating: ' + selectedRating);
+                    console.log('Star clicked! Rating: ' + selectedRating);
                     
-                    // Update star display
-                    updateStarDisplay(selectedRating);
+                    // Update all stars display
+                    stars.forEach((s, i) => {
+                        const icon = s.querySelector('i');
+                        if (i < selectedRating) {
+                            icon.className = 'fas fa-star';
+                            s.style.color = '#ffc107';
+                        } else {
+                            icon.className = 'far fa-star';
+                            s.style.color = '#ccc';
+                        }
+                    });
                     
                     // Show submit button
                     if (submitBtn) {
                         submitBtn.style.display = 'inline-block';
+                        console.log('Submit button shown');
                     }
                 });
                 
-                // Add hover effect
+                // Hover effect
                 star.addEventListener('mouseenter', function() {
                     const hoverRating = parseInt(this.getAttribute('data-rating'));
-                    console.log('Star mouse enter, rating: ' + hoverRating);
-                    updateStarDisplay(hoverRating);
+                    console.log('Mouse entered star ' + hoverRating);
+                    
+                    // Temporarily highlight stars up to hover position
+                    stars.forEach((s, i) => {
+                        const icon = s.querySelector('i');
+                        if (i < hoverRating) {
+                            icon.className = 'fas fa-star';
+                            s.style.color = '#ffdd55'; // Lighter yellow on hover
+                        }
+                    });
                 });
                 
                 star.addEventListener('mouseleave', function() {
-                    console.log('Star mouse leave, resetting to selected: ' + selectedRating);
-                    // Reset to selected rating on mouse leave
-                    updateStarDisplay(selectedRating);
+                    // Restore stars to selected rating
+                    stars.forEach((s, i) => {
+                        const icon = s.querySelector('i');
+                        if (i < selectedRating) {
+                            icon.className = 'fas fa-star';
+                            s.style.color = '#ffc107';
+                        } else {
+                            icon.className = 'far fa-star';
+                            s.style.color = '#ccc';
+                        }
+                    });
                 });
             });
             
-            // Submit rating button handler
+            // Submit button handler
             if (submitBtn) {
                 submitBtn.addEventListener('click', function() {
-                    // Get user ID from data attribute or template variable as fallback
                     const userId = submitBtn.dataset.userId || {{ user_data.id or 0 }};
-                    console.log('Submit button clicked, selected rating: ' + selectedRating + ', userId: ' + userId);
-                    if(selectedRating > 0 && userId && userId != 0) {
-                        submitRating(userId, selectedRating);
+                    console.log('Submit button clicked, rating: ' + selectedRating + ', userId: ' + userId);
+                    
+                    if (selectedRating > 0 && userId && userId != 0) {
+                        // Simple AJAX call for rating
+                        fetch('/api/rating', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                rated_user_id: parseInt(userId),
+                                stars: selectedRating
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Rating response:', data);
+                            if (data.status === 'success') {
+                                console.log('Rating submitted successfully!');
+                                submitBtn.style.display = 'none'; // Hide button after success
+                            } else {
+                                console.error('Rating error:', data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Rating submission error:', error);
+                        });
                     } else {
-                        showMessage('Please select a rating first', 'error');
+                        console.log('Please select a rating first');
                     }
                 });
             }
-        } // End of condition for stars.length > 0
+        } else {
+            console.log('No star elements found - this is expected when viewing own profile');
+        }
     });
         
 
