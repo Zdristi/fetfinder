@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import uuid
 from werkzeug.utils import secure_filename
 import hashlib
-from models import db, User as UserModel, Fetish, Interest, Match, Message, Notification, Rating
+from models import db, User as UserModel, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage
 import hmac
 import hashlib
 
@@ -239,7 +239,20 @@ LANGUAGES = {
         'loading_chat_history': 'Loading chat history...',
         'no_messages_yet': 'No messages yet',
         'i_need_help_with_my_profile': 'I need help with my profile',
-        'sure_ill_help_you_with_that': 'Sure, I\'ll help you with that. What seems to be the problem?'
+        'sure_ill_help_you_with_that': 'Sure, I\'ll help you with that. What seems to be the problem?',
+        'support_tickets': 'Support Tickets',
+        'select_ticket_to_chat': 'Select a ticket to start chatting',
+        'select_ticket_to_begin_chat': 'Select a ticket from the list to begin chatting',
+        'error_loading_tickets': 'Error loading tickets',
+        'no_tickets_found': 'No tickets found',
+        'error_loading_messages': 'Error loading messages',
+        'error_sending_message': 'Error sending message. Please try again.',
+        'welcome_to_support_chat': 'Welcome to Support Chat!',
+        'support_will_respond_soon': 'Our support team will respond to your messages as soon as possible.',
+        'support_welcome_message': 'Hello! Welcome to FetDate support. How can we help you today?',
+        'need_immediate_help': 'Need immediate help?',
+        'contact_us_by_email': 'You can also contact us by email:',
+        'error_sending_message': 'Error sending message. Please try again.'
     },
     'ru': {
         'welcome': 'Добро пожаловать в FetDate!',
@@ -378,7 +391,20 @@ LANGUAGES = {
         'loading_chat_history': 'Загрузка истории чата...',
         'no_messages_yet': 'Пока нет сообщений',
         'i_need_help_with_my_profile': 'Мне нужна помощь с моим профилем',
-        'sure_ill_help_you_with_that': 'Конечно, я помогу вам с этим. В чем проблема?'
+        'sure_ill_help_you_with_that': 'Конечно, я помогу вам с этим. В чем проблема?',
+        'support_tickets': 'Запросы в поддержку',
+        'select_ticket_to_chat': 'Выберите запрос для начала чата',
+        'select_ticket_to_begin_chat': 'Выберите запрос из списка, чтобы начать чат',
+        'error_loading_tickets': 'Ошибка загрузки запросов',
+        'no_tickets_found': 'Запросы не найдены',
+        'error_loading_messages': 'Ошибка загрузки сообщений',
+        'error_sending_message': 'Ошибка отправки сообщения. Пожалуйста, попробуйте снова.',
+        'welcome_to_support_chat': 'Добро пожаловать в чат с поддержкой!',
+        'support_will_respond_soon': 'Наша команда поддержки ответит на ваши сообщения как можно скорее.',
+        'support_welcome_message': 'Здравствуйте! Добро пожаловать в поддержку FetDate. Чем мы можем вам помочь?',
+        'need_immediate_help': 'Нужна срочная помощь?',
+        'contact_us_by_email': 'Вы также можете связаться с нами по электронной почте:',
+        'error_sending_message': 'Ошибка отправки сообщения. Пожалуйста, попробуйте снова.'
     }
 }
 
@@ -1116,6 +1142,172 @@ def admin_support_chat():
         return redirect(url_for('home'))
     
     return render_template('admin_support_chat.html')
+
+
+# API routes for support chat
+@app.route('/api/support/send_message', methods=['POST'])
+@login_required
+def api_support_send_message():
+    """Send a message from user to support"""
+    try:
+        data = request.get_json()
+        content = data.get('content', '').strip()
+        
+        if not content:
+            return jsonify({'status': 'error', 'message': 'Message content is required'})
+        
+        # Check if user already has an open ticket
+        ticket = SupportTicket.query.filter_by(
+            user_id=current_user.id, 
+            status='open'
+        ).first()
+        
+        # If no open ticket, create a new one
+        if not ticket:
+            ticket = SupportTicket(
+                user_id=current_user.id,
+                subject=f'Support request from {current_user.username}',
+                status='open'
+            )
+            db.session.add(ticket)
+            db.session.flush()  # Get ticket ID
+        
+        # Create the message
+        message = SupportMessage(
+            ticket_id=ticket.id,
+            sender_id=current_user.id,
+            content=content,
+            is_admin=False
+        )
+        db.session.add(message)
+        
+        # Update ticket timestamp
+        ticket.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': 'Message sent successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error sending support message: {e}")
+        return jsonify({'status': 'error', 'message': 'Error sending message'})
+
+
+@app.route('/api/admin/support/tickets')
+@login_required
+def api_admin_support_tickets():
+    """Get all support tickets for admin"""
+    try:
+        # Check if user is admin
+        if not current_user.is_admin:
+            return jsonify({'status': 'error', 'message': 'Access denied'})
+        
+        # Get all tickets ordered by last update
+        tickets = SupportTicket.query.order_by(SupportTicket.updated_at.desc()).all()
+        
+        # Convert to dictionary format
+        tickets_data = []
+        for ticket in tickets:
+            tickets_data.append({
+                'id': ticket.id,
+                'user_id': ticket.user_id,
+                'user': {
+                    'id': ticket.user.id,
+                    'username': ticket.user.username
+                },
+                'subject': ticket.subject,
+                'status': ticket.status,
+                'created_at': ticket.created_at.isoformat(),
+                'updated_at': ticket.updated_at.isoformat()
+            })
+        
+        return jsonify({'status': 'success', 'tickets': tickets_data})
+        
+    except Exception as e:
+        print(f"Error getting support tickets: {e}")
+        return jsonify({'status': 'error', 'message': 'Error loading tickets'})
+
+
+@app.route('/api/admin/support/ticket/<int:ticket_id>/messages')
+@login_required
+def api_admin_support_ticket_messages(ticket_id):
+    """Get messages for a specific support ticket"""
+    try:
+        # Check if user is admin
+        if not current_user.is_admin:
+            return jsonify({'status': 'error', 'message': 'Access denied'})
+        
+        # Get the ticket
+        ticket = SupportTicket.query.get_or_404(ticket_id)
+        
+        # Get all messages for this ticket
+        messages = SupportMessage.query.filter_by(ticket_id=ticket_id).order_by(SupportMessage.timestamp.asc()).all()
+        
+        # Convert to dictionary format
+        messages_data = []
+        for message in messages:
+            messages_data.append({
+                'id': message.id,
+                'ticket_id': message.ticket_id,
+                'sender_id': message.sender_id,
+                'sender': {
+                    'id': message.sender.id,
+                    'username': message.sender.username
+                },
+                'content': message.content,
+                'is_admin': message.is_admin,
+                'timestamp': message.timestamp.isoformat(),
+                'is_read': message.is_read
+            })
+        
+        return jsonify({'status': 'success', 'messages': messages_data})
+        
+    except Exception as e:
+        print(f"Error getting ticket messages: {e}")
+        return jsonify({'status': 'error', 'message': 'Error loading messages'})
+
+
+@app.route('/api/admin/support/send_message', methods=['POST'])
+@login_required
+def api_admin_support_send_message():
+    """Send a message from admin to user"""
+    try:
+        # Check if user is admin
+        if not current_user.is_admin:
+            return jsonify({'status': 'error', 'message': 'Access denied'})
+        
+        data = request.get_json()
+        ticket_id = data.get('ticket_id')
+        content = data.get('content', '').strip()
+        
+        if not ticket_id or not content:
+            return jsonify({'status': 'error', 'message': 'Ticket ID and message content are required'})
+        
+        # Get the ticket
+        ticket = SupportTicket.query.get_or_404(ticket_id)
+        
+        # Create the message
+        message = SupportMessage(
+            ticket_id=ticket.id,
+            sender_id=current_user.id,
+            content=content,
+            is_admin=True
+        )
+        db.session.add(message)
+        
+        # Update ticket status and timestamp
+        ticket.status = 'replied'
+        ticket.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': 'Message sent successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error sending admin support message: {e}")
+        return jsonify({'status': 'error', 'message': 'Error sending message'})
 
 
 @app.route('/test_match')

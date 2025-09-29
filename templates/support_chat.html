@@ -105,10 +105,30 @@ document.addEventListener('DOMContentLoaded', function() {
             // Clear input
             messageInput.value = '';
             
-            // Simulate support response after a delay
-            setTimeout(() => {
-                addMessage("{{ get_text('support_auto_response') or 'Thank you for your message. Our support team has received your inquiry and will respond as soon as possible. In the meantime, you might find answers to common questions in our FAQ section.' }}", false);
-            }, 2000);
+            // Send message to server
+            fetch('/api/support/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    content: content
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Message sent successfully
+                    console.log('Message sent successfully');
+                } else {
+                    // Error sending message
+                    addMessage('{{ get_text("error_sending_message") or "Error sending message. Please try again." }}', false);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                addMessage('{{ get_text("error_sending_message") or "Error sending message. Please try again." }}', false);
+            });
         }
     }
     

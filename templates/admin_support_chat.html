@@ -20,23 +20,23 @@
         <!-- Users list -->
         <div style="flex: 0 0 300px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;">
             <div style="background: var(--card-bg); padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: bold;">
-                {{ get_text('users') or 'Users' }}
+                {{ get_text('support_tickets') or 'Support Tickets' }}
             </div>
-            <div id="usersList" style="flex: 1; overflow-y: auto; background: var(--card-bg);">
-                <!-- Users will be loaded here -->
+            <div id="ticketsList" style="flex: 1; overflow-y: auto; background: var(--card-bg);">
+                <div style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> {{ get_text("loading") or "Loading..." }}</div>
             </div>
         </div>
         
         <!-- Chat area -->
         <div style="flex: 1; display: flex; flex-direction: column; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
             <div id="chatHeader" style="background: var(--card-bg); padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: bold;">
-                {{ get_text('select_user_to_chat') or 'Select a user to start chatting' }}
+                {{ get_text('select_ticket_to_chat') or 'Select a ticket to start chatting' }}
             </div>
             
             <div id="chatMessages" style="flex: 1; padding: 20px; overflow-y: auto; background: var(--card-bg);">
                 <div style="text-align: center; color: var(--gray); padding: 20px;">
                     <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
-                    <p>{{ get_text('select_user_to_begin_chat') or 'Select a user from the list to begin chatting' }}</p>
+                    <p>{{ get_text('select_ticket_to_begin_chat') or 'Select a ticket from the list to begin chatting' }}</p>
                 </div>
             </div>
             
@@ -55,12 +55,11 @@
 
 <script>
 // Global variables
-let selectedUserId = null;
-let chatHistory = {};
+let selectedTicketId = null;
 
 // Initialize admin chat
 document.addEventListener('DOMContentLoaded', function() {
-    loadUsers();
+    loadTickets();
     
     // Set up event listeners
     document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
@@ -71,106 +70,124 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Load users list
-function loadUsers() {
-    const usersList = document.getElementById('usersList');
-    usersList.innerHTML = '<div style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> {{ get_text("loading") or "Loading..." }}</div>';
+// Load tickets list
+function loadTickets() {
+    const ticketsList = document.getElementById('ticketsList');
+    ticketsList.innerHTML = '<div style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> {{ get_text("loading") or "Loading..." }}</div>';
     
-    // Simulate loading users (in real app, this would be an API call)
-    setTimeout(() => {
-        // This is a mock - in real app, you would fetch from backend
-        const mockUsers = [
-            {id: 1, username: 'user1', last_message: '{{ get_text("hello_how_can_i_help") or "Hello, how can I help you?" }}', unread: 2},
-            {id: 2, username: 'user2', last_message: '{{ get_text("thanks_for_your_help") or "Thanks for your help!" }}', unread: 0},
-            {id: 3, username: 'user3', last_message: '{{ get_text("i_have_a_question") or "I have a question about..." }}', unread: 1}
-        ];
-        
-        displayUsers(mockUsers);
-    }, 1000);
-}
-
-// Display users in the sidebar
-function displayUsers(users) {
-    const usersList = document.getElementById('usersList');
-    usersList.innerHTML = '';
-    
-    if (users.length === 0) {
-        usersList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">{{ get_text("no_users_found") or "No users found" }}</div>';
-        return;
-    }
-    
-    users.forEach(user => {
-        const userElement = document.createElement('div');
-        userElement.className = 'user-item';
-        userElement.style.padding = '15px';
-        userElement.style.borderBottom = '1px solid var(--border-color)';
-        userElement.style.cursor = 'pointer';
-        userElement.style.display = 'flex';
-        userElement.style.justifyContent = 'space-between';
-        userElement.style.alignItems = 'center';
-        userElement.style.transition = 'background 0.2s';
-        
-        if (selectedUserId === user.id) {
-            userElement.style.background = 'var(--primary)';
-            userElement.style.color = 'white';
+    fetch('/api/admin/support/tickets')
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            displayTickets(data.tickets);
+        } else {
+            ticketsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">{{ get_text("error_loading_tickets") or "Error loading tickets" }}</div>';
         }
-        
-        userElement.innerHTML = `
-            <div>
-                <div style="font-weight: bold;">${user.username}</div>
-                <div style="font-size: 0.8rem; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">${user.last_message}</div>
-            </div>
-            ${user.unread > 0 ? `<div style="background: var(--danger); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem;">${user.unread}</div>` : ''}
-        `;
-        
-        userElement.addEventListener('click', () => {
-            selectUser(user);
-        });
-        
-        usersList.appendChild(userElement);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        ticketsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">{{ get_text("error_loading_tickets") or "Error loading tickets" }}</div>';
     });
 }
 
-// Select a user to chat with
-function selectUser(user) {
-    selectedUserId = user.id;
+// Display tickets in the sidebar
+function displayTickets(tickets) {
+    const ticketsList = document.getElementById('ticketsList');
+    ticketsList.innerHTML = '';
+    
+    if (tickets.length === 0) {
+        ticketsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">{{ get_text("no_tickets_found") or "No tickets found" }}</div>';
+        return;
+    }
+    
+    tickets.forEach(ticket => {
+        const ticketElement = document.createElement('div');
+        ticketElement.className = 'ticket-item';
+        ticketElement.style.padding = '15px';
+        ticketElement.style.borderBottom = '1px solid var(--border-color)';
+        ticketElement.style.cursor = 'pointer';
+        ticketElement.style.display = 'flex';
+        ticketElement.style.justifyContent = 'space-between';
+        ticketElement.style.alignItems = 'center';
+        ticketElement.style.transition = 'background 0.2s';
+        
+        if (selectedTicketId === ticket.id) {
+            ticketElement.style.background = 'var(--primary)';
+            ticketElement.style.color = 'white';
+        }
+        
+        // Format timestamp
+        const date = new Date(ticket.created_at);
+        const timeString = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        ticketElement.innerHTML = `
+            <div style="flex: 1;">
+                <div style="font-weight: bold; display: flex; justify-content: space-between;">
+                    <span>${ticket.user.username}</span>
+                    <span style="font-weight: normal; font-size: 0.8rem;">${timeString}</span>
+                </div>
+                <div style="font-size: 0.9rem; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">${ticket.subject}</div>
+                <div style="font-size: 0.8rem; margin-top: 5px;">
+                    <span class="badge" style="background: ${ticket.status === 'open' ? 'var(--success)' : ticket.status === 'replied' ? 'var(--primary)' : 'var(--gray)'}; font-size: 0.7rem;">
+                        ${ticket.status}
+                    </span>
+                </div>
+            </div>
+        `;
+        
+        ticketElement.addEventListener('click', () => {
+            selectTicket(ticket);
+        });
+        
+        ticketsList.appendChild(ticketElement);
+    });
+}
+
+// Select a ticket to chat with
+function selectTicket(ticket) {
+    selectedTicketId = ticket.id;
     
     // Update chat header
     document.getElementById('chatHeader').innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
             <div style="width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                ${user.username.charAt(0).toUpperCase()}
+                ${ticket.user.username.charAt(0).toUpperCase()}
             </div>
-            <div>${user.username}</div>
+            <div>
+                <div style="font-weight: bold;">${ticket.user.username}</div>
+                <div style="font-size: 0.9rem; opacity: 0.8;">${ticket.subject}</div>
+            </div>
         </div>
     `;
     
     // Show chat input
     document.getElementById('chatInputArea').style.display = 'block';
     
-    // Load chat history for this user (mock)
-    loadChatHistory(user.id);
+    // Load chat history for this ticket
+    loadChatHistory(ticket.id);
     
-    // Refresh users list to update selection
-    loadUsers();
+    // Refresh tickets list to update selection
+    loadTickets();
 }
 
-// Load chat history for a user
-function loadChatHistory(userId) {
+// Load chat history for a ticket
+function loadChatHistory(ticketId) {
     const chatMessages = document.getElementById('chatMessages');
     chatMessages.innerHTML = '<div style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> {{ get_text("loading_chat_history") or "Loading chat history..." }}</div>';
     
-    // Simulate loading chat history
-    setTimeout(() => {
-        // Mock chat history
-        const mockHistory = [
-            {id: 1, user_id: userId, content: '{{ get_text("hello_how_can_i_help") or "Hello, how can I help you?" }}', timestamp: new Date(Date.now() - 3600000), is_admin: false},
-            {id: 2, user_id: userId, content: '{{ get_text("i_need_help_with_my_profile") or "I need help with my profile" }}', timestamp: new Date(Date.now() - 3500000), is_admin: false},
-            {id: 3, user_id: userId, content: '{{ get_text("sure_ill_help_you_with_that") or "Sure, I\'ll help you with that. What seems to be the problem?" }}', timestamp: new Date(Date.now() - 3400000), is_admin: true}
-        ];
-        
-        displayChatHistory(mockHistory);
-    }, 500);
+    fetch(`/api/admin/support/ticket/${ticketId}/messages`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            displayChatHistory(data.messages);
+        } else {
+            chatMessages.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">{{ get_text("error_loading_messages") or "Error loading messages" }}</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        chatMessages.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">{{ get_text("error_loading_messages") or "Error loading messages" }}</div>';
+    });
 }
 
 // Display chat history
@@ -242,24 +259,40 @@ function sendMessage() {
     const messageInput = document.getElementById('messageInput');
     const content = messageInput.value.trim();
     
-    if (content && selectedUserId) {
-        // Add message to chat display
+    if (content && selectedTicketId) {
+        // Add message to chat display immediately
         addMessageToChat(content, true, new Date());
         
         // Clear input
         messageInput.value = '';
         
-        // In a real app, you would send this to the backend
-        // fetch('/api/admin/send_message', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify({
-        //         user_id: selectedUserId,
-        //         content: content
-        //     })
-        // });
+        // Send message to server
+        fetch('/api/admin/support/send_message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ticket_id: selectedTicketId,
+                content: content
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Message sent successfully
+                console.log('Message sent successfully');
+                // Reload chat history to show the new message
+                loadChatHistory(selectedTicketId);
+            } else {
+                // Error sending message
+                addMessageToChat('{{ get_text("error_sending_message") or "Error sending message. Please try again." }}', true, new Date());
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            addMessageToChat('{{ get_text("error_sending_message") or "Error sending message. Please try again." }}', true, new Date());
+        });
     }
 }
 </script>

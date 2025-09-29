@@ -18,81 +18,67 @@ class User(UserMixin, db.Model):
     bio = db.Column(db.Text, nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
     is_blocked = db.Column(db.Boolean, default=False)
-    is_premium = db.Column(db.Boolean, default=False)  # Premium subscription
-    premium_expires = db.Column(db.DateTime)  # When premium subscription expires
-    blocked_reason = db.Column(db.String(200), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Дополнительные поля для расширенного профиля
-    about_me_video = db.Column(db.String(200), nullable=True)  # Ссылка на видео о себе
-    relationship_goals = db.Column(db.String(200), nullable=True)  # Цели в отношениях
+    # Добавим поля для видео-презентации
+    about_me_video = db.Column(db.String(200), nullable=True)  # Путь к видео-презентации
+    
+    # Добавим поля для дополнительной информации
+    relationship_goals = db.Column(db.String(200), nullable=True)  # Цели отношений
     lifestyle = db.Column(db.String(200), nullable=True)  # Образ жизни
-    diet = db.Column(db.String(100), nullable=True)  # Питание
-    smoking = db.Column(db.String(50), nullable=True)  # Отношение к курению
-    drinking = db.Column(db.String(50), nullable=True)  # Отношение к алкоголю
+    diet = db.Column(db.String(100), nullable=True)  # Диета
+    smoking = db.Column(db.String(100), nullable=True)  # Отношение к курению
+    drinking = db.Column(db.String(100), nullable=True)  # Отношение к алкоголю
     occupation = db.Column(db.String(100), nullable=True)  # Род занятий
     education = db.Column(db.String(100), nullable=True)  # Образование
-    children = db.Column(db.String(50), nullable=True)  # Дети
-    pets = db.Column(db.String(50), nullable=True)  # Домашние животные
+    children = db.Column(db.String(100), nullable=True)  # Дети
+    pets = db.Column(db.String(100), nullable=True)  # Домашние животные
     
-    # Виртуальная валюта
-    coins = db.Column(db.Integer, default=0)  # Количество монет пользователя
+    # Премиум статус
+    is_premium = db.Column(db.Boolean, default=False)
+    premium_expires = db.Column(db.DateTime, nullable=True)
     
-    # Relationship with fetishes and interests
-    fetishes = db.relationship('Fetish', backref='user', lazy=True)
-    interests = db.relationship('Interest', backref='user', lazy=True)
-    photos = db.relationship('UserPhoto', back_populates="user")  # Use back_populates to properly define bidirectional relationship
-    matches = db.relationship('Match', foreign_keys='Match.user_id', backref='user', lazy=True)
+    # Виртуальная валюта (монеты)
+    coins = db.Column(db.Integer, default=0)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    fetishes = db.relationship('Fetish', backref='user', lazy=True, cascade='all, delete-orphan')
+    interests = db.relationship('Interest', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
+        """Set user password (hash)"""
         self.password_hash = hashlib.sha256(password.encode()).hexdigest()
     
     def check_password(self, password):
+        """Check user password"""
         return self.password_hash == hashlib.sha256(password.encode()).hexdigest()
     
     def __repr__(self):
         return f'<User {self.username}>'
 
 
-class Rating(db.Model):
-    __tablename__ = 'rating'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    rater_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кто ставит рейтинг
-    rated_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кому ставят рейтинг
-    stars = db.Column(db.Integer, nullable=False)  # Рейтинг от 1 до 5 звезд
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Уникальность: один пользователь может поставить только одну оценку другому пользователю
-    __table_args__ = (db.UniqueConstraint('rater_id', 'rated_user_id'),)
-    
-    # Relationships
-    rater = db.relationship('User', foreign_keys=[rater_id])
-    rated_user = db.relationship('User', foreign_keys=[rated_user_id])
-    
-    def __repr__(self):
-        return f'<Rating from {self.rater_id} to {self.rated_user_id}, stars: {self.stars}>'
-
-
 class Fetish(db.Model):
     __tablename__ = 'fetish'
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
     
     def __repr__(self):
         return f'<Fetish {self.name}>'
+
 
 class Interest(db.Model):
     __tablename__ = 'interest'
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
     
     def __repr__(self):
         return f'<Interest {self.name}>'
+
 
 class Match(db.Model):
     __tablename__ = 'match'
@@ -102,11 +88,12 @@ class Match(db.Model):
     matched_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Ensure we don't have duplicate matches
-    __table_args__ = (db.UniqueConstraint('user_id', 'matched_user_id'),)
+    # Prevent duplicate matches
+    __table_args__ = (db.UniqueConstraint('user_id', 'matched_user_id', name='unique_match'),)
     
     def __repr__(self):
-        return f'<Match {self.user_id} -> {self.matched_user_id}>'
+        return f'<Match {self.user_id} <-> {self.matched_user_id}>'
+
 
 class Message(db.Model):
     __tablename__ = 'message'
@@ -131,41 +118,18 @@ class Notification(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Кто вызвал уведомление
-    type = db.Column(db.String(50), nullable=False)  # 'match', 'message', 'like', 'visit'
+    type = db.Column(db.String(50), nullable=False)  # like, match, message, etc.
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     is_read = db.Column(db.Boolean, default=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    url = db.Column(db.String(300), nullable=True)  # URL для перехода
+    url = db.Column(db.String(300), nullable=True)  # Optional URL to navigate to
     
     # Relationships
-    user = db.relationship('User', foreign_keys=[user_id])
-    sender = db.relationship('User', foreign_keys=[sender_id])
+    user = db.relationship('User', backref='notifications')
     
     def __repr__(self):
-        return f'<Notification {self.type} for {self.user_id}>'
-
-
-
-
-
-class UserPhoto(db.Model):
-    __tablename__ = 'user_photo'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    photo_path = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)  # Описание фото
-    is_primary = db.Column(db.Boolean, default=False)  # Основное фото
-    is_premium = db.Column(db.Boolean, default=False)  # Только для премиум-пользователей
-    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationship to User
-    user = db.relationship('User', back_populates="photos")
-    
-    def __repr__(self):
-        return f'<UserPhoto {self.photo_path} for user {self.user_id}>'
+        return f'<Notification {self.title}>'
 
 
 class Gift(db.Model):
@@ -173,16 +137,12 @@ class Gift(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)  # Описание подарка
-    image_url = db.Column(db.String(200))  # Путь к изображению подарка
-    price_coins = db.Column(db.Integer, nullable=False)  # Цена в монетах
-    category = db.Column(db.String(50))  # Категория подарка
-    is_premium_only = db.Column(db.Boolean, default=False)  # Только для премиум-пользователей
-    is_active = db.Column(db.Boolean, default=True)  # Активен ли подарок
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    price = db.Column(db.Integer, nullable=False)  # Цена в монетах
+    icon = db.Column(db.String(100), nullable=True)  # Иконка подарка
+    category = db.Column(db.String(50), nullable=True)  # Категория подарка
     
     def __repr__(self):
-        return f'<Gift {self.name}, price: {self.price_coins} coins>'
+        return f'<Gift {self.name}>'
 
 
 class UserGift(db.Model):
@@ -204,3 +164,51 @@ class UserGift(db.Model):
     
     def __repr__(self):
         return f'<UserGift from {self.sender_id} to {self.recipient_id}, gift: {self.gift_id}>'
+
+
+class SupportTicket(db.Model):
+    __tablename__ = 'support_ticket'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    status = db.Column(db.String(20), default='open')  # open, closed, replied
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship with messages
+    messages = db.relationship('SupportMessage', backref='ticket', lazy=True, cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<SupportTicket {self.id}: {self.subject}>'
+
+
+class SupportMessage(db.Model):
+    __tablename__ = 'support_message'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('support_ticket.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)  # True if sent by admin
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
+    
+    def __repr__(self):
+        return f'<SupportMessage {self.id}: {self.content[:50]}>'
+
+
+class Rating(db.Model):
+    __tablename__ = 'rating'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    rater_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    rated_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    stars = db.Column(db.Integer, nullable=False)  # 1-5 stars
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Unique constraint to prevent duplicate ratings
+    __table_args__ = (db.UniqueConstraint('rater_id', 'rated_user_id', name='unique_user_rating'),)
+    
+    def __repr__(self):
+        return f'<Rating {self.rater_id}->{self.rated_user_id}: {self.stars} stars>'
