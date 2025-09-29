@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import uuid
 from werkzeug.utils import secure_filename
 import hashlib
-from models import db, User as UserModel, Fetish, Interest, Match, Message, Notification
+from models import db, User as UserModel, Fetish, Interest, Match, Message, Notification, Rating
 import hmac
 import hashlib
 
@@ -380,12 +380,6 @@ def show_profile(user_id):
     user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
     user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
     
-    # Calculate user's average rating and total reviews
-    from models import Review
-    reviews = Review.query.filter_by(reviewed_user_id=user.id).all()
-    total_reviews = len(reviews)
-    avg_rating = sum(review.rating for review in reviews) / total_reviews if total_reviews > 0 else None
-    
     user_data = {
         'username': user.username,
         'email': user.email,
@@ -396,9 +390,7 @@ def show_profile(user_id):
         'fetishes': user_fetishes,
         'interests': user_interests,
         'created_at': user.created_at.isoformat(),
-        'is_premium': is_premium_user(user),
-        'avg_rating': avg_rating,
-        'total_reviews': total_reviews
+        'is_premium': is_premium_user(user)
     }
     
     is_complete = bool(user.country and user.city)
@@ -1143,6 +1135,71 @@ def import_data():
     with app.app_context():
         from data_migration import import_data_from_json
         import_data_from_json()
+
+
+# API routes for star ratings
+@app.route('/api/rating', methods=['POST'])
+@login_required
+def api_set_rating():
+    """Set a star rating for a user"""
+    data = request.get_json()
+    rated_user_id = data.get('rated_user_id')
+    stars = data.get('stars')
+    
+    if not rated_user_id or not stars:
+        return jsonify({'status': 'error', 'message': 'Missing rated_user_id or stars'})
+    
+    if not (1 <= stars <= 5):
+        return jsonify({'status': 'error', 'message': 'Stars must be between 1 and 5'})
+    
+    # Check if user is trying to rate themselves
+    if int(rated_user_id) == int(current_user.id):
+        return jsonify({'status': 'error', 'message': 'Cannot rate yourself'})
+    
+    # Check if rated user exists
+    rated_user = UserModel.query.get(rated_user_id)
+    if not rated_user:
+        return jsonify({'status': 'error', 'message': 'Rated user not found'})
+    
+    # Check if rating already exists
+    existing_rating = Rating.query.filter_by(
+        rater_id=int(current_user.id),
+        rated_user_id=int(rated_user_id)
+    ).first()
+    
+    if existing_rating:
+        # Update existing rating
+        existing_rating.stars = stars
+        existing_rating.timestamp = datetime.utcnow()
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Rating updated successfully'})
+    else:
+        # Create new rating
+        rating = Rating(
+            rater_id=int(current_user.id),
+            rated_user_id=int(rated_user_id),
+            stars=stars
+        )
+        db.session.add(rating)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Rating created successfully'})
+
+
+@app.route('/api/rating/<int:user_id>')
+def api_get_user_rating(user_id):
+    """Get a user's average rating"""
+    user = UserModel.query.get_or_404(user_id)
+    
+    # Calculate average rating
+    ratings = Rating.query.filter_by(rated_user_id=user.id).all()
+    total_ratings = len(ratings)
+    avg_rating = sum(rating.stars for rating in ratings) / total_ratings if total_ratings > 0 else 0
+    
+    return jsonify({
+        'avg_rating': round(avg_rating, 1),
+        'total_ratings': total_ratings
+    })
+
 
 # Create database tables if they don't exist
 with app.app_context():

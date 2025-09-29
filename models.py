@@ -41,7 +41,7 @@ class User(UserMixin, db.Model):
     # Relationship with fetishes and interests
     fetishes = db.relationship('Fetish', backref='user', lazy=True)
     interests = db.relationship('Interest', backref='user', lazy=True)
-    photos = db.relationship('UserPhoto')  # Relationship to UserPhoto, accessed via UserPhoto.user_owner
+    photos = db.relationship('UserPhoto', back_populates="user", backref=db.backref('user_photos', lazy=True))  # Use back_populates to properly define bidirectional relationship
     matches = db.relationship('Match', foreign_keys='Match.user_id', backref='user', lazy=True)
     
     def set_password(self, password):
@@ -52,6 +52,27 @@ class User(UserMixin, db.Model):
     
     def __repr__(self):
         return f'<User {self.username}>'
+
+
+class Rating(db.Model):
+    __tablename__ = 'rating'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    rater_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кто ставит рейтинг
+    rated_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кому ставят рейтинг
+    stars = db.Column(db.Integer, nullable=False)  # Рейтинг от 1 до 5 звезд
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Уникальность: один пользователь может поставить только одну оценку другому пользователю
+    __table_args__ = (db.UniqueConstraint('rater_id', 'rated_user_id'),)
+    
+    # Relationships
+    rater = db.relationship('User', foreign_keys=[rater_id])
+    rated_user = db.relationship('User', foreign_keys=[rated_user_id])
+    
+    def __repr__(self):
+        return f'<Rating from {self.rater_id} to {self.rated_user_id}, stars: {self.stars}>'
+
 
 class Fetish(db.Model):
     __tablename__ = 'fetish'
@@ -126,25 +147,7 @@ class Notification(db.Model):
         return f'<Notification {self.type} for {self.user_id}>'
 
 
-class Review(db.Model):
-    __tablename__ = 'review'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кто оставляет отзыв
-    reviewed_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кого оценивают
-    rating = db.Column(db.Integer, nullable=False)  # Рейтинг от 1 до 5
-    comment = db.Column(db.Text)  # Комментарий
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Уникальность: один пользователь может оставить только один отзыв другому пользователю
-    __table_args__ = (db.UniqueConstraint('reviewer_id', 'reviewed_user_id'),)
-    
-    # Relationships
-    reviewer = db.relationship('User', foreign_keys=[reviewer_id])
-    reviewed_user = db.relationship('User', foreign_keys=[reviewed_user_id])
-    
-    def __repr__(self):
-        return f'<Review from {self.reviewer_id} to {self.reviewed_user_id}, rating: {self.rating}>'
+
 
 
 class UserPhoto(db.Model):
