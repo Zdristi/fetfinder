@@ -102,6 +102,7 @@
 <script>
     // Star rating functionality
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, attempting to initialize star rating functionality');
         const stars = document.querySelectorAll('.star-rating');
         const submitBtn = document.getElementById('submit-rating-btn');
         let selectedRating = 0;
