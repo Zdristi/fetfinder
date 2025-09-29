@@ -113,54 +113,50 @@
         console.log('Star rating functionality loaded. Found ' + stars.length + ' stars.');
         console.log('Submit button found: ' + (submitBtn !== null));
         
-        // Check if stars exist before adding event listeners
-        if (stars.length === 0) {
-            console.log('No star elements found - this is normal if user is viewing their own profile');
-            // Don't return here, just exit the click handler setup
-        } else {
-            // Only add event listeners if stars exist
-        
-        // Add click handlers to stars
-        stars.forEach(star => {
-            star.addEventListener('click', function() {
-                selectedRating = parseInt(this.getAttribute('data-rating'));
-                console.log('Star clicked, rating: ' + selectedRating);
+        // Add click handlers to stars if they exist
+        if (stars.length > 0) {
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    selectedRating = parseInt(this.getAttribute('data-rating'));
+                    console.log('Star clicked, rating: ' + selectedRating);
+                    
+                    // Update star display
+                    updateStarDisplay(selectedRating);
+                    
+                    // Show submit button
+                    if (submitBtn) {
+                        submitBtn.style.display = 'inline-block';
+                    }
+                });
                 
-                // Update star display
-                updateStarDisplay(selectedRating);
+                // Add hover effect
+                star.addEventListener('mouseenter', function() {
+                    const hoverRating = parseInt(this.getAttribute('data-rating'));
+                    console.log('Star mouse enter, rating: ' + hoverRating);
+                    updateStarDisplay(hoverRating);
+                });
                 
-                // Show submit button
-                submitBtn.style.display = 'inline-block';
+                star.addEventListener('mouseleave', function() {
+                    console.log('Star mouse leave, resetting to selected: ' + selectedRating);
+                    // Reset to selected rating on mouse leave
+                    updateStarDisplay(selectedRating);
+                });
             });
             
-            // Add hover effect
-            star.addEventListener('mouseenter', function() {
-                const hoverRating = parseInt(this.getAttribute('data-rating'));
-                console.log('Star mouse enter, rating: ' + hoverRating);
-                updateStarDisplay(hoverRating);
-            });
-            
-            star.addEventListener('mouseleave', function() {
-                console.log('Star mouse leave, resetting to selected: ' + selectedRating);
-                // Reset to selected rating on mouse leave
-                updateStarDisplay(selectedRating);
-            });
-        });
-        
-        // Submit rating button handler
-        if (submitBtn) {
-            submitBtn.addEventListener('click', function() {
-                // Get user ID from data attribute or template variable as fallback
-                const userId = submitBtn.dataset.userId || {{ user_data.id or 0 }};
-                console.log('Submit button clicked, selected rating: ' + selectedRating + ', userId: ' + userId);
-                if(selectedRating > 0 && userId && userId != 0) {
-                    submitRating(userId, selectedRating);
-                } else {
-                    showMessage('Please select a rating first', 'error');
-                }
-            });
-        }
-        } // End of else block for stars.length > 0
+            // Submit rating button handler
+            if (submitBtn) {
+                submitBtn.addEventListener('click', function() {
+                    // Get user ID from data attribute or template variable as fallback
+                    const userId = submitBtn.dataset.userId || {{ user_data.id or 0 }};
+                    console.log('Submit button clicked, selected rating: ' + selectedRating + ', userId: ' + userId);
+                    if(selectedRating > 0 && userId && userId != 0) {
+                        submitRating(userId, selectedRating);
+                    } else {
+                        showMessage('Please select a rating first', 'error');
+                    }
+                });
+            }
+        } // End of condition for stars.length > 0
     });
         
         // Function to update star display
