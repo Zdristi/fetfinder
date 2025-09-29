@@ -153,24 +153,70 @@
         
         // Function to submit rating via AJAX
         function submitRating(userId, stars) {
+            // Validate inputs
+            if (!userId || !stars || stars < 1 || stars > 5) {
+                showMessage('Invalid rating parameters', 'error');
+                return;
+            }
+            
             fetch('/api/rating', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'  // Common header for AJAX requests
                 },
                 body: JSON.stringify({
                     rated_user_id: userId,
                     stars: stars
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if(data.status === 'success') {
-                    showMessage('Rating submitted successfully!', 'success');
+                    showMessage(data.message || 'Rating submitted successfully!', 'success');
                     // Hide submit button after successful submission
                     submitBtn.style.display = 'none';
                 } else {
-                    showMessage('Error submitting rating: ' + data.message, 'error');
+                    showMessage('Error submitting rating: ' + (data.message || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('Error submitting rating: ' + error.message, 'error');
+            });
+        }
+        
+        // Function to submit rating via AJAX
+        function submitRating(userId, stars) {
+            fetch('/api/rating', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'  // Common header for AJAX requests
+                },
+                body: JSON.stringify({
+                    rated_user_id: userId,
+                    stars: stars
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if(data.status === 'success') {
+                    showMessage(data.message || 'Rating submitted successfully!', 'success');
+                    // Hide submit button after successful submission
+                    submitBtn.style.display = 'none';
+                } else {
+                    showMessage('Error submitting rating: ' + (data.message || 'Unknown error'), 'error');
                 }
             })
             .catch(error => {
@@ -201,9 +247,16 @@
             
             messageDiv.style.border = '1px solid';
             
-            // Insert message before the rating form
-            const ratingForm = document.querySelector('.section-title').nextElementSibling;
-            ratingForm.parentNode.insertBefore(messageDiv, ratingForm);
+            // Insert message in a safe location - add to the rating section div
+            const ratingSection = document.querySelector('#rating-input')?.closest('div') ||
+                                 document.querySelector('#submit-rating-btn')?.parentElement;
+            
+            if(ratingSection) {
+                ratingSection.parentNode.insertBefore(messageDiv, ratingSection);
+            } else {
+                // Fallback: add to the beginning of the main content area
+                document.querySelector('.card').prepend(messageDiv);
+            }
             
             // Remove message after 3 seconds
             setTimeout(() => {
