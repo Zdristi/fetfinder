@@ -593,6 +593,16 @@ def api_match():
     user2 = data.get('user2')
     action = data.get('action')  # 'like' or 'dislike'
     
+    # For non-premium users, check if they have reached their daily like limit
+    if action == 'like' and not is_premium_user(current_user):
+        likes_today_count = likes_today(current_user.id)
+        # Free users are limited to 1 interaction (like) per day
+        if likes_today_count >= 1:
+            return jsonify({
+                'status': 'error', 
+                'error': 'Free users can only like 1 profile per day. Upgrade to Premium for unlimited interactions!'
+            })
+    
     is_mutual_match = False
     
     if action == 'like':
@@ -624,6 +634,8 @@ def api_match():
         # as they don't create matches
         pass
     
+    })
+
     response = {'status': 'success'}
     
     # If it's a mutual match, add notification
@@ -637,6 +649,20 @@ def api_match():
             response['matched_user_photo'] = matched_user.photo
     
     return jsonify(response)
+
+
+def likes_today(user_id, target_date=None):
+    """Count likes sent by user today"""
+    from datetime import datetime, date
+    if target_date is None:
+        target_date = datetime.utcnow().date()
+    
+    count = Match.query.filter(
+        Match.user_id == user_id,
+        db.func.date(Match.created_at) == target_date
+    ).count()
+    
+    return count
 
 @app.route('/blocked')
 def blocked():
@@ -777,14 +803,8 @@ def api_send_message():
     if not recipient:
         return jsonify({'status': 'error', 'error': 'Recipient not found'})
     
-    # Check message limit for non-premium users
-    if not is_premium_user(current_user):
-        messages_today_count = messages_today(current_user.id)
-        if messages_today_count >= 1:  # Limit to 1 message per day for free users
-            return jsonify({
-                'status': 'error', 
-                'error': 'Free users can only send 1 message per day. Upgrade to Premium for unlimited messaging!'
-            })
+    # No message limits - users can communicate freely
+    # The premium restriction is on interactions (likes/swipes) not on messaging
     
     message = Message(
         sender_id=current_user.id,
@@ -809,15 +829,7 @@ def api_send_message():
 @app.route('/api/message_limit_check')
 @login_required
 def api_message_limit_check():
-    """Check if user has reached their daily message limit"""
-    if is_premium_user(current_user):
-        return jsonify({'status': 'success', 'limit_reached': False})
-    
-    # Check how many messages user has sent today
-    messages_today_count = messages_today(current_user.id)
-    if messages_today_count >= 1:
-        return jsonify({'status': 'error', 'limit_reached': True, 'message': 'Daily message limit reached'})
-    
+    """Check if user has reached their daily message limit - always returns success"""
     return jsonify({'status': 'success', 'limit_reached': False})
 
 
