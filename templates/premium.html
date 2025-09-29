@@ -6,7 +6,7 @@
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">
-            <i class="fas fa-crown"></i> Premium Features
+            <i class="fas fa-crown"></i> Upgrade to Premium
         </h2>
     </div>
     
@@ -52,9 +52,34 @@
             </div>
         </div>
         
-        <div class="alert alert-info" style="margin: 20px 0; padding: 15px; border-radius: 8px; background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;">
-            <i class="fas fa-info-circle"></i> Premium functionality is temporarily unavailable.
-        </div>
+        {% if user.is_premium and user.premium_expires and user.premium_expires > now %}
+            <div class="alert alert-success" style="margin: 20px 0; padding: 15px; border-radius: 8px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
+                <i class="fas fa-check-circle"></i> You're already a premium member!
+                <br>Expires: {{ user.premium_expires.strftime('%B %d, %Y') }}
+                <br>
+                <form method="POST" action="{{ url_for('unsubscribe_premium') }}">
+                    <button type="submit" class="btn" style="background: #dc3545; margin-top: 10px;">Cancel Premium</button>
+                </form>
+            </div>
+        {% else %}
+            {% if user.is_premium and user.premium_expires and user.premium_expires <= now %}
+                <div class="alert alert-warning" style="margin: 20px 0; padding: 15px; border-radius: 8px; background: #fff3cd; color: #856404; border: 1px solid #ffeaa7;">
+                    <i class="fas fa-exclamation-circle"></i> Your premium subscription has expired.
+                    <br>Subscribe again to regain premium features.
+                </div>
+            {% endif %}
+            
+            {% if not (user.is_premium and user.premium_expires and user.premium_expires > now) %}
+            <div style="text-align: center; margin: 30px 0;">
+                <h3>Premium subscription gives you special features</h3>
+                <p>As an admin, you can grant premium status to users directly from the admin panel.</p>
+                
+                <div class="alert alert-info" style="margin: 20px 0; padding: 15px; border-radius: 8px; background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;">
+                    <i class="fas fa-info-circle"></i> Premium functionality is currently being upgraded. 
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
     </div>
 </div>
 

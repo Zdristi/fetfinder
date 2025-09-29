@@ -280,7 +280,7 @@ def inject_language():
         countries=['Russia', 'USA', 'UK', 'Germany', 'France'],
         COUNTRIES_CITIES=countries_cities,
         SITE_NAME=SITE_NAME,
-
+        is_premium_user=is_premium_user
     )
 
 
@@ -396,7 +396,7 @@ def show_profile(user_id):
         'fetishes': user_fetishes,
         'interests': user_interests,
         'created_at': user.created_at.isoformat(),
-        'is_premium': False
+        'is_premium': is_premium_user(user)
     }
     
     is_complete = bool(user.country and user.city)
@@ -510,7 +510,7 @@ def edit_profile():
         'fetishes': user_fetishes,
         'interests': user_interests,
         'created_at': current_user.created_at.isoformat(),
-        'is_premium': False
+        'is_premium': is_premium_user(current_user)
     }
     
     return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
@@ -934,6 +934,34 @@ def premium():
 
 
 
+@app.route('/remove_premium/<int:user_id>', methods=['POST'])
+@login_required
+def remove_premium(user_id):
+    if not current_user.is_admin:
+        flash('Access denied')
+        return redirect(url_for('home'))
+    
+    user = UserModel.query.get_or_404(user_id)
+    user.is_premium = False
+    user.premium_expires = None
+    db.session.commit()
+    flash(f'Premium status removed from user {user.username}')
+    
+    return redirect(url_for('admin'))
+
+
+@app.route('/unsubscribe_premium', methods=['POST'])
+@login_required
+def unsubscribe_premium():
+    # For now, we'll just remove the premium status
+    current_user.is_premium = False
+    current_user.premium_expires = None
+    db.session.commit()
+    flash('Your premium subscription has been cancelled.')
+    
+    return redirect(url_for('profile'))
+
+
 @app.route('/test_match')
 @login_required
 def test_match():
@@ -1121,6 +1149,18 @@ with app.app_context():
             print(f"Error running psql-based database migrations: {e2}")
             import traceback
             traceback.print_exc()
+
+def is_premium_user(user):
+    """Check if user has an active premium subscription"""
+    if not user.is_premium:
+        return False
+    if user.premium_expires and user.premium_expires < datetime.utcnow():
+        # Subscription has expired, remove premium status
+        user.is_premium = False
+        user.premium_expires = None
+        db.session.commit()
+        return False
+    return True
 
 # For Render and other hosting platforms
 if __name__ == '__main__':
