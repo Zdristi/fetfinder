@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}{{ get_text('admin_support_chat') or 'Admin Support Chat' }} - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="fas fa-headset"></i> {{ get_text('admin_support_chat') or 'Admin Support Chat' }}
+        </h2>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('admin') }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> {{ get_text('back_to_admin_panel') or 'Back to Admin Panel' }}
+        </a>
+    </div>
+    
+    <div style="display: flex; gap: 20px; height: 600px;">
+        <!-- Users list -->
+        <div style="flex: 0 0 300px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;">
+            <div style="background: var(--card-bg); padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: bold;">
+                {{ get_text('users') or 'Users' }}
+            </div>
+            <div id="usersList" style="flex: 1; overflow-y: auto; background: var(--card-bg);">
+                <!-- Users will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Chat area -->
+        <div style="flex: 1; display: flex; flex-direction: column; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
+            <div id="chatHeader" style="background: var(--card-bg); padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: bold;">
+                {{ get_text('select_user_to_chat') or 'Select a user to start chatting' }}
+            </div>
+            
+            <div id="chatMessages" style="flex: 1; padding: 20px; overflow-y: auto; background: var(--card-bg);">
+                <div style="text-align: center; color: var(--gray); padding: 20px;">
+                    <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
+                    <p>{{ get_text('select_user_to_begin_chat') or 'Select a user from the list to begin chatting' }}</p>
+                </div>
+            </div>
+            
+            <div id="chatInputArea" style="padding: 15px; border-top: 1px solid var(--border-color); background: var(--body-bg); display: none;">
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="messageInput" placeholder="{{ get_text('type_your_message') or 'Type your message...' }}" 
+                           style="flex: 1; padding: 12px; border: 1px solid var(--border-color); border-radius: 25px; background: var(--card-bg); color: var(--text-color);" />
+                    <button id="sendMessageBtn" class="btn" style="padding: 12px 20px; border-radius: 25px;">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables
+let selectedUserId = null;
+let chatHistory = {};
+
+// Initialize admin chat
+document.addEventListener('DOMContentLoaded', function() {
+    loadUsers();
+    
+    // Set up event listeners
+    document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
+    document.getElementById('messageInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+});
+
+// Load users list
+function loadUsers() {
+    const usersList = document.getElementById('usersList');
+    usersList.innerHTML = '<div style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> {{ get_text("loading") or "Loading..." }}</div>';
+    
+    // Simulate loading users (in real app, this would be an API call)
+    setTimeout(() => {
+        // This is a mock - in real app, you would fetch from backend
+        const mockUsers = [
+            {id: 1, username: 'user1', last_message: '{{ get_text("hello_how_can_i_help") or "Hello, how can I help you?" }}', unread: 2},
+            {id: 2, username: 'user2', last_message: '{{ get_text("thanks_for_your_help") or "Thanks for your help!" }}', unread: 0},
+            {id: 3, username: 'user3', last_message: '{{ get_text("i_have_a_question") or "I have a question about..." }}', unread: 1}
+        ];
+        
+        displayUsers(mockUsers);
+    }, 1000);
+}
+
+// Display users in the sidebar
+function displayUsers(users) {
+    const usersList = document.getElementById('usersList');
+    usersList.innerHTML = '';
+    
+    if (users.length === 0) {
+        usersList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">{{ get_text("no_users_found") or "No users found" }}</div>';
+        return;
+    }
+    
+    users.forEach(user => {
+        const userElement = document.createElement('div');
+        userElement.className = 'user-item';
+        userElement.style.padding = '15px';
+        userElement.style.borderBottom = '1px solid var(--border-color)';
+        userElement.style.cursor = 'pointer';
+        userElement.style.display = 'flex';
+        userElement.style.justifyContent = 'space-between';
+        userElement.style.alignItems = 'center';
+        userElement.style.transition = 'background 0.2s';
+        
+        if (selectedUserId === user.id) {
+            userElement.style.background = 'var(--primary)';
+            userElement.style.color = 'white';
+        }
+        
+        userElement.innerHTML = `
+            <div>
+                <div style="font-weight: bold;">${user.username}</div>
+                <div style="font-size: 0.8rem; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">${user.last_message}</div>
+            </div>
+            ${user.unread > 0 ? `<div style="background: var(--danger); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem;">${user.unread}</div>` : ''}
+        `;
+        
+        userElement.addEventListener('click', () => {
+            selectUser(user);
+        });
+        
+        usersList.appendChild(userElement);
+    });
+}
+
+// Select a user to chat with
+function selectUser(user) {
+    selectedUserId = user.id;
+    
+    // Update chat header
+    document.getElementById('chatHeader').innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                ${user.username.charAt(0).toUpperCase()}
+            </div>
+            <div>${user.username}</div>
+        </div>
+    `;
+    
+    // Show chat input
+    document.getElementById('chatInputArea').style.display = 'block';
+    
+    // Load chat history for this user (mock)
+    loadChatHistory(user.id);
+    
+    // Refresh users list to update selection
+    loadUsers();
+}
+
+// Load chat history for a user
+function loadChatHistory(userId) {
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.innerHTML = '<div style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> {{ get_text("loading_chat_history") or "Loading chat history..." }}</div>';
+    
+    // Simulate loading chat history
+    setTimeout(() => {
+        // Mock chat history
+        const mockHistory = [
+            {id: 1, user_id: userId, content: '{{ get_text("hello_how_can_i_help") or "Hello, how can I help you?" }}', timestamp: new Date(Date.now() - 3600000), is_admin: false},
+            {id: 2, user_id: userId, content: '{{ get_text("i_need_help_with_my_profile") or "I need help with my profile" }}', timestamp: new Date(Date.now() - 3500000), is_admin: false},
+            {id: 3, user_id: userId, content: '{{ get_text("sure_ill_help_you_with_that") or "Sure, I\'ll help you with that. What seems to be the problem?" }}', timestamp: new Date(Date.now() - 3400000), is_admin: true}
+        ];
+        
+        displayChatHistory(mockHistory);
+    }, 500);
+}
+
+// Display chat history
+function displayChatHistory(messages) {
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.innerHTML = '';
+    
+    if (messages.length === 0) {
+        chatMessages.innerHTML = '<div style="text-align: center; color: var(--gray); padding: 20px;">{{ get_text("no_messages_yet") or "No messages yet" }}</div>';
+        return;
+    }
+    
+    messages.forEach(message => {
+        addMessageToChat(message.content, message.is_admin, new Date(message.timestamp));
+    });
+    
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Add a message to the chat display
+function addMessageToChat(content, isAdmin, timestamp) {
+    const chatMessages = document.getElementById('chatMessages');
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.style.marginBottom = '15px';
+    messageDiv.style.display = 'flex';
+    messageDiv.style.flexDirection = isAdmin ? 'row-reverse' : 'row';
+    
+    const messageContent = document.createElement('div');
+    messageContent.style.maxWidth = '70%';
+    messageContent.style.padding = '12px 15px';
+    messageContent.style.borderRadius = '18px';
+    messageContent.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+    
+    if (isAdmin) {
+        messageContent.style.background = 'var(--primary)';
+        messageContent.style.color = 'white';
+        messageContent.style.borderBottomRightRadius = '5px';
+    } else {
+        messageContent.style.background = 'var(--card-bg)';
+        messageContent.style.border = '1px solid var(--border-color)';
+        messageContent.style.borderBottomLeftRadius = '5px';
+    }
+    
+    messageContent.textContent = content;
+    
+    const timeDiv = document.createElement('div');
+    timeDiv.style.fontSize = '0.7rem';
+    timeDiv.style.color = 'var(--gray)';
+    timeDiv.style.marginTop = '5px';
+    timeDiv.style.textAlign = isAdmin ? 'right' : 'left';
+    timeDiv.textContent = timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    const messageWrapper = document.createElement('div');
+    messageWrapper.style.width = '100%';
+    messageWrapper.appendChild(messageContent);
+    messageWrapper.appendChild(timeDiv);
+    
+    messageDiv.appendChild(messageWrapper);
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Send a message
+function sendMessage() {
+    const messageInput = document.getElementById('messageInput');
+    const content = messageInput.value.trim();
+    
+    if (content && selectedUserId) {
+        // Add message to chat display
+        addMessageToChat(content, true, new Date());
+        
+        // Clear input
+        messageInput.value = '';
+        
+        // In a real app, you would send this to the backend
+        // fetch('/api/admin/send_message', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //     },
+        //     body: JSON.stringify({
+        //         user_id: selectedUserId,
+        //         content: content
+        //     })
+        // });
+    }
+}
+</script>
+{% endblock %}

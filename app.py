@@ -225,7 +225,21 @@ LANGUAGES = {
         'support_welcome_message': 'Hello! Welcome to FetDate support. How can we help you today?',
         'need_immediate_help': 'Need immediate help?',
         'contact_us_by_email': 'You can also contact us by email:',
-        'typical_response_time': 'Typical response time: 24 hours'
+        'typical_response_time': 'Typical response time: 24 hours',
+        'admin_support_chat': 'Admin Support Chat',
+        'back_to_admin_panel': 'Back to Admin Panel',
+        'users': 'Users',
+        'select_user_to_chat': 'Select a user to start chatting',
+        'select_user_to_begin_chat': 'Select a user from the list to begin chatting',
+        'loading': 'Loading...',
+        'no_users_found': 'No users found',
+        'hello_how_can_i_help': 'Hello, how can I help you?',
+        'thanks_for_your_help': 'Thanks for your help!',
+        'i_have_a_question': 'I have a question about...',
+        'loading_chat_history': 'Loading chat history...',
+        'no_messages_yet': 'No messages yet',
+        'i_need_help_with_my_profile': 'I need help with my profile',
+        'sure_ill_help_you_with_that': 'Sure, I\'ll help you with that. What seems to be the problem?'
     },
     'ru': {
         'welcome': 'Добро пожаловать в FetDate!',
@@ -350,7 +364,21 @@ LANGUAGES = {
         'support_welcome_message': 'Здравствуйте! Добро пожаловать в поддержку FetDate. Чем мы можем вам помочь?',
         'need_immediate_help': 'Нужна срочная помощь?',
         'contact_us_by_email': 'Вы также можете связаться с нами по электронной почте:',
-        'typical_response_time': 'Среднее время ответа: 24 часа'
+        'typical_response_time': 'Среднее время ответа: 24 часа',
+        'admin_support_chat': 'Чат поддержки для администраторов',
+        'back_to_admin_panel': 'Назад к панели администратора',
+        'users': 'Пользователи',
+        'select_user_to_chat': 'Выберите пользователя для начала чата',
+        'select_user_to_begin_chat': 'Выберите пользователя из списка, чтобы начать чат',
+        'loading': 'Загрузка...',
+        'no_users_found': 'Пользователи не найдены',
+        'hello_how_can_i_help': 'Здравствуйте, чем могу помочь?',
+        'thanks_for_your_help': 'Спасибо за вашу помощь!',
+        'i_have_a_question': 'У меня есть вопрос о...',
+        'loading_chat_history': 'Загрузка истории чата...',
+        'no_messages_yet': 'Пока нет сообщений',
+        'i_need_help_with_my_profile': 'Мне нужна помощь с моим профилем',
+        'sure_ill_help_you_with_that': 'Конечно, я помогу вам с этим. В чем проблема?'
     }
 }
 
@@ -1077,6 +1105,17 @@ def faq():
 @login_required
 def support_chat():
     return render_template('support_chat.html')
+
+
+@app.route('/admin/support_chat')
+@login_required
+def admin_support_chat():
+    # Check if user is admin
+    if not current_user.is_admin:
+        flash('Access denied')
+        return redirect(url_for('home'))
+    
+    return render_template('admin_support_chat.html')
 
 
 @app.route('/test_match')
