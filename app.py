@@ -633,8 +633,6 @@ def api_match():
         # We don't need to store dislikes in a separate table for now
         # as they don't create matches
         pass
-    
-    })
 
     response = {'status': 'success'}
     
