@@ -41,7 +41,7 @@ class User(UserMixin, db.Model):
     # Relationship with fetishes and interests
     fetishes = db.relationship('Fetish', backref='user', lazy=True)
     interests = db.relationship('Interest', backref='user', lazy=True)
-    photos = db.relationship('UserPhoto', back_populates="user", backref=db.backref('user_photos', lazy=True))  # Use back_populates to properly define bidirectional relationship
+    photos = db.relationship('UserPhoto', back_populates="user")  # Use back_populates to properly define bidirectional relationship
     matches = db.relationship('Match', foreign_keys='Match.user_id', backref='user', lazy=True)
     
     def set_password(self, password):
@@ -162,7 +162,7 @@ class UserPhoto(db.Model):
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship to User
-    user = db.relationship('User', backref=db.backref('user_photos', lazy=True))
+    user = db.relationship('User', back_populates="photos")
     
     def __repr__(self):
         return f'<UserPhoto {self.photo_path} for user {self.user_id}>'
