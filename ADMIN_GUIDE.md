@@ -1,4 +1,4 @@
-# FetFinder Admin Guide
+# FetDate Admin Guide
 
 ## Initial Setup
 

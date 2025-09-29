@@ -61,7 +61,7 @@ login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
 
 # Site configuration
-SITE_NAME = 'FetFinder'
+SITE_NAME = 'FetDate'
 
 # Configuration
 UPLOAD_FOLDER = app.config.get('UPLOAD_FOLDER', 'static/uploads')
@@ -103,9 +103,9 @@ def check_blocked_user():
 # Language dictionaries
 LANGUAGES = {
     'en': {
-        'welcome': 'Welcome to FetFinder!',
+        'welcome': 'Welcome to FetDate!',
         'find_match': 'Find your perfect match',
-        'description': 'FetFinder is a modern dating platform where you can find matches based on shared interests and fetishes.',
+        'description': 'FetDate is a modern dating platform where you can find matches based on shared interests and fetishes.',
         'create_profile': 'Create Profile',
         'complete_profile': 'Complete Profile',
         'discover': 'Discover Matches',
@@ -178,9 +178,9 @@ LANGUAGES = {
         'no_notifications': 'No notifications yet'
     },
     'ru': {
-        'welcome': 'Добро пожаловать в FetFinder!',
+        'welcome': 'Добро пожаловать в FetDate!',
         'find_match': 'Найдите свою идеальную пару',
-        'description': 'FetFinder - это современная платформа для знакомств, где вы можете найти совпадения по общим интересам и фетишам.',
+        'description': 'FetDate - это современная платформа для знакомств, где вы можете найти совпадения по общим интересам и фетишам.',
         'create_profile': 'Создать профиль',
         'complete_profile': 'Завершить профиль',
         'discover': 'Метчи',
@@ -949,7 +949,7 @@ def subscribe_premium():
         form_data = ik_config.create_payment_form(
             order_id=order_id,
             amount=4.99,  # Стоимость премиум-подписки
-            description="Premium subscription for FetFinder",
+            description="Premium subscription for FetDate",
             user_email=current_user.email,
             user_id=current_user.id
         )

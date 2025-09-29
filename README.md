@@ -1,4 +1,4 @@
-# FetFinder Dating Site
+# FetDate Dating Site
 
 A modern dating website built with Python and Flask, featuring a Tinder-like swipe interface where users can find matches based on shared interests and fetishes.
 
@@ -61,7 +61,7 @@ The site supports both English and Russian languages. You can switch languages u
 
 ## Dark/Light Theme
 
-FetFinder supports both dark and light themes:
+FetDate supports both dark and light themes:
 - Toggle between themes using the moon/sun icon in the top navigation bar
 - Your theme preference is saved in your browser
 - Default theme is light
@@ -78,7 +78,7 @@ Users can specify their country and city during profile completion:
 
 ## Database
 
-FetFinder uses PostgreSQL database for persistent storage:
+FetDate uses PostgreSQL database for persistent storage:
 - User profiles and authentication
 - User preferences (fetishes and interests)
 - Match information
@@ -88,7 +88,7 @@ The database is automatically created on first run.
 
 ## Moderation System
 
-FetFinder includes a comprehensive moderation system:
+FetDate includes a comprehensive moderation system:
 
 ### Admin Panel
 - Accessible only to admin users

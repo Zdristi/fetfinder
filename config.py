@@ -8,7 +8,7 @@ DEBUG = False if os.environ.get('FLASK_ENV') == 'production' else True
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
 # Database configuration
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///fetfinder.db')
+DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///fetdate.db')
 # Handle PostgreSQL URL format for SQLAlchemy
 if DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
