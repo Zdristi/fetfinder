@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}{{ get_text('support_chat') or 'Support Chat' }} - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="fas fa-headset"></i> {{ get_text('support_chat') or 'Support Chat' }}
+        </h2>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('profile') }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> {{ get_text('back_to_profile') or 'Back to Profile' }}
+        </a>
+    </div>
+    
+    <div id="chatContainer" style="display: flex; flex-direction: column; height: 600px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
+        <div id="chatMessages" style="flex: 1; padding: 20px; overflow-y: auto; background: var(--card-bg);">
+            <div style="text-align: center; color: var(--gray); padding: 20px;">
+                <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
+                <p>{{ get_text('welcome_to_support_chat') or 'Welcome to Support Chat!' }}</p>
+                <p style="font-size: 0.9rem;">{{ get_text('support_will_respond_soon') or 'Our support team will respond to your messages as soon as possible.' }}</p>
+            </div>
+        </div>
+        
+        <div id="chatInputArea" style="padding: 15px; border-top: 1px solid var(--border-color); background: var(--body-bg);">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="messageInput" placeholder="{{ get_text('type_your_message') or 'Type your message...' }}" 
+                       style="flex: 1; padding: 12px; border: 1px solid var(--border-color); border-radius: 25px; background: var(--card-bg); color: var(--text-color);" />
+                <button id="sendMessageBtn" class="btn" style="padding: 12px 20px; border-radius: 25px;">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 20px; background: var(--card-bg); border-radius: 10px; text-align: center;">
+        <h3 style="margin-top: 0;">{{ get_text('need_immediate_help') or 'Need immediate help?' }}</h3>
+        <p>{{ get_text('contact_us_by_email') or 'You can also contact us by email:' }}</p>
+        <p><strong>support@fetdate.online</strong></p>
+        <p style="font-size: 0.9rem; color: var(--gray);">{{ get_text('typical_response_time') or 'Typical response time: 24 hours' }}</p>
+    </div>
+</div>
+
+<script>
+// Chat functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const chatMessages = document.getElementById('chatMessages');
+    const messageInput = document.getElementById('messageInput');
+    const sendMessageBtn = document.getElementById('sendMessageBtn');
+    
+    // Function to add a message to the chat
+    function addMessage(content, isUser = false, timestamp = new Date()) {
+        const messageDiv = document.createElement('div');
+        messageDiv.style.marginBottom = '15px';
+        messageDiv.style.display = 'flex';
+        messageDiv.style.flexDirection = isUser ? 'row-reverse' : 'row';
+        
+        const messageContent = document.createElement('div');
+        messageContent.style.maxWidth = '70%';
+        messageContent.style.padding = '12px 15px';
+        messageContent.style.borderRadius = '18px';
+        messageContent.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+        
+        if (isUser) {
+            messageContent.style.background = 'var(--primary)';
+            messageContent.style.color = 'white';
+            messageContent.style.borderBottomRightRadius = '5px';
+        } else {
+            messageContent.style.background = 'var(--card-bg)';
+            messageContent.style.border = '1px solid var(--border-color)';
+            messageContent.style.borderBottomLeftRadius = '5px';
+        }
+        
+        messageContent.textContent = content;
+        
+        const timeDiv = document.createElement('div');
+        timeDiv.style.fontSize = '0.7rem';
+        timeDiv.style.color = 'var(--gray)';
+        timeDiv.style.marginTop = '5px';
+        timeDiv.style.textAlign = isUser ? 'right' : 'left';
+        timeDiv.textContent = timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        const messageWrapper = document.createElement('div');
+        messageWrapper.style.width = '100%';
+        messageWrapper.appendChild(messageContent);
+        messageWrapper.appendChild(timeDiv);
+        
+        messageDiv.appendChild(messageWrapper);
+        chatMessages.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // Function to send a message
+    function sendMessage() {
+        const content = messageInput.value.trim();
+        if (content) {
+            // Add user message
+            addMessage(content, true);
+            
+            // Clear input
+            messageInput.value = '';
+            
+            // Simulate support response after a delay
+            setTimeout(() => {
+                addMessage("{{ get_text('support_auto_response') or 'Thank you for your message. Our support team has received your inquiry and will respond as soon as possible. In the meantime, you might find answers to common questions in our FAQ section.' }}", false);
+            }, 2000);
+        }
+    }
+    
+    // Event listeners
+    sendMessageBtn.addEventListener('click', sendMessage);
+    
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+    
+    // Welcome message
+    setTimeout(() => {
+        addMessage("{{ get_text('support_welcome_message') or 'Hello! Welcome to FetDate support. How can we help you today?' }}", false);
+    }, 1000);
+});
+</script>
+{% endblock %}

@@ -24,6 +24,8 @@
                     <a href="{{ url_for('swipe') }}">{{ get_text('discover') }}</a>
                     <a href="{{ url_for('chat_list') }}">{{ get_text('chat') }}</a>
                     <a href="{{ url_for('premium') }}">Premium</a>
+                    <a href="{{ url_for('faq') }}">{{ get_text('faq') or 'FAQ' }}</a>
+                    <a href="{{ url_for('support_chat') }}">{{ get_text('support') or 'Support' }}</a>
 
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('admin') }}">Admin Panel</a>

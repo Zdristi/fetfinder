@@ -198,7 +198,34 @@ LANGUAGES = {
         'cancel_subscription': 'Cancel Subscription',
         'subscription_expired': 'Your premium subscription has expired.',
         'get_premium_now': 'Get Premium Now',
-        'by_subscribing': 'By subscribing, you agree to our terms of service and privacy policy.'
+        'by_subscribing': 'By subscribing, you agree to our terms of service and privacy policy.',
+        'faq': 'FAQ',
+        'support': 'Support',
+        'frequently_asked_questions': 'Frequently Asked Questions',
+        'back_to_home': 'Back to Home',
+        'how_do_i_create_an_account': 'How do I create an account?',
+        'how_do_i_create_an_account_answer': 'To create an account, click the "Sign Up" button on the homepage. Fill in your username, email, and password, then follow the instructions to complete your profile.',
+        'how_do_i_find_matches': 'How do I find matches?',
+        'how_do_i_find_matches_answer': 'After completing your profile, go to the "Discover" section to start swiping through potential matches. You can like or reject profiles based on your preferences.',
+        'is_my_information_secure': 'Is my information secure?',
+        'is_my_information_secure_answer': 'We take your privacy seriously. All personal information is encrypted and stored securely. We never share your data with third parties without your consent.',
+        'what_are_premium_features': 'What are Premium features?',
+        'what_are_premium_features_answer': 'Premium members enjoy unlimited swipes, the ability to undo up to 5 swipes per day, unlimited messaging, and a premium badge on their profile. Premium also gives priority placement in discovery queues.',
+        'how_do_i_contact_support': 'How do I contact support?',
+        'how_do_i_contact_support_answer': 'You can contact our support team through the "Contact Support" link in your profile menu, or by emailing support@fetdate.online. Our team typically responds within 24 hours.',
+        'still_have_questions': 'Still have questions?',
+        'contact_our_support_team': 'Contact our support team for personalized assistance.',
+        'contact_support': 'Contact Support',
+        'support_chat': 'Support Chat',
+        'back_to_profile': 'Back to Profile',
+        'welcome_to_support_chat': 'Welcome to Support Chat!',
+        'support_will_respond_soon': 'Our support team will respond to your messages as soon as possible.',
+        'type_your_message': 'Type your message...',
+        'support_auto_response': 'Thank you for your message. Our support team has received your inquiry and will respond as soon as possible. In the meantime, you might find answers to common questions in our FAQ section.',
+        'support_welcome_message': 'Hello! Welcome to FetDate support. How can we help you today?',
+        'need_immediate_help': 'Need immediate help?',
+        'contact_us_by_email': 'You can also contact us by email:',
+        'typical_response_time': 'Typical response time: 24 hours'
     },
     'ru': {
         'welcome': 'Добро пожаловать в FetDate!',
@@ -296,7 +323,34 @@ LANGUAGES = {
         'cancel_subscription': 'Отменить подписку',
         'subscription_expired': 'Ваша премиум подписка истекла.',
         'get_premium_now': 'Получить премиум сейчас',
-        'by_subscribing': 'Оформляя подписку, вы соглашаетесь с условиями обслуживания и политикой конфиденциальности.'
+        'by_subscribing': 'Оформляя подписку, вы соглашаетесь с условиями обслуживания и политикой конфиденциальности.',
+        'faq': 'Частые вопросы',
+        'support': 'Поддержка',
+        'frequently_asked_questions': 'Часто задаваемые вопросы',
+        'back_to_home': 'Назад на главную',
+        'how_do_i_create_an_account': 'Как создать аккаунт?',
+        'how_do_i_create_an_account_answer': 'Чтобы создать аккаунт, нажмите кнопку "Зарегистрироваться" на главной странице. Заполните имя пользователя, электронную почту и пароль, затем следуйте инструкциям для завершения профиля.',
+        'how_do_i_find_matches': 'Как найти совпадения?',
+        'how_do_i_find_matches_answer': 'После завершения профиля перейдите в раздел "Метчи", чтобы начать свайпинг по потенциальным совпадениям. Вы можете лайкать или отклонять профили по вашим предпочтениям.',
+        'is_my_information_secure': 'Безопасна ли моя информация?',
+        'is_my_information_secure_answer': 'Мы серьезно относимся к вашей конфиденциальности. Вся личная информация шифруется и надежно хранится. Мы никогда не передаем ваши данные третьим сторонам без вашего согласия.',
+        'what_are_premium_features': 'Какие возможности даёт Премиум?',
+        'what_are_premium_features_answer': 'Премиум участники получают неограниченные свайпы, возможность отменять до 5 свайпов в день, неограниченные сообщения и премиум бейдж на своем профиле. Премиум также обеспечивает приоритетное размещение в очереди обнаружения.',
+        'how_do_i_contact_support': 'Как связаться с поддержкой?',
+        'how_do_i_contact_support_answer': 'Вы можете связаться с нашей командой поддержки через ссылку "Связаться с поддержкой" в меню профиля или по электронной почте support@fetdate.online. Наша команда обычно отвечает в течение 24 часов.',
+        'still_have_questions': 'Остались вопросы?',
+        'contact_our_support_team': 'Свяжитесь с нашей командой поддержки для персональной помощи.',
+        'contact_support': 'Связаться с поддержкой',
+        'support_chat': 'Чат с поддержкой',
+        'back_to_profile': 'Назад к профилю',
+        'welcome_to_support_chat': 'Добро пожаловать в чат с поддержкой!',
+        'support_will_respond_soon': 'Наша команда поддержки ответит на ваши сообщения как можно скорее.',
+        'type_your_message': 'Введите ваше сообщение...',
+        'support_auto_response': 'Спасибо за ваше сообщение. Наша команда поддержки получила ваш запрос и ответит как можно скорее. Тем временем вы можете найти ответы на часто задаваемые вопросы в нашем разделе FAQ.',
+        'support_welcome_message': 'Здравствуйте! Добро пожаловать в поддержку FetDate. Чем мы можем вам помочь?',
+        'need_immediate_help': 'Нужна срочная помощь?',
+        'contact_us_by_email': 'Вы также можете связаться с нами по электронной почте:',
+        'typical_response_time': 'Среднее время ответа: 24 часа'
     }
 }
 
@@ -1012,6 +1066,17 @@ def subscribe_premium():
     
     flash('Congratulations! You are now a premium member.')
     return redirect(url_for('profile'))
+
+
+@app.route('/faq')
+def faq():
+    return render_template('faq.html')
+
+
+@app.route('/support_chat')
+@login_required
+def support_chat():
+    return render_template('support_chat.html')
 
 
 @app.route('/test_match')
