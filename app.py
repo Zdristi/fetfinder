@@ -1211,18 +1211,34 @@ def api_admin_support_tickets():
         # Convert to dictionary format
         tickets_data = []
         for ticket in tickets:
-            tickets_data.append({
-                'id': ticket.id,
-                'user_id': ticket.user_id,
-                'user': {
-                    'id': ticket.user.id,
-                    'username': ticket.user.username
-                },
-                'subject': ticket.subject,
-                'status': ticket.status,
-                'created_at': ticket.created_at.isoformat() if ticket.created_at else None,
-                'updated_at': ticket.updated_at.isoformat() if ticket.updated_at else None
-            })
+            try:
+                tickets_data.append({
+                    'id': ticket.id,
+                    'user_id': ticket.user_id,
+                    'user': {
+                        'id': ticket.user.id if ticket.user else None,
+                        'username': ticket.user.username if ticket.user else 'Unknown User'
+                    },
+                    'subject': ticket.subject,
+                    'status': ticket.status,
+                    'created_at': ticket.created_at.isoformat() if ticket.created_at else None,
+                    'updated_at': ticket.updated_at.isoformat() if ticket.updated_at else None
+                })
+            except AttributeError as ae:
+                print(f"Error accessing ticket.user: {ae}")
+                # Handle orphaned tickets gracefully
+                tickets_data.append({
+                    'id': ticket.id,
+                    'user_id': ticket.user_id,
+                    'user': {
+                        'id': None,
+                        'username': 'Deleted User'
+                    },
+                    'subject': ticket.subject,
+                    'status': ticket.status,
+                    'created_at': ticket.created_at.isoformat() if ticket.created_at else None,
+                    'updated_at': ticket.updated_at.isoformat() if ticket.updated_at else None
+                })
         
         return jsonify({'status': 'success', 'tickets': tickets_data})
         
@@ -1251,19 +1267,36 @@ def api_admin_support_ticket_messages(ticket_id):
         # Convert to dictionary format
         messages_data = []
         for message in messages:
-            messages_data.append({
-                'id': message.id,
-                'ticket_id': message.ticket_id,
-                'sender_id': message.sender_id,
-                'sender': {
-                    'id': message.sender.id,
-                    'username': message.sender.username
-                },
-                'content': message.content,
-                'is_admin': message.is_admin,
-                'timestamp': message.timestamp.isoformat() if message.timestamp else None,
-                'is_read': message.is_read
-            })
+            try:
+                messages_data.append({
+                    'id': message.id,
+                    'ticket_id': message.ticket_id,
+                    'sender_id': message.sender_id,
+                    'sender': {
+                        'id': message.sender.id if message.sender else None,
+                        'username': message.sender.username if message.sender else 'Unknown User'
+                    },
+                    'content': message.content,
+                    'is_admin': message.is_admin,
+                    'timestamp': message.timestamp.isoformat() if message.timestamp else None,
+                    'is_read': message.is_read
+                })
+            except AttributeError as ae:
+                print(f"Error accessing message.sender: {ae}")
+                # Handle orphaned messages gracefully
+                messages_data.append({
+                    'id': message.id,
+                    'ticket_id': message.ticket_id,
+                    'sender_id': message.sender_id,
+                    'sender': {
+                        'id': None,
+                        'username': 'Deleted User'
+                    },
+                    'content': message.content,
+                    'is_admin': message.is_admin,
+                    'timestamp': message.timestamp.isoformat() if message.timestamp else None,
+                    'is_read': message.is_read
+                })
         
         return jsonify({'status': 'success', 'messages': messages_data})
         
