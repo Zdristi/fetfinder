@@ -113,6 +113,97 @@
         console.log('Star rating functionality loaded. Found ' + stars.length + ' stars.');
         console.log('Submit button found: ' + (submitBtn !== null));
         
+        // Function to update star display
+        function updateStarDisplay(rating) {
+            console.log('Updating star display for rating: ' + rating);
+            stars.forEach((star, index) => {
+                const starIcon = star.querySelector('i');
+                if(index < rating) {
+                    starIcon.className = 'fas fa-star';
+                    // Use more specific colors in case CSS variables are not defined
+                    star.style.color = '#ffc107'; // Standard yellow for stars
+                } else {
+                    starIcon.className = 'far fa-star';
+                    star.style.color = '#ccc'; // Standard gray for unselected stars
+                }
+            });
+        }
+        
+        // Function to submit rating via AJAX
+        function submitRating(userId, stars) {
+            fetch('/api/rating', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest' // Common header for AJAX requests
+                },
+                body: JSON.stringify({
+                    rated_user_id: userId,
+                    stars: stars
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP error! status: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if(data.status === 'success') {
+                    showMessage(data.message || 'Rating submitted successfully!', 'success');
+                    // Hide submit button after successful submission
+                    if (submitBtn) {
+                        submitBtn.style.display = 'none';
+                    }
+                } else {
+                    showMessage('Error submitting rating: ' + (data.message || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('Error submitting rating: ' + error.message, 'error');
+            });
+        }
+        
+        // Function to show message
+        function showMessage(text, type) {
+            // Create message element
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = text;
+            messageDiv.style.padding = '10px';
+            messageDiv.style.margin = '10px 0';
+            messageDiv.style.borderRadius = '5px';
+            messageDiv.style.textAlign = 'center';
+            
+            if(type === 'success') {
+                messageDiv.style.backgroundColor = '#d4edda';
+                messageDiv.style.color = '#155724';
+                messageDiv.style.borderColor = '#c3e6cb';
+            } else {
+                messageDiv.style.backgroundColor = '#f8d7da';
+                messageDiv.style.color = '#721c24';
+                messageDiv.style.borderColor = '#f5c6cb';
+            }
+            
+            messageDiv.style.border = '1px solid';
+            
+            // Insert message in a safe location - add to the rating section div
+            const ratingSection = document.querySelector('#rating-input')?.closest('div') ||
+                                 document.querySelector('#submit-rating-btn')?.parentElement;
+            
+            if(ratingSection) {
+                ratingSection.parentNode.insertBefore(messageDiv, ratingSection);
+            } else {
+                // Fallback: add to the beginning of the main content area
+                document.querySelector('.card').prepend(messageDiv);
+            }
+            
+            // Remove message after 3 seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 3000);
+        }
+        
         // Add click handlers to stars if they exist
         if (stars.length > 0) {
             stars.forEach(star => {
@@ -158,22 +249,6 @@
             }
         } // End of condition for stars.length > 0
     });
-        
-        // Function to update star display
-        function updateStarDisplay(rating) {
-            console.log('Updating star display for rating: ' + rating);
-            stars.forEach((star, index) => {
-                const starIcon = star.querySelector('i');
-                if(index < rating) {
-                    starIcon.className = 'fas fa-star';
-                    // Use more specific colors in case CSS variables are not defined
-                    star.style.color = '#ffc107'; // Standard yellow for stars
-                } else {
-                    starIcon.className = 'far fa-star';
-                    star.style.color = '#ccc'; // Standard gray for unselected stars
-                }
-            });
-        }
         
 
         
