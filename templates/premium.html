@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Premium - {{ SITE_NAME }}{% endblock %}
+{% block title %}Premium Membership - {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">
-            <i class="fas fa-crown"></i> Premium Features
+            <i class="fas fa-crown"></i> Upgrade to Premium
         </h2>
     </div>
     
@@ -25,37 +25,84 @@
         </p>
     </div>
     
-    <div class="card-body">
-        <div class="premium-features">
-            <div class="feature">
-                <i class="fas fa-infinity"></i>
-                <h3>Unlimited Swipes</h3>
-                <p>Unlike free users who are limited to 1 like per day, premium users can swipe as much as they want.</p>
-            </div>
-            
-            <div class="feature">
-                <i class="fas fa-history"></i>
-                <h3>Undo Swipes</h3>
-                <p>Changed your mind? Undo your last swipe in case you accidentally rejected someone you liked.</p>
-            </div>
-            
-            <div class="feature">
-                <i class="fas fa-star"></i>
-                <h3>Stand out</h3>
-                <p>Stand out with a premium badge on your profile</p>
-            </div>
-            
-            <div class="feature">
-                <i class="fas fa-bolt"></i>
-                <h3>Priority Placement</h3>
-                <p>Your profile will be shown to more users than non-premium profiles.</p>
-            </div>
-        </div>
+    <div class="premium-features">
+        <h3 style="text-align: center; margin-bottom: 25px; color: var(--dark);">Premium Features</h3>
         
-        <div class="alert alert-info" style="margin: 20px 0; padding: 15px; border-radius: 8px; background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;">
-            <i class="fas fa-info-circle"></i> Premium functionality is temporarily unavailable.
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            <div class="feature-card" style="background: var(--card-bg); padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                <div style="font-size: 2.5rem; margin-bottom: 15px; color: var(--primary);">
+                    <i class="fas fa-undo"></i>
+                </div>
+                <h4 style="margin: 0 0 10px 0; color: var(--text-color);">Undo Swipes</h4>
+                <p style="margin: 0; color: var(--gray); font-size: 0.9rem;">
+                    Change your mind and undo up to 5 swipes per day
+                </p>
+            </div>
+            
+            <div class="feature-card" style="background: var(--card-bg); padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                <div style="font-size: 2.5rem; margin-bottom: 15px; color: var(--primary);">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <h4 style="margin: 0 0 10px 0; color: var(--text-color);">Unlimited Messaging</h4>
+                <p style="margin: 0; color: var(--gray); font-size: 0.9rem;">
+                    Send unlimited messages to your matches
+                </p>
+            </div>
+            
+            <div class="feature-card" style="background: var(--card-bg); padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                <div style="font-size: 2.5rem; margin-bottom: 15px; color: var(--primary);">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h4 style="margin: 0 0 10px 0; color: var(--text-color);">Premium Badge</h4>
+                <p style="margin: 0; color: var(--gray); font-size: 0.9rem;">
+                    Stand out with a premium badge on your profile
+                </p>
+            </div>
         </div>
+    </div>
+    
+    <div style="text-align: center; padding: 30px 20px; background: var(--card-bg); border-radius: 15px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: var(--text-color); font-size: 1.5rem;">
+            Just $9.99/month
+        </h3>
+        <p style="margin: 0 0 20px 0; color: var(--gray);">Cancel anytime</p>
+        
+        {% if user.is_premium and user.premium_expires and user.premium_expires > now %}
+            <div style="background: var(--success); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <i class="fas fa-check-circle"></i> You're already a premium member!
+                <br>Expires: {{ user.premium_expires.strftime('%B %d, %Y') }}
+            </div>
+            
+            <form method="POST" action="{{ url_for('unsubscribe_premium') }}">
+                <button type="submit" class="btn" style="background: var(--danger); padding: 12px 30px; font-size: 1.1rem;">
+                    <i class="fas fa-times"></i> Cancel Subscription
+                </button>
+            </form>
+        {% else %}
+            {% if user.is_premium and user.premium_expires and user.premium_expires <= now %}
+                <!-- Subscription expired -->
+                <div style="background: var(--danger); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <i class="fas fa-exclamation-circle"></i> Your premium subscription has expired.
+                </div>
+            {% endif %}
+            <form method="POST" action="{{ url_for('subscribe_premium') }}">
+                <button type="submit" class="btn" style="padding: 15px 40px; font-size: 1.2rem; background: linear-gradient(135deg, var(--primary), var(--secondary));">
+                    <i class="fas fa-crown"></i> Get Premium Now
+                </button>
+            </form>
+        {% endif %}
+    </div>
+    
+    <div style="margin-top: 20px; text-align: center; color: var(--gray); font-size: 0.9rem;">
+        <p>By subscribing, you agree to our terms of service and privacy policy.</p>
     </div>
 </div>
 
+<script>
+// Add current date/time function for template
+function now() {
+    // This would be implemented server-side in a real application
+    return new Date();
+}
+</script>
 {% endblock %}
