@@ -67,7 +67,7 @@
     {% if user_data.interests %}
         <div>
             {% for interest in user_data.interests %}
-                <span class=\"badge badge-interest\">{{ interest }}</span>
+                <span class="badge badge-interest">{{ interest }}</span>
             {% endfor %}
         </div>
     {% else %}
@@ -98,7 +98,6 @@
         </div>
     {% endif %}
     
-{% endblock %}
 
 <script>
     // Star rating functionality
@@ -207,7 +206,11 @@
             ratingForm.parentNode.insertBefore(messageDiv, ratingForm);
             
             // Remove message after 3 seconds
+            setTimeout(() => {
+                messageDiv.remove();
             }, 3000);
         }
     });
 </script>
+
+{% endblock %}
