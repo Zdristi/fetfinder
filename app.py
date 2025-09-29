@@ -931,43 +931,9 @@ def premium():
     return render_template('premium.html', user=current_user, now=datetime.utcnow())
 
 
-@app.route('/subscribe_premium', methods=['POST'])
-@login_required
-def subscribe_premium():
-    from payment_config import InterKassaConfig
-    
-    try:
-        # Создаем экземпляр конфигурации InterKassa
-        ik_config = InterKassaConfig()
-        
-        # Генерируем уникальный ID заказа
-        order_id = f"premium_{current_user.id}_{int(datetime.utcnow().timestamp())}"
-        
-        # Создаем данные для формы оплаты
-        form_data = ik_config.create_payment_form(
-            order_id=order_id,
-            amount=4.99,  # Стоимость премиум-подписки
-            description="Premium subscription for FetDate",
-            user_email=current_user.email,
-            user_id=current_user.id
-        )
-        
-        # Сохраняем ID заказа в сессии для последующей проверки
-        session['pending_order_id'] = order_id
-        
-        return render_template('interkassa_payment.html', form_data=form_data)
-        
-    except Exception as e:
-        flash(f'Error creating payment form: {str(e)}')
-        return redirect(url_for('premium'))
 
-@app.route('/premium_success')
-@login_required
-def premium_success():
-    # Эта страница показывается после успешного возврата из InterKassa
-    # Но подписка устанавливается через вебхук
-    flash('Payment successful! Your premium status will be updated shortly.')
-    return redirect(url_for('profile'))
+
+
 
 
 @app.route('/remove_premium/<int:user_id>', methods=['POST'])
@@ -998,41 +964,7 @@ def unsubscribe_premium():
     
     return redirect(url_for('profile'))
 
-@app.route('/interkassa_webhook', methods=['POST'])
-def interkassa_webhook():
-    """Обработка вебхуков от InterKassa"""
-    from payment_config import InterKassaConfig
-    
-    try:
-        # Проверяем подпись
-        ik_config = InterKassaConfig()
-        is_valid = ik_config.verify_payment(request.form)
-        
-        if not is_valid:
-            print("Invalid signature from InterKassa webhook")
-            return 'Invalid signature', 400
-        
-        # Получаем данные из запроса
-        order_id = request.form.get('ik_inv_id')
-        user_id = request.form.get('user_id')
-        status = request.form.get('ik_inv_st', 'pending')  # Статус заказа
-        
-        if status == 'success' and user_id:
-            # Обновляем статус пользователя
-            user = UserModel.query.get(int(user_id))
-            if user:
-                user.is_premium = True
-                user.premium_expires = datetime.utcnow() + timedelta(days=30)  # 30 дней премиум
-                db.session.commit()
-                
-                print(f"Premium status updated for user {user_id}")
-        
-        # Возвращаем ответ, подтверждающий получение вебхука
-        return 'OK', 200
-        
-    except Exception as e:
-        print(f"Error processing InterKassa webhook: {str(e)}")
-        return 'Error', 500
+
 
 
 def is_premium_user(user):
