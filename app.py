@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import uuid
 from werkzeug.utils import secure_filename
 import hashlib
-from models import db, User as UserModel, Fetish, Interest, Match, Message
+from models import db, User as UserModel, Fetish, Interest, Match, Message, Notification
 import hmac
 import hashlib
 
@@ -1066,6 +1066,55 @@ def test_match():
     
     flash(f'Created test mutual match with {other_user.username}')
     return redirect(url_for('matches'))
+
+
+# API routes for notifications
+@app.route('/api/notifications')
+@login_required
+def api_notifications():
+    """Get current user's notifications"""
+    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.timestamp.desc()).all()
+    
+    notifications_data = []
+    for notification in notifications:
+        notifications_data.append({
+            'id': notification.id,
+            'type': notification.type,
+            'title': notification.title,
+            'content': notification.content,
+            'is_read': notification.is_read,
+            'timestamp': notification.timestamp.isoformat(),
+            'url': notification.url
+        })
+    
+    return jsonify(notifications_data)
+
+
+@app.route('/api/notifications/<int:notification_id>/read', methods=['POST'])
+@login_required
+def api_mark_notification_read(notification_id):
+    """Mark a specific notification as read"""
+    notification = Notification.query.filter_by(id=notification_id, user_id=current_user.id).first()
+    
+    if notification:
+        notification.is_read = True
+        db.session.commit()
+        return jsonify({'status': 'success'})
+    else:
+        return jsonify({'status': 'error', 'message': 'Notification not found'}), 404
+
+
+@app.route('/api/notifications/read-all', methods=['POST'])
+@login_required
+def api_mark_all_notifications_read():
+    """Mark all notifications as read"""
+    notifications = Notification.query.filter_by(user_id=current_user.id).all()
+    
+    for notification in notifications:
+        notification.is_read = True
+    
+    db.session.commit()
+    return jsonify({'status': 'success'})
 
 def create_tables():
     with app.app_context():

@@ -38,7 +38,7 @@
                     <div id="notificationDropdown" style="display: none; position: absolute; top: 100%; right: 0; background: var(--card-bg); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; min-width: 300px; max-height: 500px; overflow-y: auto;">
                         <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
                             <h4 style="margin: 0;">{{ get_text('notifications') or 'Notifications' }}</h4>
-                            <button type="button" class="btn btn-sm" style="padding: 5px 10px; font-size: 0.8rem;" onclick="markAllNotificationsAsRead()">{{ get_text('mark_all_read') or 'Mark all read' }}</button>
+                            <button id="mark-all-read-btn" type="button" class="btn btn-sm" style="padding: 5px 10px; font-size: 0.8rem; display: none;" onclick="markAllNotificationsAsRead()">{{ get_text('mark_all_read') or 'Mark all read' }}</button>
                         </div>
                         <div id="notifications-list" style="max-height: 400px; overflow-y: auto;">
                             <!-- Notifications will be loaded here -->
@@ -179,9 +179,13 @@
                     notificationsList.innerHTML = '';
                     
                     if(data.length > 0) {
-                        // Show notification count
-                        notificationCount.textContent = data.length;
+                        // Show notification count (show 9+ if more than 9)
+                        const displayCount = data.length > 9 ? '9+' : data.length;
+                        notificationCount.textContent = displayCount;
                         notificationCount.style.display = 'flex';
+                        
+                        // Show the "Mark all read" button
+                        document.getElementById('mark-all-read-btn').style.display = 'block';
                         
                         // Add each notification to the list
                         data.forEach(notification => {
@@ -221,6 +225,7 @@
                     } else {
                         // No notifications message
                         notificationCount.style.display = 'none';
+                        document.getElementById('mark-all-read-btn').style.display = 'none';
                         notificationsList.innerHTML = '<div style="padding: 15px; text-align: center; color: var(--gray);">{{ get_text('no_notifications') or 'No notifications yet' }}</div>';
                     }
                 })
@@ -254,7 +259,6 @@
             .then(response => response.json())
             .then(data => {
                 if(data.status === 'success') {
-                    document.getElementById('notification-count').style.display = 'none';
                     loadNotifications();
                 }
             })
