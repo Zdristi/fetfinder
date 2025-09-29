@@ -76,6 +76,7 @@
     
     <!-- Star Rating Form (only for other users, not for the profile owner) -->
     {% if current_user.id != user_data.id %}
+        <script>console.log('Rating UI displayed: current_user.id ({{ current_user.id }}) != user_data.id ({{ user_data.id }})');</script>
         <div class="section-title">
             <h2 class="section-title-text"><i class="fas fa-star"></i> {{ get_text('rate_this_user') or 'Rate This User' }}</h2>
         </div>
@@ -96,6 +97,8 @@
                 {{ get_text('submit_rating') or 'Submit Rating' }}
             </button>
         </div>
+    {% else %}
+        <script>console.log('Rating UI not displayed: current_user.id ({{ current_user.id }}) == user_data.id ({{ user_data.id }}) - user viewing own profile or not logged in');</script>
     {% endif %}
     
 
