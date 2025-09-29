@@ -107,6 +107,14 @@
         let selectedRating = 0;
         
         console.log('Star rating functionality loaded. Found ' + stars.length + ' stars.');
+        console.log('Submit button found: ' + (submitBtn !== null));
+        
+        // Check if stars exist before adding event listeners
+        if (stars.length === 0) {
+            console.log('No star elements found - this is normal if user is viewing their own profile');
+            // Don't return here, just exit the click handler setup
+        } else {
+            // Only add event listeners if stars exist
         
         // Add click handlers to stars
         stars.forEach(star => {
@@ -136,14 +144,18 @@
         });
         
         // Submit rating button handler
-        submitBtn.addEventListener('click', function() {
-            console.log('Submit button clicked, selected rating: ' + selectedRating);
-            if(selectedRating > 0) {
-                submitRating({{ user_data.id }}, selectedRating);
-            } else {
-                showMessage('Please select a rating first', 'error');
-            }
-        });
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function() {
+                console.log('Submit button clicked, selected rating: ' + selectedRating);
+                if(selectedRating > 0) {
+                    submitRating({{ user_data.id }}, selectedRating);
+                } else {
+                    showMessage('Please select a rating first', 'error');
+                }
+            });
+        }
+        } // End of else block for stars.length > 0
+    });
         
         // Function to update star display
         function updateStarDisplay(rating) {
