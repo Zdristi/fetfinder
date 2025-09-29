@@ -106,10 +106,13 @@
         const submitBtn = document.getElementById('submit-rating-btn');
         let selectedRating = 0;
         
+        console.log('Star rating functionality loaded. Found ' + stars.length + ' stars.');
+        
         // Add click handlers to stars
         stars.forEach(star => {
             star.addEventListener('click', function() {
                 selectedRating = parseInt(this.getAttribute('data-rating'));
+                console.log('Star clicked, rating: ' + selectedRating);
                 
                 // Update star display
                 updateStarDisplay(selectedRating);
@@ -121,10 +124,12 @@
             // Add hover effect
             star.addEventListener('mouseenter', function() {
                 const hoverRating = parseInt(this.getAttribute('data-rating'));
+                console.log('Star mouse enter, rating: ' + hoverRating);
                 updateStarDisplay(hoverRating);
             });
             
             star.addEventListener('mouseleave', function() {
+                console.log('Star mouse leave, resetting to selected: ' + selectedRating);
                 // Reset to selected rating on mouse leave
                 updateStarDisplay(selectedRating);
             });
@@ -132,21 +137,26 @@
         
         // Submit rating button handler
         submitBtn.addEventListener('click', function() {
+            console.log('Submit button clicked, selected rating: ' + selectedRating);
             if(selectedRating > 0) {
                 submitRating({{ user_data.id }}, selectedRating);
+            } else {
+                showMessage('Please select a rating first', 'error');
             }
         });
         
         // Function to update star display
         function updateStarDisplay(rating) {
+            console.log('Updating star display for rating: ' + rating);
             stars.forEach((star, index) => {
                 const starIcon = star.querySelector('i');
                 if(index < rating) {
                     starIcon.className = 'fas fa-star';
-                    star.style.color = 'var(--primary)';
+                    // Use more specific colors in case CSS variables are not defined
+                    star.style.color = '#ffc107'; // Standard yellow for stars
                 } else {
                     starIcon.className = 'far fa-star';
-                    star.style.color = 'var(--gray)';
+                    star.style.color = '#ccc'; // Standard gray for unselected stars
                 }
             });
         }
