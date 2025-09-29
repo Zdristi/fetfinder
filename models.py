@@ -179,6 +179,9 @@ class SupportTicket(db.Model):
     # Relationship with messages
     messages = db.relationship('SupportMessage', backref='ticket', lazy=True, cascade='all, delete-orphan')
     
+    # Relationship with user
+    user = db.relationship('User', backref='support_tickets', lazy=True)
+    
     def __repr__(self):
         return f'<SupportTicket {self.id}: {self.subject}>'
 
@@ -193,6 +196,9 @@ class SupportMessage(db.Model):
     is_admin = db.Column(db.Boolean, default=False)  # True if sent by admin
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     is_read = db.Column(db.Boolean, default=False)
+    
+    # Relationship with sender
+    sender = db.relationship('User', backref='support_messages', lazy=True)
     
     def __repr__(self):
         return f'<SupportMessage {self.id}: {self.content[:50]}>'
