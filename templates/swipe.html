@@ -41,7 +41,6 @@
             <button id="undoBtn" class="btn btn-large btn-info" onclick="undoSwipe()" style="display: none;">
                 <i class="fas fa-undo"></i>
             </button>
-            {% endif %}
             <button id="rejectBtn" class="btn btn-large btn-danger" onclick="swipe('dislike')">
                 <i class="fas fa-times"></i>
             </button>
@@ -64,7 +63,7 @@
             
             <h3>Send a message instead of just liking</h3>
             
-
+            {% if not isPremiumUser %}
                 <div class="message-limit-info" style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ffeaa7;">
                     <strong>Note:</strong> You have 1 free message per day. Upgrade to Premium for unlimited messaging.
                 </div>
