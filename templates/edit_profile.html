@@ -140,7 +140,7 @@
                         <option value=\"None\" {% if user.children == 'None' %}selected{% endif %}>{{ get_text('none') or 'None' }}</option>
                         <option value=\"Yes\" {% if user.children == 'Yes' %}selected{% endif %}>{{ get_text('yes') or 'Yes' }}</option>
                         <option value=\"Want someday\" {% if user.children == 'Want someday' %}selected{% endif %}>{{ get_text('want_someday') or 'Want someday' }}</option>
-                        <option value=\"Don't want\" {% if user.children == 'Don\\'t want' %}selected{% endif %}>{{ get_text('dont_want') or 'Don\\'t want' }}</option>
+                        <option value="Don't want" {% if user.children == "Don't want" %}selected{% endif %}>{{ get_text('dont_want') }}</option>
                     </select>
                 </div>
                 
