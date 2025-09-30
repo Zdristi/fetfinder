@@ -11,14 +11,14 @@
 </head>
 <body>
     <div class="header">
-        <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; padding: 1rem 2rem;">
-            <div class="logo" style="flex: 0 0 auto;">
+        <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem;">
+            <div class="logo">
                 <a href="{{ url_for('home') }}" style="display: flex; align-items: center; text-decoration: none; color: white; font-size: 1.5rem; font-weight: bold;">
                     <i class="fas fa-heart" style="margin-right: 10px; color: #ff6b6b;"></i>
                     FetDate
                 </a>
             </div>
-            <div class="nav-links" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: flex-end; flex: 1 1 auto;">
+            <div class="nav-links" style="display: flex; flex-wrap: nowrap; gap: 15px; align-items: center;">
                 {% if current_user.is_authenticated %}
                     <a href="{{ url_for('profile') }}">{{ get_text('profile') }}</a>
                     <a href="{{ url_for('swipe') }}">{{ get_text('discover') }}</a>
@@ -168,7 +168,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
+                if(data.status === 'success') {
                     // Hide notification count
                     const countElement = document.getElementById('notification-count');
                     if (countElement) {
@@ -180,7 +180,7 @@
                 }
             })
             .catch(error => {
-                console.error('Error marking all notifications as read:', error);
+                console.error('Error:', error);
             });
         }
         
@@ -249,7 +249,7 @@
                 }
             })
             .catch(error => {
-                console.error('Error loading notifications:', error);
+                console.error('Error:', error);
             });
         }
         
@@ -373,7 +373,7 @@
 
         .nav-links {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             gap: 15px;
             align-items: center;
         }
