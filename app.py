@@ -838,6 +838,10 @@ def api_users():
         current_user_id = int(current_user.id)
         print(f"Fetching users for current user ID: {current_user_id}")
         
+        # Get total count of all users in the system
+        total_users_count = UserModel.query.count()
+        print(f"Total users in the system: {total_users_count}")
+        
         # Check how many swipe records exist for this user
         swipe_count = UserSwipe.query.filter_by(swiper_id=current_user_id).count()
         print(f"User {current_user_id} has swiped on {swipe_count} users")
@@ -847,22 +851,31 @@ def api_users():
         swiped_user_ids = [swipe.swipee_id for swipe in swiped_users]
         print(f"User {current_user_id} has swiped on user IDs: {swiped_user_ids}")
         
-        # Alternative approach: Get all eligible users and exclude swiped ones manually
-        all_eligible_users = UserModel.query.filter(
+        # Get all users to see the full picture
+        all_users = UserModel.query.all()
+        all_user_ids = [user.id for user in all_users]
+        print(f"All user IDs in system: {all_user_ids}")
+        
+        # Get other users (excluding current user and blocked)
+        other_users = UserModel.query.filter(
             UserModel.id != current_user_id,
             UserModel.is_blocked == False
         ).all()
         
-        all_users_count = len(all_eligible_users)
-        print(f"Total users excluding current user and blocked: {all_users_count}")
+        other_user_ids = [user.id for user in other_users]
+        print(f"Other users (not current and not blocked): {other_user_ids}")
         
         # Filter out users that have been swiped on
-        db_users = [user for user in all_eligible_users if user.id not in swiped_user_ids]
+        eligible_users = [user for user in other_users if user.id not in swiped_user_ids]
         
-        print(f"Users after filtering swiped: {len(db_users)}")
+        print(f"Eligible users after filtering swiped: {len(eligible_users)}")
+        
+        # Debug: show which users were filtered out
+        filtered_out = [user.id for user in other_users if user.id in swiped_user_ids]
+        print(f"Users filtered out due to previous swipe: {filtered_out}")
         
         users = []
-        for user in db_users:
+        for user in eligible_users:
             try:
                 user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
                 user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
