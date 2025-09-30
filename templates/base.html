@@ -100,6 +100,9 @@
                 document.documentElement.style.setProperty('--danger', '#dc3545');
                 document.documentElement.style.setProperty('--warning', '#ffc107');
                 document.documentElement.style.setProperty('--info', '#17a2b8');
+                
+                // Save theme preference
+                localStorage.setItem('theme', 'light');
             } else {
                 // Switch to dark theme
                 htmlElement.setAttribute('data-theme', 'dark');
@@ -121,6 +124,9 @@
                 document.documentElement.style.setProperty('--danger', '#dc3545');
                 document.documentElement.style.setProperty('--warning', '#ffc107');
                 document.documentElement.style.setProperty('--info', '#17a2b8');
+                
+                // Save theme preference
+                localStorage.setItem('theme', 'dark');
             }
             
             // Remove transition class after animation completes
@@ -291,6 +297,55 @@
         
         // Load notifications when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            // Apply saved theme on page load
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                const htmlElement = document.documentElement;
+                const themeIcon = document.getElementById('themeIcon');
+                
+                htmlElement.setAttribute('data-theme', savedTheme);
+                
+                if (savedTheme === 'dark') {
+                    themeIcon.className = 'fas fa-sun theme-icon';
+                    
+                    // Apply dark theme CSS variables
+                    document.documentElement.style.setProperty('--body-bg', '#121212');
+                    document.documentElement.style.setProperty('--card-bg', '#212529');
+                    document.documentElement.style.setProperty('--text-color', '#f8f9fa');
+                    document.documentElement.style.setProperty('--border-color', '#495057');
+                    document.documentElement.style.setProperty('--header-bg', 'linear-gradient(135deg, #1a1a1a, #2d2d2d)');
+                    document.documentElement.style.setProperty('--primary', '#667eea');
+                    document.documentElement.style.setProperty('--secondary', '#764ba2');
+                    document.documentElement.style.setProperty('--accent', '#f093fb');
+                    document.documentElement.style.setProperty('--dark', '#f8f9fa');
+                    document.documentElement.style.setProperty('--gray', '#adb5bd');
+                    document.documentElement.style.setProperty('--light-gray', '#343a40');
+                    document.documentElement.style.setProperty('--success', '#28a745');
+                    document.documentElement.style.setProperty('--danger', '#dc3545');
+                    document.documentElement.style.setProperty('--warning', '#ffc107');
+                    document.documentElement.style.setProperty('--info', '#17a2b8');
+                } else {
+                    themeIcon.className = 'fas fa-moon theme-icon';
+                    
+                    // Apply light theme CSS variables
+                    document.documentElement.style.setProperty('--body-bg', '#f8f9fa');
+                    document.documentElement.style.setProperty('--card-bg', '#ffffff');
+                    document.documentElement.style.setProperty('--text-color', '#333');
+                    document.documentElement.style.setProperty('--border-color', '#dee2e6');
+                    document.documentElement.style.setProperty('--header-bg', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
+                    document.documentElement.style.setProperty('--primary', '#667eea');
+                    document.documentElement.style.setProperty('--secondary', '#764ba2');
+                    document.documentElement.style.setProperty('--accent', '#f093fb');
+                    document.documentElement.style.setProperty('--dark', '#333');
+                    document.documentElement.style.setProperty('--gray', '#666');
+                    document.documentElement.style.setProperty('--light-gray', '#f8f9fa');
+                    document.documentElement.style.setProperty('--success', '#28a745');
+                    document.documentElement.style.setProperty('--danger', '#dc3545');
+                    document.documentElement.style.setProperty('--warning', '#ffc107');
+                    document.documentElement.style.setProperty('--info', '#17a2b8');
+                }
+            }
+            
             loadNotifications();
         });
         
