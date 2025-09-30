@@ -25,7 +25,7 @@ def run_psql_migration():
     # Create environment variable for psql to avoid password prompt
     env_vars = f"PGPASSWORD='{password}' "
     
-    # SQL commands to add missing columns
+    # SQL commands to add missing columns and create new tables
     sql_commands = [
         "ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS about_me_video TEXT;",
         "ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS relationship_goals VARCHAR(200);",
@@ -37,7 +37,8 @@ def run_psql_migration():
         "ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS education VARCHAR(100);",
         "ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS children VARCHAR(50);",
         "ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS pets VARCHAR(50);",
-        "ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS coins INTEGER DEFAULT 0;"
+        "ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS coins INTEGER DEFAULT 0;",
+        "CREATE TABLE IF NOT EXISTS user_swipe (id SERIAL PRIMARY KEY, swiper_id INTEGER NOT NULL, swipee_id INTEGER NOT NULL, action VARCHAR(10) NOT NULL, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(swiper_id, swipee_id));"
     ]
     
     # Execute each SQL command using psql
@@ -51,11 +52,11 @@ def run_psql_migration():
         try:
             result = os.system(psql_cmd)
             if result == 0:
-                print(f"✓ Successfully executed step {i}")
+                print(f"[SUCCESS] Successfully executed step {i}")
             else:
-                print(f"✗ Error executing step {i}")
+                print(f"[ERROR] Error executing step {i}")
         except Exception as e:
-            print(f"✗ Error executing step {i}: {e}")
+            print(f"[ERROR] Error executing step {i}: {e}")
     
     print("Database migration completed!")
 
