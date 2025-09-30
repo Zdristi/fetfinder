@@ -369,6 +369,51 @@
         color: var(--gray);
     }
     
+    /* Extended profile section styles for dark theme */
+    [data-theme="dark"] .extended-profile-section {
+        border: 2px solid var(--accent);
+        background: var(--card-bg);
+    }
+    
+    [data-theme="dark"] .extended-profile-section h3 {
+        color: var(--accent);
+    }
+    
+    /* Form group enhancements for extended profile */
+    .extended-profile-section .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .extended-profile-section label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+    
+    .extended-profile-section .form-control {
+        width: 100%;
+        padding: 10px 15px;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        font-size: 1rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .extended-profile-section .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+    
+    [data-theme="dark"] .extended-profile-section .form-control {
+        background: var(--card-bg);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+    
     /* Photo action buttons styles */
     .photo-action-btn {
         display: inline-flex;
@@ -427,12 +472,22 @@
     
     .extended-profile-section {
         margin: 30px 0;
+        padding: 20px;
+        border: 2px solid var(--accent);
+        border-radius: 15px;
+        background: var(--card-bg);
+    }
+    
+    .extended-profile-section h3 {
+        color: var(--accent);
+        margin-top: 0;
     }
     
     .profile-fields-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap: 20px;
+        margin-top: 20px;
     }
 </style>
 
