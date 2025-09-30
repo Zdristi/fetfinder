@@ -204,6 +204,21 @@ class SupportMessage(db.Model):
         return f'<SupportMessage {self.id}: {self.content[:50]}>'
 
 
+class UserSwipe(db.Model):
+    __tablename__ = 'user_swipe'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    swiper_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кто свайпнул
+    swipee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кого свайпнули
+    action = db.Column(db.String(10), nullable=False)  # 'like' или 'dislike'
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Уникальное ограничение, чтобы предотвратить дубликаты свайпов
+    __table_args__ = (db.UniqueConstraint('swiper_id', 'swipee_id', name='unique_swipe'),)
+    
+    def __repr__(self):
+        return f'<UserSwipe {self.swiper_id}->{self.swipee_id}: {self.action}>'
+
 class Rating(db.Model):
     __tablename__ = 'rating'
     

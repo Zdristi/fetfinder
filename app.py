@@ -832,11 +832,17 @@ def users():
 @login_required
 def api_users():
     try:
+        from models import UserSwipe
         # Get all users except current user and blocked users
-        # For testing, we'll show all users, even those with incomplete profiles
+        # Exclude users that current user has already swiped on
+        subquery = db.session.query(UserSwipe.swipee_id).filter(
+            UserSwipe.swiper_id == int(current_user.id)
+        ).subquery()
+        
         db_users = UserModel.query.filter(
             UserModel.id != int(current_user.id),
-            UserModel.is_blocked == False
+            UserModel.is_blocked == False,
+            ~UserModel.id.in_(db.session.query(subquery.c.swipee_id))
         ).all()
         
         users = []
