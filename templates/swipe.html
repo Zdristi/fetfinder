@@ -135,11 +135,13 @@
         console.log('Loading next user from API...');
         $.get('/api/users', function(data) {
             console.log('API returned:', data);
+            console.log('API response length:', data.length);
             if (data && data.length > 0) {
                 console.log('Loaded ' + data.length + ' users from API');
                 // Reset the internal state for a single user
                 users = data;
                 currentIndex = 0;
+                console.log('Calling showNextUser with new user data');
                 showNextUser();
             } else {
                 console.log('No more users to show - API returned empty array');
@@ -213,6 +215,8 @@
                 tagsContainer.append('<span class="badge badge-interest">' + interest + '</span>');
             });
         }
+        
+        console.log('Displaying user card for user ID:', currentUserId);
         
         // Reset card position
         $('#currentCard').css('transform', 'translateX(0) rotate(0deg)')
@@ -330,8 +334,10 @@
                     alert('It\'s a match! ' + response.matched_user_name + ' liked you too!');
                 }
                 setTimeout(function() {
+                    console.log('Processing swipe response, preparing to load next user...');
                     // Add a small delay to ensure the swipe is recorded in the database
                     setTimeout(function() {
+                        console.log('Calling loadNextUser...');
                         loadNextUser();
                         updateUndoButton();
                     }, 100);
