@@ -879,13 +879,32 @@ def api_users():
 @app.route('/api/match', methods=['POST'])
 @login_required
 def api_match():
+    from models import UserSwipe
+    from datetime import datetime
     data = request.get_json()
     user2 = data.get('user2')
     action = data.get('action')  # 'like' or 'dislike'
     
-
-    
     is_mutual_match = False
+    
+    # Record the swipe action (like or dislike)
+    existing_swipe = UserSwipe.query.filter_by(
+        swiper_id=int(current_user.id), 
+        swipee_id=int(user2)
+    ).first()
+    
+    if existing_swipe:
+        # Update existing swipe if needed
+        existing_swipe.action = action
+        existing_swipe.timestamp = datetime.utcnow()
+    else:
+        # Create new swipe record
+        swipe = UserSwipe(
+            swiper_id=int(current_user.id),
+            swipee_id=int(user2),
+            action=action
+        )
+        db.session.add(swipe)
     
     if action == 'like':
         # Check if match already exists
@@ -900,7 +919,6 @@ def api_match():
                 matched_user_id=int(user2)
             )
             db.session.add(match)
-            db.session.commit()
             
             # Check if this is a mutual match
             reverse_match = Match.query.filter_by(
@@ -910,11 +928,9 @@ def api_match():
             
             # Return True if it's a mutual match
             is_mutual_match = reverse_match is not None
-    elif action == 'dislike':
-        # Record dislike (we may need this for undo functionality)
-        # We don't need to store dislikes in a separate table for now
-        # as they don't create matches
-        pass
+    
+    # Commit all changes
+    db.session.commit()
 
     response = {'status': 'success'}
     
@@ -929,7 +945,6 @@ def api_match():
             response['matched_user_photo'] = matched_user.photo
     
     return jsonify(response)
-
 
 def likes_today(user_id, target_date=None):
     """Count likes sent by user today"""
