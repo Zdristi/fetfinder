@@ -130,14 +130,34 @@
         });
     }
 
+    function loadNextUser() {
+        // Load a single user instead of the entire list
+        $.get('/api/users', function(data) {
+            if (data && data.length > 0) {
+                // Reset the internal state for a single user
+                users = data;
+                currentIndex = 0;
+                showNextUser();
+            } else {
+                // No more users to show
+                console.log('No more users to show');
+                $('#noUsersMessage').show();
+                $('.swipe-container').hide();
+            }
+        }).fail(function(xhr, status, error) {
+            console.error('Error loading next user:', error);
+            console.error('Response:', xhr.responseText);
+            alert('Error loading next user: ' + error);
+        });
+    }
+
     function showNextUser() {
         console.log('Showing user at index:', currentIndex);
         console.log('Total users:', users.length);
         
         if (currentIndex >= users.length) {
-            console.log('No more users to show');
-            $('#noUsersMessage').show();
-            $('.swipe-container').hide();
+            // Try to load more users
+            loadNextUser();
             return;
         }
 
@@ -307,7 +327,7 @@
                     alert('It\'s a match! ' + response.matched_user_name + ' liked you too!');
                 }
                 setTimeout(function() {
-                    showNextUser();
+                    loadNextUser();
                     updateUndoButton();
                 }, 300);
             },
