@@ -27,6 +27,27 @@ def after_request(response):
         response.headers['Expires'] = '0'
     return response
 
+
+# Serve static files with cache control headers
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    """Serve static files with appropriate cache control headers"""
+    from flask import send_from_directory
+    response = send_from_directory(app.static_folder, filename)
+    
+    # Add version-based cache control for CSS and JS files
+    if filename.endswith(('.css', '.js')):
+        # For CSS and JS files, use version-based caching
+        response.headers['Cache-Control'] = 'public, max-age=31536000'  # 1 year for versioned files
+    elif filename.endswith(('.png', '.jpg', '.jpeg', '.gif', '.ico')):
+        # For image files, use longer cache
+        response.headers['Cache-Control'] = 'public, max-age=31536000'  # 1 year
+    else:
+        # For other static files
+        response.headers['Cache-Control'] = 'public, max-age=86400'  # 1 day
+    
+    return response
+
 # Load configuration
 app.config.from_pyfile('config.py', silent=True)
 
@@ -1575,6 +1596,25 @@ def is_premium_user(user):
         db.session.commit()
         return False
     return True
+
+def get_static_version(filename):
+    """Generate a version string based on file modification time to bust cache"""
+    import os
+    try:
+        file_path = os.path.join(app.static_folder, filename)
+        if os.path.exists(file_path):
+            mtime = os.path.getmtime(file_path)
+            return f"?v={int(mtime)}"
+        else:
+            return "?v=1.0"
+    except:
+        return "?v=1.0"
+
+
+@app.context_processor
+def inject_static_version():
+    return dict(static_version=get_static_version)
+
 
 # For Render and other hosting platforms
 if __name__ == '__main__':
