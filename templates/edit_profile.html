@@ -188,19 +188,22 @@
                             {{ get_text('premium') or 'Premium' }}
                         </div>
                         {% endif %}
-                        <div style=\"padding: 5px; background: rgba(0,0,0,0.7); color: white; font-size: 0.8rem; text-align: center;\">
+                        <div class=\"photo-actions-container\">
                             {% if photo.is_primary %}
-                            <strong>{{ get_text('primary') or 'Primary' }}</strong>
+                            <div class=\"photo-primary-badge\">
+                                <i class=\"fas fa-star\"></i>
+                                <span>{{ get_text('primary') }}</span>
+                            </div>
                             {% else %}
-                            <button type=\"button\" class=\"btn btn-sm\" 
-                                    onclick=\"setPrimaryPhoto({{ photo.id }})\" 
-                                    style=\"padding: 2px 5px; font-size: 0.7rem;\">
+                            <button type=\"button\" class=\"photo-action-btn btn-set-primary\" 
+                                    onclick=\"setPrimaryPhoto({{ photo.id }})\">
+                                <i class=\"fas fa-star\"></i>
                                 {{ get_text('set_primary_photo') }}
                             </button>
                             {% endif %}
-                            <button type=\"button\" class=\"btn btn-sm btn-danger\" 
-                                    onclick=\"deletePhoto({{ photo.id }})\" 
-                                    style=\"padding: 2px 5px; font-size: 0.7rem; margin-left: 5px;\">
+                            <button type=\"button\" class=\"photo-action-btn btn-delete\" 
+                                    onclick=\"deletePhoto({{ photo.id }})\">
+                                <i class=\"fas fa-trash\"></i>
                                 {{ get_text('delete') }}
                             </button>
                         </div>
@@ -363,6 +366,62 @@
     
     [data-theme="dark"] .file-name-display {
         color: var(--gray);
+    }
+    
+    /* Photo action buttons styles */
+    .photo-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        margin: 2px;
+    }
+    
+    .photo-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .photo-action-btn:active {
+        transform: translateY(0);
+    }
+    
+    .btn-set-primary {
+        background: linear-gradient(135deg, var(--accent), var(--primary));
+        color: white;
+    }
+    
+    .btn-delete {
+        background: linear-gradient(135deg, var(--danger), #c82333);
+        color: white;
+    }
+    
+    .photo-primary-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .photo-actions-container {
+        padding: 10px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        font-size: 0.85rem;
+        text-align: center;
+        border-radius: 0 0 10px 10px;
     }
 </style>
 
