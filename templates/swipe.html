@@ -193,19 +193,27 @@
         currentUserId = userData[0];
         
         console.log('Displaying user:', user);
-        console.log('User ID:', currentUserId);
+        console.log('Setting currentUserId to:', currentUserId);
         
         $('#username').text(user.username || 'Anonymous');
         $('#location').text((user.city || '') + (user.city && user.country ? ', ' : '') + (user.country || ''));
         $('#bio').text(user.bio || 'No bio provided');
         
-        // Set avatar
+        // Set avatar with error handling
         const avatarDiv = $('#userAvatar');
+        avatarDiv.removeClass('error-loading'); // Remove any previous error classes
+        
         if (user.photo) {
             if (user.photo.startsWith('http')) {
                 avatarDiv.css('background-image', 'url("' + user.photo + '")');
             } else {
-                avatarDiv.css('background-image', 'url("/static/uploads/' + user.photo + '")');
+                const photoUrl = "/static/uploads/" + user.photo;
+                console.log('Loading photo from:', photoUrl);
+                avatarDiv.css('background-image', 'url("' + photoUrl + '")')
+                         .on('error', function() {
+                            console.error('Failed to load photo:', photoUrl);
+                            $(this).addClass('error-loading');
+                         });
             }
         } else {
             avatarDiv.css('background-image', 'none');
@@ -236,6 +244,7 @@
                         .css('transition', 'none')
                         .css('display', 'block')
                         .css('opacity', '1')
+                        .removeClass('swipe-card-liked swipe-card-disliked') // Clear any animation classes
                         .show();
                         
         // Hide action hints
@@ -321,6 +330,11 @@
     }
     
     function performSwipe(action) {
+        console.log('Performing swipe action:', action);
+        
+        // Remove any existing animation classes
+        $('#currentCard').removeClass('swipe-card-liked swipe-card-disliked');
+        
         if (action === 'like') {
             $('#currentCard').addClass('swipe-card-liked');
         } else if (action === 'dislike') {
