@@ -330,8 +330,11 @@
                     alert('It\'s a match! ' + response.matched_user_name + ' liked you too!');
                 }
                 setTimeout(function() {
-                    loadNextUser();
-                    updateUndoButton();
+                    // Add a small delay to ensure the swipe is recorded in the database
+                    setTimeout(function() {
+                        loadNextUser();
+                        updateUndoButton();
+                    }, 100);
                 }, 300);
             },
             error: function(xhr, status, error) {
