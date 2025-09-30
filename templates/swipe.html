@@ -135,7 +135,7 @@
         console.log('Loading next user from API...');
         $.get('/api/users', function(data) {
             console.log('API returned:', data);
-            console.log('API response length:', data.length);
+            console.log('API response length:', data ? data.length : 'null');
             if (data && data.length > 0) {
                 console.log('Loaded ' + data.length + ' users from API');
                 // Reset the internal state for a single user
@@ -144,20 +144,32 @@
                 console.log('Calling showNextUser with new user data');
                 showNextUser();
             } else {
-                console.log('No more users to show - API returned empty array');
+                console.log('No more users to show - API returned empty array or null');
+                console.log('Data type:', typeof data);
+                console.log('Data value:', data);
                 $('#noUsersMessage').show();
                 $('.swipe-container').hide();
             }
         }).fail(function(xhr, status, error) {
             console.error('Error loading next user:', error);
             console.error('Response:', xhr.responseText);
+            console.error('Status code:', xhr.status);
+            console.error('XHR object:', xhr);
             alert('Error loading next user: ' + error);
         });
     }
 
     function showNextUser() {
-        console.log('Showing user at index:', currentIndex);
-        console.log('Total users:', users.length);
+        console.log('=== showNextUser called ===');
+        console.log('Current index:', currentIndex);
+        console.log('Total users in array:', users ? users.length : 'null');
+        console.log('Users array:', users);
+        
+        if (!users || users.length === 0) {
+            console.log('Users array is empty or null, calling loadNextUser');
+            loadNextUser();
+            return;
+        }
         
         if (currentIndex >= users.length) {
             // Try to load more users
@@ -181,6 +193,7 @@
         currentUserId = userData[0];
         
         console.log('Displaying user:', user);
+        console.log('User ID:', currentUserId);
         
         $('#username').text(user.username || 'Anonymous');
         $('#location').text((user.city || '') + (user.city && user.country ? ', ' : '') + (user.country || ''));
@@ -226,6 +239,8 @@
         // Hide action hints
         $('#likeHint').hide();
         $('#dislikeHint').hide();
+        
+        console.log('=== showNextUser completed ===');
     }
     
     function startDrag(e) {
