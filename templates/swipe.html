@@ -231,9 +231,11 @@
         
         console.log('Displaying user card for user ID:', currentUserId);
         
-        // Reset card position
+        // Reset card position and visibility
         $('#currentCard').css('transform', 'translateX(0) rotate(0deg)')
                         .css('transition', 'none')
+                        .css('display', 'block')
+                        .css('opacity', '1')
                         .show();
                         
         // Hide action hints
@@ -241,6 +243,9 @@
         $('#dislikeHint').hide();
         
         console.log('=== showNextUser completed ===');
+        
+        // Force browser repaint
+        $('#currentCard')[0].offsetHeight; // Trigger reflow
     }
     
     function startDrag(e) {
@@ -356,6 +361,8 @@
                         console.log('Calling loadNextUser...');
                         loadNextUser();
                         updateUndoButton();
+                        // Force UI update
+                        $('#currentCard').trigger('resize');
                     }, 100);
                 }, 300);
             },
