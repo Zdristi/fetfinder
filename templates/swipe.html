@@ -304,7 +304,26 @@
             // Ensure avatar is visible
             $('#userAvatar').css('visibility', 'visible')
                            .show();
+                           
+            // Scroll to top of card
+            $('html, body').animate({
+                scrollTop: card.offset().top - 100
+            }, 300);
+            
+            // Force DOM update
+            card.trigger('DOMNodeInserted');
         }, 10);
+        
+        // Additional DOM refresh
+        setTimeout(function() {
+            const card = $('#currentCard')[0];
+            if (card) {
+                // Force browser to redraw the element
+                card.style.display = 'none';
+                card.offsetHeight; // Trigger reflow
+                card.style.display = 'block';
+            }
+        }, 50);
     }
     
     function startDrag(e) {
