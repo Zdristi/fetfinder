@@ -190,6 +190,7 @@
                         {% endif %}
                         <div class=\"photo-actions-container\">
                             {% if photo.is_primary %}
+<<<<<<< HEAD
                             <div class=\"photo-primary-badge\">
                                 <i class=\"fas fa-star\"></i>
                                 <span>{{ get_text('primary') }}</span>
@@ -204,6 +205,19 @@
                             <button type=\"button\" class=\"photo-action-btn btn-delete\" 
                                     onclick=\"deletePhoto({{ photo.id }})\">
                                 <i class=\"fas fa-trash\"></i>
+=======
+                            <strong>{{ get_text('primary') }}</strong>
+                            {% else %}
+                            <button type=\"button\" class=\"btn btn-sm\" 
+                                    onclick=\"setPrimaryPhoto({{ photo.id }})\" 
+                                    style=\"padding: 2px 5px; font-size: 0.7rem; background: var(--primary); color: white; border: none; border-radius: 3px; cursor: pointer;\">
+                                {{ get_text('set_primary_photo') }}
+                            </button>
+                            {% endif %}
+                            <button type=\"button\" class=\"btn btn-sm\" 
+                                    onclick=\"deletePhoto({{ photo.id }})\" 
+                                    style=\"padding: 2px 5px; font-size: 0.7rem; margin-left: 5px; background: var(--danger); color: white; border: none; border-radius: 3px; cursor: pointer;\">
+>>>>>>> 5400793ebe63aac27717d828d5b11420f8f1d4f6
                                 {{ get_text('delete') }}
                             </button>
                         </div>
