@@ -196,19 +196,15 @@
                                 <span>{{ get_text('primary') }}</span>
                             </div>
                             {% else %}
-                            <button type=\"button\" class=\"photo-action-btn btn-set-primary\" 
-                                    onclick=\"setPrimaryPhoto({{ photo.id }})\">
-                            <strong>{{ get_text('primary') }}</strong>
-                            {% else %}
-                            <button type=\"button\" class=\"photo-action-btn btn-set-primary\" 
-                                    onclick=\"setPrimaryPhoto({{ photo.id }})\">
-                                <i class=\"fas fa-star\"></i>
+                            <button type="button" class="photo-action-btn btn-set-primary" 
+                                    onclick="setPrimaryPhoto({{ photo.id }})">
+                                <i class="fas fa-star"></i>
                                 {{ get_text('set_primary_photo') }}
                             </button>
                             {% endif %}
-                            <button type=\"button\" class=\"photo-action-btn btn-delete\" 
-                                    onclick=\"deletePhoto({{ photo.id }})\">
-                                <i class=\"fas fa-trash\"></i>
+                            <button type="button" class="photo-action-btn btn-delete" 
+                                    onclick="deletePhoto({{ photo.id }})">
+                                <i class="fas fa-trash"></i>
                                 {{ get_text('delete') }}
                             </button>
                         </div>
