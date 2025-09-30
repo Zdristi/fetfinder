@@ -80,11 +80,47 @@
             htmlElement.classList.add('theme-transition');
             
             if (htmlElement.getAttribute('data-theme') === 'dark') {
+                // Switch to light theme
                 htmlElement.setAttribute('data-theme', 'light');
                 themeIcon.className = 'fas fa-moon theme-icon';
+                
+                // Update CSS variables for light theme
+                document.documentElement.style.setProperty('--body-bg', '#f8f9fa');
+                document.documentElement.style.setProperty('--card-bg', '#ffffff');
+                document.documentElement.style.setProperty('--text-color', '#333');
+                document.documentElement.style.setProperty('--border-color', '#dee2e6');
+                document.documentElement.style.setProperty('--header-bg', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
+                document.documentElement.style.setProperty('--primary', '#667eea');
+                document.documentElement.style.setProperty('--secondary', '#764ba2');
+                document.documentElement.style.setProperty('--accent', '#f093fb');
+                document.documentElement.style.setProperty('--dark', '#333');
+                document.documentElement.style.setProperty('--gray', '#666');
+                document.documentElement.style.setProperty('--light-gray', '#f8f9fa');
+                document.documentElement.style.setProperty('--success', '#28a745');
+                document.documentElement.style.setProperty('--danger', '#dc3545');
+                document.documentElement.style.setProperty('--warning', '#ffc107');
+                document.documentElement.style.setProperty('--info', '#17a2b8');
             } else {
+                // Switch to dark theme
                 htmlElement.setAttribute('data-theme', 'dark');
                 themeIcon.className = 'fas fa-sun theme-icon';
+                
+                // Update CSS variables for dark theme
+                document.documentElement.style.setProperty('--body-bg', '#121212');
+                document.documentElement.style.setProperty('--card-bg', '#212529');
+                document.documentElement.style.setProperty('--text-color', '#f8f9fa');
+                document.documentElement.style.setProperty('--border-color', '#495057');
+                document.documentElement.style.setProperty('--header-bg', 'linear-gradient(135deg, #1a1a1a, #2d2d2d)');
+                document.documentElement.style.setProperty('--primary', '#667eea');
+                document.documentElement.style.setProperty('--secondary', '#764ba2');
+                document.documentElement.style.setProperty('--accent', '#f093fb');
+                document.documentElement.style.setProperty('--dark', '#f8f9fa');
+                document.documentElement.style.setProperty('--gray', '#adb5bd');
+                document.documentElement.style.setProperty('--light-gray', '#343a40');
+                document.documentElement.style.setProperty('--success', '#28a745');
+                document.documentElement.style.setProperty('--danger', '#dc3545');
+                document.documentElement.style.setProperty('--warning', '#ffc107');
+                document.documentElement.style.setProperty('--info', '#17a2b8');
             }
             
             // Remove transition class after animation completes
@@ -275,6 +311,85 @@
             color: white !important;
         }
         
+        /* Full dark theme styles */
+        [data-theme="dark"] {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --accent: #f093fb;
+            --dark: #f8f9fa;
+            --gray: #adb5bd;
+            --light-gray: #343a40;
+            --border-color: #495057;
+            --card-bg: #212529;
+            --body-bg: #121212;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --text-color: #f8f9fa;
+            --header-bg: #1a1a1a;
+        }
+        
+        [data-theme="dark"] body {
+            background-color: var(--body-bg);
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .header {
+            background: linear-gradient(135deg, var(--header-bg), #2d2d2d);
+        }
+        
+        [data-theme="dark"] .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+        }
+        
+        [data-theme="dark"] .card-header {
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        [data-theme="dark"] .form-control {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+        
+        [data-theme="dark"] .btn-outline {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+        }
+        
+        [data-theme="dark"] .btn-outline:hover {
+            background: white;
+            color: var(--primary);
+        }
+        
+        [data-theme="dark"] .nav-links a {
+            color: white;
+        }
+        
+        [data-theme="dark"] .nav-links a:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        [data-theme="dark"] .alert-success {
+            background: #155724;
+            color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        
+        [data-theme="dark"] .alert-danger {
+            background: #721c24;
+            color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        
         /* Styling for fetish and interest buttons */
         .fetish-btn, .interest-btn {
             display: inline-block;
@@ -317,6 +432,7 @@
         }
         
         /* Add our custom styles for the improved homepage */
+        /* Default CSS variables for light theme */
         :root {
             --primary: #667eea;
             --secondary: #764ba2;
@@ -331,15 +447,28 @@
             --danger: #dc3545;
             --warning: #ffc107;
             --info: #17a2b8;
+            --text-color: #333;
+            --header-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        body.dark-mode {
+        /* Dark theme CSS variables */
+        [data-theme="dark"] {
             --primary: #667eea;
             --secondary: #764ba2;
             --accent: #f093fb;
             --dark: #f8f9fa;
             --gray: #adb5bd;
             --light-gray: #343a40;
+            --border-color: #495057;
+            --card-bg: #212529;
+            --body-bg: #121212;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --text-color: #f8f9fa;
+            --header-bg: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+        }
             --border-color: #495057;
             --card-bg: #212529;
             --body-bg: #121212;
@@ -554,6 +683,102 @@
         }
 
         ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary);
+        }
+        
+        /* Theme transition */
+        .theme-transition {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Dark theme styles */
+        [data-theme="dark"] {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --accent: #f093fb;
+            --dark: #f8f9fa;
+            --gray: #adb5bd;
+            --light-gray: #343a40;
+            --border-color: #495057;
+            --card-bg: #212529;
+            --body-bg: #121212;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --text-color: #f8f9fa;
+            --header-bg: #1a1a1a;
+        }
+        
+        [data-theme="dark"] body {
+            background-color: var(--body-bg);
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .header {
+            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+        }
+        
+        [data-theme="dark"] .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+        }
+        
+        [data-theme="dark"] .card-header {
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        [data-theme="dark"] .form-control {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+        
+        [data-theme="dark"] .btn-outline {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+        }
+        
+        [data-theme="dark"] .btn-outline:hover {
+            background: white;
+            color: var(--primary);
+        }
+        
+        [data-theme="dark"] .nav-links a {
+            color: white;
+        }
+        
+        [data-theme="dark"] .nav-links a:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        [data-theme="dark"] .alert-success {
+            background: #155724;
+            color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        
+        [data-theme="dark"] .alert-danger {
+            background: #721c24;
+            color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        
+        [data-theme="dark"] ::-webkit-scrollbar-track {
+            background: var(--light-gray);
+        }
+        
+        [data-theme="dark"] ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+        }
+        
+        [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
             background: var(--secondary);
         }
     </style>
