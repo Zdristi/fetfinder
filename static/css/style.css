@@ -1,9 +1,9 @@
 /* FetDate Site Styles */
 :root {
-  --primary: #fd297b;
-  --secondary: #ff6b6b;
-  --accent: #4ecdc4;
-  --dark: #1a1a2e;
+  --primary: #667eea;  /* Purple */
+  --secondary: #764ba2;  /* Purple */
+  --accent: #f093fb;
+  --dark: #333;
   --light: #f8f9fa;
   --gray: #6c757d;
   --success: #28a745;
@@ -22,7 +22,7 @@
   --card-bg: #1e1e1e;
   --text-color: #e0e0e0;
   --border-color: #444444;
-  --header-bg: linear-gradient(135deg, #c41e65, #d64d4d);
+  --header-bg: linear-gradient(135deg, #1a1a1a, #2d2d2d);
 }
 
 [data-theme="dark"] .header,
