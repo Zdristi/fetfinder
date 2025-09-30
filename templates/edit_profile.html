@@ -38,7 +38,13 @@
         
         <div class="form-group">
             <label for="photo" class="form-label">{{ get_text('photo') }}</label>
-            <input type="file" id="photo" name="photo" class="form-control" accept="image/*">
+            <div class="file-input-wrapper">
+                <input type="file" id="photo" name="photo" class="file-input" accept="image/*" style="display: none;">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('photo').click();">
+                    <i class="fas fa-upload"></i> {{ get_text('choose_file') or 'Choose File' }}
+                </button>
+                <span id="photo-file-name" class="file-name-display">{{ get_text('no_file_chosen') or 'No file chosen' }}</span>
+            </div>
             {% if user.photo %}
                 <div style="margin-top: 10px;">
                     <img src="{{ url_for('static', filename='uploads/' + user.photo) if user.photo and not user.photo.startswith('http') else user.photo }}" 
@@ -161,8 +167,14 @@
             
             <div class=\"form-group\">
                 <label for=\"additional_photos\" class=\"form-label\">{{ get_text('upload_photos') }}</label>
-                <input type=\"file\" id=\"additional_photos\" name=\"additional_photos\" class=\"form-control\" 
-                       accept=\"image/*\" multiple>
+                <div class=\"file-input-wrapper\">
+                    <input type=\"file\" id=\"additional_photos\" name=\"additional_photos\" class=\"file-input\" 
+                           accept=\"image/*\" multiple style=\"display: none;\">
+                    <button type=\"button\" class=\"btn btn-outline\" onclick=\"document.getElementById('additional_photos').click();\">
+                        <i class=\"fas fa-upload\"></i> {{ get_text('choose_files') or 'Choose Files' }}
+                    </button>
+                    <span id=\"additional-photos-file-name\" class=\"file-name-display\">{{ get_text('no_files_chosen') or 'No files chosen' }}</span>
+                </div>
                 <small style=\"color: var(--gray);\">{{ get_text('ctrl_click_multiple') or 'Ctrl+Click to select multiple files' }}</small>
             </div>
             
@@ -334,6 +346,24 @@
     [data-theme="dark"] .card-title {
         color: white !important;
     }
+    
+    .file-input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .file-name-display {
+        font-size: 0.9rem;
+        color: var(--gray);
+        max-width: 100%;
+        word-break: break-word;
+    }
+    
+    [data-theme="dark"] .file-name-display {
+        color: var(--gray);
+    }
 </style>
 
 <script>
@@ -407,6 +437,29 @@
             });
         }
     }
+    
+    // Update file name display when a file is selected
+    document.getElementById('photo').addEventListener('change', function() {
+        const fileNameSpan = document.getElementById('photo-file-name');
+        if (this.files && this.files[0]) {
+            fileNameSpan.textContent = this.files[0].name;
+        } else {
+            fileNameSpan.textContent = '{{ get_text("no_file_chosen") or "No file chosen" }}';
+        }
+    });
+    
+    document.getElementById('additional_photos').addEventListener('change', function() {
+        const fileNameSpan = document.getElementById('additional-photos-file-name');
+        if (this.files && this.files.length > 0) {
+            if (this.files.length === 1) {
+                fileNameSpan.textContent = this.files[0].name;
+            } else {
+                fileNameSpan.textContent = this.files.length + ' files selected';
+            }
+        } else {
+            fileNameSpan.textContent = '{{ get_text("no_files_chosen") or "No files chosen" }}';
+        }
+    });
 </script>
 
 {% endblock %}

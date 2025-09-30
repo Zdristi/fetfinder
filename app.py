@@ -244,6 +244,10 @@ LANGUAGES = {
         'active_users': 'Active Users',
         'successful_matches': 'Successful Matches',
         'satisfaction_rate': 'Satisfaction Rate',
+        'choose_file': 'Choose File',
+        'no_file_chosen': 'No file chosen',
+        'choose_files': 'Choose Files',
+        'no_files_chosen': 'No files chosen',
         'faq': 'FAQ',
         'support': 'Support',
         'frequently_asked_questions': 'Frequently Asked Questions',
@@ -479,7 +483,11 @@ LANGUAGES = {
         'join_thousands': 'Присоединяйтесь к тысячам довольных участников!',
         'active_users': 'Активные пользователи',
         'successful_matches': 'Успешные совпадения',
-        'satisfaction_rate': 'Уровень удовлетворенности'
+        'satisfaction_rate': 'Уровень удовлетворенности',
+        'choose_file': 'Выберите файл',
+        'no_file_chosen': 'Файл не выбран',
+        'choose_files': 'Выберите файлы',
+        'no_files_chosen': 'Файлы не выбраны'
     }
 }
 
