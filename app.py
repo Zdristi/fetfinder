@@ -17,14 +17,13 @@ import hashlib
 # Create Flask app
 app = Flask(__name__)
 
-# Add cache control headers to prevent browser caching of HTML pages
+# Add cache control headers to prevent browser caching
 @app.after_request
 def after_request(response):
-    # Don't cache HTML responses
-    if response.content_type.startswith('text/html'):
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
+    # Prevent caching for all responses to avoid any kind of cached content showing
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
     return response
 
 
@@ -1604,7 +1603,8 @@ def get_static_version(filename):
         file_path = os.path.join(app.static_folder, filename)
         if os.path.exists(file_path):
             mtime = os.path.getmtime(file_path)
-            return f"?v={int(mtime)}"
+            # Include full timestamp to ensure uniqueness
+            return f"?v={int(mtime * 1000000)}"  # Use microseconds to make unique
         else:
             return "?v=1.0"
     except:
