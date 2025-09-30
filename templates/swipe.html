@@ -329,6 +329,7 @@
                 action: action
             }),
             success: function(response) {
+                console.log('Swipe processed successfully, response:', response);
                 currentIndex++;
                 if (response.mutual_match) {
                     alert('It\'s a match! ' + response.matched_user_name + ' liked you too!');
@@ -345,6 +346,8 @@
             },
             error: function(xhr, status, error) {
                 console.error('Error processing swipe:', error);
+                console.error('XHR object:', xhr);
+                console.error('Status:', status);
                 alert('Error processing swipe: ' + error);
                 // Return card to original position
                 $('#currentCard').removeClass('swipe-card-liked swipe-card-disliked')
