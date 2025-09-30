@@ -17,6 +17,16 @@ import hashlib
 # Create Flask app
 app = Flask(__name__)
 
+# Add cache control headers to prevent browser caching of HTML pages
+@app.after_request
+def after_request(response):
+    # Don't cache HTML responses
+    if response.content_type.startswith('text/html'):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
+
 # Load configuration
 app.config.from_pyfile('config.py', silent=True)
 
