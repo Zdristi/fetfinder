@@ -132,15 +132,17 @@
 
     function loadNextUser() {
         // Load a single user instead of the entire list
+        console.log('Loading next user from API...');
         $.get('/api/users', function(data) {
+            console.log('API returned:', data);
             if (data && data.length > 0) {
+                console.log('Loaded ' + data.length + ' users from API');
                 // Reset the internal state for a single user
                 users = data;
                 currentIndex = 0;
                 showNextUser();
             } else {
-                // No more users to show
-                console.log('No more users to show');
+                console.log('No more users to show - API returned empty array');
                 $('#noUsersMessage').show();
                 $('.swipe-container').hide();
             }
@@ -157,6 +159,7 @@
         
         if (currentIndex >= users.length) {
             // Try to load more users
+            console.log('Current index exceeds array length, loading next user from API');
             loadNextUser();
             return;
         }
