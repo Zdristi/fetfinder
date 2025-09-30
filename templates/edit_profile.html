@@ -190,17 +190,17 @@
                         {% endif %}
                         <div style=\"padding: 5px; background: rgba(0,0,0,0.7); color: white; font-size: 0.8rem; text-align: center;\">
                             {% if photo.is_primary %}
-                            <strong>{{ get_text('primary') or 'Primary' }}</strong>
+                            <strong>{{ get_text('primary') }}</strong>
                             {% else %}
                             <button type=\"button\" class=\"btn btn-sm\" 
                                     onclick=\"setPrimaryPhoto({{ photo.id }})\" 
-                                    style=\"padding: 2px 5px; font-size: 0.7rem;\">
+                                    style=\"padding: 2px 5px; font-size: 0.7rem; background: var(--primary); color: white; border: none; border-radius: 3px; cursor: pointer;\">
                                 {{ get_text('set_primary_photo') }}
                             </button>
                             {% endif %}
-                            <button type=\"button\" class=\"btn btn-sm btn-danger\" 
+                            <button type=\"button\" class=\"btn btn-sm\" 
                                     onclick=\"deletePhoto({{ photo.id }})\" 
-                                    style=\"padding: 2px 5px; font-size: 0.7rem; margin-left: 5px;\">
+                                    style=\"padding: 2px 5px; font-size: 0.7rem; margin-left: 5px; background: var(--danger); color: white; border: none; border-radius: 3px; cursor: pointer;\">
                                 {{ get_text('delete') }}
                             </button>
                         </div>
