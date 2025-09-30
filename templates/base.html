@@ -134,8 +134,15 @@
                     <a href="{{ url_for('swipe') }}">{{ get_text('discover') }}</a>
                     <a href="{{ url_for('chat_list') }}">{{ get_text('chat') }}</a>
                     <a href="{{ url_for('premium') }}">Premium</a>
-                    <a href="{{ url_for('faq') }}">{{ get_text('faq') or 'FAQ' }}</a>
-                    <a href="{{ url_for('support_chat') }}">{{ get_text('support') or 'Support' }}</a>
+                    <div class="faq-menu" style="position: relative; display: inline-block;">
+                        <a href="{{ url_for('faq') }}" class="faq-menu-link" style="text-decoration: none; color: inherit;">
+                            {{ get_text('faq') or 'FAQ' }}
+                        </a>
+                        <div class="faq-dropdown" style="display: none; position: absolute; top: 100%; left: 0; background: var(--card-bg); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; min-width: 150px;">
+                            <a href="{{ url_for('faq') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('faq') or 'FAQ' }}</a>
+                            <a href="{{ url_for('support_chat') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none;">{{ get_text('support') or 'Support' }}</a>
+                        </div>
+                    </div>
 
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('admin') }}">Admin Panel</a>
@@ -309,6 +316,37 @@
                 }
             }
         });
+        
+        // FAQ menu dropdown
+        const faqMenu = document.querySelector('.faq-menu');
+        const faqDropdown = document.querySelector('.faq-dropdown');
+        
+        if (faqMenu && faqDropdown) {
+            // Show dropdown on hover
+            faqMenu.addEventListener('mouseenter', function() {
+                faqDropdown.style.display = 'block';
+            });
+            
+            // Hide dropdown when leaving menu
+            faqMenu.addEventListener('mouseleave', function() {
+                faqDropdown.style.display = 'none';
+            });
+            
+            // Also show dropdown when clicking on FAQ link on mobile
+            const faqLink = document.querySelector('.faq-menu-link');
+            let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints;
+            
+            if (isTouchDevice) {
+                faqLink.addEventListener('click', function(e) {
+                    if (faqDropdown.style.display === 'block') {
+                        faqDropdown.style.display = 'none';
+                    } else {
+                        faqDropdown.style.display = 'block';
+                    }
+                    e.preventDefault();
+                });
+            }
+        }
         
         // Mark all notifications as read
         function markAllNotificationsAsRead() {
