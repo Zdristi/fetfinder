@@ -165,6 +165,11 @@
         console.log('Total users in array:', users ? users.length : 'null');
         console.log('Users array:', users);
         
+        // Reset card completely before showing new user
+        if (typeof resetCard === 'function') {
+            resetCard();
+        }
+        
         if (!users || users.length === 0) {
             console.log('Users array is empty or null, calling loadNextUser');
             loadNextUser();
@@ -239,22 +244,67 @@
         
         console.log('Displaying user card for user ID:', currentUserId);
         
-        // Reset card position and visibility
-        $('#currentCard').css('transform', 'translateX(0) rotate(0deg)')
-                        .css('transition', 'none')
-                        .css('display', 'block')
-                        .css('opacity', '1')
-                        .removeClass('swipe-card-liked swipe-card-disliked') // Clear any animation classes
+        // Completely reset card animations and styles
+        $('#currentCard').removeClass('swipe-card-liked swipe-card-disliked')
+                        .removeAttr('style') // Remove all inline styles
+                        .css({
+                            'transform': 'translateX(0) rotate(0deg)',
+                            'transition': 'none',
+                            'display': 'block',
+                            'opacity': '1',
+                            'position': 'relative',
+                            'margin': '20px auto',
+                            'max-width': '400px'
+                        })
                         .show();
-                        
+        
+        // Reset avatar specifically
+        $('#userAvatar').removeAttr('style')
+                        .css({
+                            'width': '100%',
+                            'height': '300px',
+                            'background-size': 'cover',
+                            'background-position': 'center',
+                            'border-radius': '10px 10px 0 0'
+                        });
+        
+        // Reset user info container
+        $('.user-info').removeAttr('style')
+                      .css({
+                          'padding': '20px'
+                      });
+        
+        // Force reflow
+        $('#currentCard')[0].offsetHeight;
+        
+        // Apply final styles
+        $('#currentCard').css({
+            'transform': 'translateX(0) rotate(0deg)',
+            'transition': 'none',
+            'display': 'block',
+            'opacity': '1'
+        });
+        
         // Hide action hints
         $('#likeHint').hide();
         $('#dislikeHint').hide();
         
         console.log('=== showNextUser completed ===');
         
-        // Force browser repaint
-        $('#currentCard')[0].offsetHeight; // Trigger reflow
+        // Force browser repaint and ensure visibility
+        setTimeout(function() {
+            const card = $('#currentCard');
+            card.css('visibility', 'visible')
+                .css('display', 'block')
+                .show();
+            
+            // Force reflow
+            card[0].offsetHeight;
+            
+            // Ensure avatar is visible
+            $('#userAvatar').css('visibility', 'visible')
+                           .show();
+        }, 10);
     }
     
     function startDrag(e) {
