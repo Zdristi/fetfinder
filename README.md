@@ -1,4 +1,4 @@
-# FetDate Dating Site
+# FetDate
 
 A modern dating website built with Python and Flask, featuring a Tinder-like swipe interface where users can find matches based on shared interests and fetishes.
 
