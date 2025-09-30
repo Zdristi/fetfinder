@@ -835,15 +835,35 @@ def api_users():
         from models import UserSwipe
         # Get all users except current user and blocked users
         # Exclude users that current user has already swiped on
+        current_user_id = int(current_user.id)
+        print(f"Fetching users for current user ID: {current_user_id}")
+        
+        # Check how many swipe records exist for this user
+        swipe_count = UserSwipe.query.filter_by(swiper_id=current_user_id).count()
+        print(f"User {current_user_id} has swiped on {swipe_count} users")
+        
+        # Get IDs of users this user has swiped on
+        swiped_users = UserSwipe.query.filter_by(swiper_id=current_user_id).all()
+        swiped_user_ids = [swipe.swipee_id for swipe in swiped_users]
+        print(f"User {current_user_id} has swiped on user IDs: {swiped_user_ids}")
+        
         subquery = db.session.query(UserSwipe.swipee_id).filter(
-            UserSwipe.swiper_id == int(current_user.id)
+            UserSwipe.swiper_id == current_user_id
         ).subquery()
         
+        all_users_count = UserModel.query.filter(
+            UserModel.id != current_user_id,
+            UserModel.is_blocked == False
+        ).count()
+        print(f"Total users excluding current user and blocked: {all_users_count}")
+        
         db_users = UserModel.query.filter(
-            UserModel.id != int(current_user.id),
+            UserModel.id != current_user_id,
             UserModel.is_blocked == False,
             ~UserModel.id.in_(db.session.query(subquery.c.swipee_id))
         ).all()
+        
+        print(f"Users after filtering swiped: {len(db_users)}")
         
         users = []
         for user in db_users:
