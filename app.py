@@ -828,6 +828,52 @@ def users():
     return render_template('users.html', users=users_dict)
 
 
+@app.route('/api/users/debug/all')
+@login_required
+def api_users_debug_all():
+    """Debug endpoint to show all users without filtering"""
+    try:
+        current_user_id = int(current_user.id)
+        print(f"Debug: Fetching ALL users for current user ID: {current_user_id}")
+        
+        # Get ALL users except current user (no filtering at all)
+        db_users = UserModel.query.filter(
+            UserModel.id != current_user_id
+        ).all()
+        
+        print(f"Debug: Total users found (excluding current): {len(db_users)}")
+        
+        users = []
+        for user in db_users:
+            try:
+                user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
+                user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+                users.append([
+                    str(user.id),
+                    {
+                        'username': user.username or 'Anonymous',
+                        'email': user.email or '',
+                        'photo': user.photo or '',
+                        'country': user.country or '',
+                        'city': user.city or '',
+                        'bio': user.bio or '',
+                        'fetishes': user_fetishes,
+                        'interests': user_interests,
+                        'created_at': user.created_at.isoformat() if user.created_at else ''
+                    }
+                ])
+            except Exception as e:
+                print(f"Error processing user {user.id}: {e}")
+                continue
+        
+        print(f"Debug: Returning {len(users)} users for debugging")
+        return jsonify(users)
+    except Exception as e:
+        print(f"Error in api_users_debug_all: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify([]), 500
+
 @app.route('/api/users')
 @login_required
 def api_users():
