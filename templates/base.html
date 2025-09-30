@@ -11,14 +11,14 @@
 </head>
 <body>
     <div class="header">
-        <div class="header-content">
-            <div class="logo">
-                <a href="{{ url_for('home') }}">
-                    <i class="fas fa-heart"></i>
+        <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; padding: 1rem 2rem;">
+            <div class="logo" style="flex: 0 0 auto;">
+                <a href="{{ url_for('home') }}" style="display: flex; align-items: center; text-decoration: none; color: white; font-size: 1.5rem; font-weight: bold;">
+                    <i class="fas fa-heart" style="margin-right: 10px; color: #ff6b6b;"></i>
                     FetDate
                 </a>
             </div>
-            <div class="nav-links">
+            <div class="nav-links" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: flex-end; flex: 1 1 auto;">
                 {% if current_user.is_authenticated %}
                     <a href="{{ url_for('profile') }}">{{ get_text('profile') }}</a>
                     <a href="{{ url_for('swipe') }}">{{ get_text('discover') }}</a>
@@ -31,25 +31,6 @@
                         <a href="{{ url_for('admin') }}">Admin Panel</a>
                     {% endif %}
                     <a href="{{ url_for('logout') }}">{{ get_text('logout') }} ({{ current_user.username }})</a>
-                
-                <!-- Notifications dropdown -->
-                <div class="notification-dropdown" style="position: relative; display: inline-block;">
-                    <button class="btn" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 8px 15px; font-size: 0.9rem;" onclick="toggleNotifications()">
-                        <i class="fas fa-bell"></i>
-                        <span id="notification-count" style="display: none; position: absolute; top: -5px; right: -5px; background: var(--primary); color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center;"></span>
-                    </button>
-                    <div id="notificationDropdown" style="display: none; position: absolute; top: 100%; right: 0; background: var(--card-bg); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; min-width: 300px; max-height: 500px; overflow-y: auto;">
-                        <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                            <h4 style="margin: 0;">{{ get_text('notifications') or 'Notifications' }}</h4>
-                            <button id="mark-all-read-btn" type="button" class="btn btn-sm" style="padding: 5px 10px; font-size: 0.8rem; display: none;" onclick="markAllNotificationsAsRead()">{{ get_text('mark_all_read') or 'Mark all read' }}</button>
-                        </div>
-                        <div id="notifications-list" style="max-height: 400px; overflow-y: auto;">
-                            <!-- Notifications will be loaded here -->
-                        </div>
-                    </div>
-                </div>
-</file>
-</file>
                 {% else %}
                     <a href="{{ url_for('login') }}">{{ get_text('login') }}</a>
                 {% endif %}
@@ -99,13 +80,11 @@
             htmlElement.classList.add('theme-transition');
             
             if (htmlElement.getAttribute('data-theme') === 'dark') {
-                htmlElement.removeAttribute('data-theme');
-                themeIcon.className = 'fas fa-moon';
-                localStorage.setItem('theme', 'light');
+                htmlElement.setAttribute('data-theme', 'light');
+                themeIcon.className = 'fas fa-moon theme-icon';
             } else {
                 htmlElement.setAttribute('data-theme', 'dark');
-                themeIcon.className = 'fas fa-sun';
-                localStorage.setItem('theme', 'dark');
+                themeIcon.className = 'fas fa-sun theme-icon';
             }
             
             // Remove transition class after animation completes
@@ -114,150 +93,174 @@
             }, 300);
         }
         
-        // Apply saved theme on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('theme');
-            const themeIcon = document.getElementById('themeIcon');
-            
-            if (savedTheme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                themeIcon.className = 'fas fa-sun';
-            } else {
-                themeIcon.className = 'fas fa-moon';
-            }
-        });
-        
+        // Language menu toggle
         function toggleLanguageMenu() {
             const menu = document.getElementById('languageMenu');
             menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         }
         
-        // Close menu when clicking outside
-        window.onclick = function(event) {
+        // Close language menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const languageSwitcher = document.querySelector('.language-switcher');
             const menu = document.getElementById('languageMenu');
-            const button = event.target.closest('.language-switcher');
-            if (menu && !button) {
+            
+            if (menu && languageSwitcher && !languageSwitcher.contains(event.target)) {
                 menu.style.display = 'none';
             }
-            
-            // Close notification dropdown when clicking outside
-            const notificationDropdown = document.getElementById('notificationDropdown');
-            const notificationButton = event.target.closest('.notification-dropdown');
-            if (notificationDropdown && !notificationButton) {
-                notificationDropdown.style.display = 'none';
-            }
-        }
+        });
         
-        // Notification functions
+        // Close language menu when pressing Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const menu = document.getElementById('languageMenu');
+                if (menu) {
+                    menu.style.display = 'none';
+                }
+            }
+        });
+        
+        // Notifications dropdown with animation
         function toggleNotifications() {
             const dropdown = document.getElementById('notificationDropdown');
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-            
-            if(dropdown.style.display === 'block') {
-                loadNotifications();
+            if (dropdown) {
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+                
+                // Add animation
+                if (dropdown.style.display === 'block') {
+                    dropdown.style.opacity = '0';
+                    dropdown.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        dropdown.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                        dropdown.style.opacity = '1';
+                        dropdown.style.transform = 'translateY(0)';
+                    }, 10);
+                }
             }
         }
         
-        function loadNotifications() {
-            fetch('/api/notifications')
-                .then(response => response.json())
-                .then(data => {
-                    const notificationsList = document.getElementById('notifications-list');
-                    const notificationCount = document.getElementById('notification-count');
-                    
-                    // Clear current notifications
-                    notificationsList.innerHTML = '';
-                    
-                    if(data.length > 0) {
-                        // Show notification count (show 9+ if more than 9)
-                        const displayCount = data.length > 9 ? '9+' : data.length;
-                        notificationCount.textContent = displayCount;
-                        notificationCount.style.display = 'flex';
-                        
-                        // Show the "Mark all read" button
-                        document.getElementById('mark-all-read-btn').style.display = 'block';
-                        
-                        // Add each notification to the list
-                        data.forEach(notification => {
-                            const notificationDiv = document.createElement('div');
-                            notificationDiv.className = 'notification-item';
-                            notificationDiv.style.padding = '10px 15px';
-                            notificationDiv.style.borderBottom = '1px solid var(--border-color)';
-                            notificationDiv.style.cursor = 'pointer';
-                            notificationDiv.style.background = notification.is_read ? 'transparent' : 'var(--bg-color)';
-                            
-                            notificationDiv.innerHTML = `
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                    <div style="flex: 1;">
-                                        <div style="font-weight: bold; margin-bottom: 5px;">${notification.title}</div>
-                                        <div style="font-size: 0.9rem; color: var(--gray); margin-bottom: 5px;">${notification.content}</div>
-                                        <div style="font-size: 0.8rem; color: var(--gray);">${new Date(notification.timestamp).toLocaleString()}</div>
-                                    </div>
-                                    ${!notification.is_read ? '<div style="width: 8px; height: 8px; background: var(--primary); border-radius: 50%; margin-left: 10px;"></div>' : ''}
-                                </div>
-                            `;
-                            
-                            if (!notification.is_read) {
-                                notificationDiv.style.fontWeight = 'bold';
-                            }
-                            
-                            notificationDiv.onclick = function() {
-                                markNotificationAsRead(notification.id);
-                                if (notification.url) {
-                                    window.location.href = notification.url;
-                                }
-                                notificationDiv.style.background = 'transparent';
-                                notificationDiv.style.fontWeight = 'normal';
-                            };
-                            
-                            notificationsList.appendChild(notificationDiv);
-                        });
-                    } else {
-                        // No notifications message
-                        notificationCount.style.display = 'none';
-                        document.getElementById('mark-all-read-btn').style.display = 'none';
-                        notificationsList.innerHTML = '<div style="padding: 15px; text-align: center; color: var(--gray);">{{ get_text('no_notifications') or 'No notifications yet' }}</div>';
-                    }
-                })
-                .catch(error => console.error('Error loading notifications:', error));
-        }
+        // Close notifications dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const notificationDropdown = document.querySelector('.notification-dropdown');
+            const dropdown = document.getElementById('notificationDropdown');
+            
+            if (dropdown && notificationDropdown && !notificationDropdown.contains(event.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
         
-        function markNotificationAsRead(notificationId) {
-            fetch(`/api/notifications/${notificationId}/read`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+        // Close notifications dropdown when pressing Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const dropdown = document.getElementById('notificationDropdown');
+                if (dropdown) {
+                    dropdown.style.display = 'none';
                 }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    // Reload notifications to update the count
-                    setTimeout(loadNotifications, 500);
-                }
-            })
-            .catch(error => console.error('Error marking notification as read:', error));
-        }
+            }
+        });
         
+        // Mark all notifications as read
         function markAllNotificationsAsRead() {
-            fetch('/api/notifications/read-all', {
+            fetch('/api/mark_all_notifications_read', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 }
             })
             .then(response => response.json())
             .then(data => {
-                if(data.status === 'success') {
+                if (data.status === 'success') {
+                    // Hide notification count
+                    const countElement = document.getElementById('notification-count');
+                    if (countElement) {
+                        countElement.style.display = 'none';
+                    }
+                    
+                    // Update notification list
                     loadNotifications();
                 }
             })
-            .catch(error => console.error('Error marking all notifications as read:', error));
+            .catch(error => {
+                console.error('Error marking all notifications as read:', error);
+            });
         }
         
-        // Check for new notifications every 30 seconds
-        setInterval(function() {
-            if(document.visibilityState === 'visible') {
+        // Load notifications
+        function loadNotifications() {
+            fetch('/api/notifications')
+            .then(response => response.json())
+            .then(data => {
+                const notificationsList = document.getElementById('notifications-list');
+                const countElement = document.getElementById('notification-count');
+                const markAllReadBtn = document.getElementById('mark-all-read-btn');
+                
+                if (notificationsList && data.length > 0) {
+                    notificationsList.innerHTML = '';
+                    
+                    // Show notification count
+                    if (countElement) {
+                        const unreadCount = data.filter(n => !n.is_read).length;
+                        if (unreadCount > 0) {
+                            countElement.textContent = unreadCount;
+                            countElement.style.display = 'flex';
+                        } else {
+                            countElement.style.display = 'none';
+                        }
+                    }
+                    
+                    // Show mark all read button if there are unread notifications
+                    if (markAllReadBtn) {
+                        const hasUnread = data.some(n => !n.is_read);
+                        markAllReadBtn.style.display = hasUnread ? 'inline-block' : 'none';
+                    }
+                    
+                    // Add notifications to list
+                    data.forEach(notification => {
+                        const notificationElement = document.createElement('div');
+                        notificationElement.className = 'notification-item';
+                        notificationElement.style.padding = '15px';
+                        notificationElement.style.borderBottom = '1px solid var(--border-color)';
+                        
+                        if (!notification.is_read) {
+                            notificationElement.style.background = 'rgba(102, 126, 234, 0.1)';
+                        }
+                        
+                        notificationElement.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h4 style="margin: 0; font-size: 1.1rem;">${notification.title}</h4>
+                                <span style="font-size: 0.8rem; color: var(--gray);">${new Date(notification.timestamp).toLocaleDateString()}</span>
+                            </div>
+                            <p style="margin: 0 0 15px 0; color: var(--text-color);">${notification.content}</p>
+                            ${notification.url ? `<a href="${notification.url}" class="btn btn-sm" style="padding: 5px 10px; font-size: 0.8rem;">View</a>` : ''}
+                        `;
+                        
+                        notificationsList.appendChild(notificationElement);
+                    });
+                } else if (notificationsList) {
+                    // No notifications
+                    notificationsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--gray);">No notifications yet</div>';
+                    
+                    if (countElement) {
+                        countElement.style.display = 'none';
+                    }
+                    
+                    if (markAllReadBtn) {
+                        markAllReadBtn.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+            });
+        }
+        
+        // Load notifications when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotifications();
+        });
+        
+        // Periodically check for new notifications (every 30 seconds)
+        setInterval(() => {
+            if (document.hidden === false) {
                 loadNotifications();
             }
         }, 30000);
@@ -554,7 +557,5 @@
             background: var(--secondary);
         }
     </style>
-    
-
 </body>
 </html>
