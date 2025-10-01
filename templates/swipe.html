@@ -467,16 +467,12 @@
         // Apply transform to the card element with proper positioning
         const card = $('#currentCard');
         
-        // Remove previous transform styles to avoid conflicts
+        // Only update the transform and opacity during drag
+        // Don't override other styles that might be set by showNextUser
         card.css({
             'transform': 'translateX(' + currentX + 'px) rotate(' + rotation + 'deg)',
             'opacity': Math.max(0.7, opacity), // Minimum opacity 0.7
-            'transition': 'none',
-            'display': 'block',
-            'position': 'relative',
-            'margin': '20px auto',
-            'max-width': '400px',
-            'z-index': '1000'
+            'transition': 'none'
         });
         
         // Also update parent containers if needed
