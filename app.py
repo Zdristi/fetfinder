@@ -550,7 +550,9 @@ LANGUAGES = {
         'write_message_placeholder': 'Напишите ваше сообщение здесь...',
         'cancel': 'Отмена',
         'send_message': 'Отправить сообщение',
-        'note': 'Примечание'
+        'note': 'Примечание',
+        'continue_swiping': 'Продолжить свайпинг',
+        'view_matches': 'Просмотреть совпадения'
     }
 }
 
