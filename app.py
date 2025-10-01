@@ -197,6 +197,7 @@ LANGUAGES = {
         'please_complete_profile': 'Please complete your profile',
         'invalid_credentials': 'Invalid username or password',
         'username_exists': 'Username already exists',
+        'email_exists': 'A user with this email already exists. Please use a different email address.',
         'registration_success': 'Registration successful! Please log in.',
         'already_have_account': 'Already have an account?',
         'no_account': 'Don\'t have an account?',
@@ -378,6 +379,7 @@ LANGUAGES = {
         'please_complete_profile': 'Пожалуйста, завершите свой профиль',
         'invalid_credentials': 'Неверное имя пользователя или пароль',
         'username_exists': 'Имя пользователя уже существует',
+        'email_exists': 'Пользователь с этой электронной почтой уже зарегестрирован. Пожалуйста, используйте другой адрес электронной почты.',
         'registration_success': 'Регистрация успешна! Пожалуйста, войдите.',
         'already_have_account': 'Уже есть аккаунт?',
         'no_account': 'Нет аккаунта?',
@@ -605,6 +607,12 @@ def register():
             flash(get_text('username_exists'))
             return redirect(url_for('register'))
         
+        # Check if email already exists
+        existing_email = UserModel.query.filter_by(email=email).first()
+        if existing_email:
+            flash(get_text('email_exists') or 'A user with this email already exists')
+            return redirect(url_for('register'))
+        
         # Create new user
         user = UserModel(
             username=username,
@@ -617,10 +625,18 @@ def register():
             user.is_admin = True
         
         db.session.add(user)
-        db.session.commit()
-        
-        flash(get_text('registration_success'))
-        return redirect(url_for('login'))
+        try:
+            db.session.commit()
+            flash(get_text('registration_success'))
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            # Check if it's a duplicate email error
+            if 'duplicate key value violates unique constraint' in str(e) and 'email' in str(e):
+                flash(get_text('email_exists') or 'A user with this email already exists')
+            else:
+                flash('An error occurred during registration. Please try again.')
+            return redirect(url_for('register'))
     
     return render_template('register.html')
 

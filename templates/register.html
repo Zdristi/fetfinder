@@ -8,6 +8,20 @@
         <h2 class="card-title">{{ get_text('signup') }}</h2>
     </div>
     
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div id="flash-messages" style="margin: 0 20px 20px 20px; padding: 10px; border-radius: 5px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+                {% for message in messages %}
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div><i class="fas fa-exclamation-triangle"></i> {{ message }}</div>
+                        <button type="button" onclick="this.parentElement.parentElement.style.display='none';" style="background: none; border: none; color: #721c24; font-size: 1.2em; cursor: pointer;">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
     <form method="POST">
         <div class="form-group">
             <label for="username" class="form-label">{{ get_text('username') }} *</label>
@@ -35,4 +49,14 @@
         </p>
     </div>
 </div>
+
+<script>
+// Auto-hide flash messages after 5 seconds
+setTimeout(function() {
+    const flashContainer = document.getElementById('flash-messages');
+    if (flashContainer) {
+        flashContainer.style.display = 'none';
+    }
+}, 5000);
+</script>
 {% endblock %}
