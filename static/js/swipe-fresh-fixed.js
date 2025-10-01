@@ -133,15 +133,50 @@ class SwipeSystem {
     const avatarElem = document.getElementById('userAvatar');
     if (avatarElem) {
       if (user.photo) {
-        const photoUrl = user.photo.startsWith('http') ? 
-          user.photo : 
-          `/static/uploads/${user.photo}`;
+        // Handle both absolute URLs and relative paths
+        let photoUrl;
+        if (user.photo.startsWith('http')) {
+          photoUrl = user.photo;
+        } else if (user.photo.startsWith('/')) {
+          photoUrl = user.photo; // Already a complete path
+        } else {
+          photoUrl = `/static/uploads/${user.photo}`;
+        }
+        
+        // Set background image for the avatar
         avatarElem.style.backgroundImage = `url('${photoUrl}')`;
-        avatarElem.textContent = '';
+        avatarElem.style.backgroundSize = 'cover';
+        avatarElem.style.backgroundPosition = 'center';
+        avatarElem.textContent = ''; // Clear any text content
+        
+        // Add error handling for image loading
+        const img = new Image();
+        img.onload = function() {
+          // Image loaded successfully, make sure it's displayed properly
+          avatarElem.style.backgroundImage = `url('${photoUrl}')`;
+        };
+        img.onerror = function() {
+          // If image fails to load, show gradient with first letter
+          avatarElem.style.backgroundImage = 'none';
+          avatarElem.textContent = user.username ? user.username.charAt(0).toUpperCase() : '?';
+          avatarElem.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+          avatarElem.style.display = 'flex';
+          avatarElem.style.alignItems = 'center';
+          avatarElem.style.justifyContent = 'center';
+          avatarElem.style.fontSize = '4rem';
+          avatarElem.style.color = 'white';
+        };
+        img.src = photoUrl;
       } else {
+        // No photo - show gradient with first letter
         avatarElem.style.backgroundImage = 'none';
         avatarElem.textContent = user.username ? user.username.charAt(0).toUpperCase() : '?';
         avatarElem.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+        avatarElem.style.display = 'flex';
+        avatarElem.style.alignItems = 'center';
+        avatarElem.style.justifyContent = 'center';
+        avatarElem.style.fontSize = '4rem';
+        avatarElem.style.color = 'white';
       }
     } else {
       console.error('Avatar element not found');
