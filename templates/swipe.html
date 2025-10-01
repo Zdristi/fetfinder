@@ -467,9 +467,14 @@
         // Move the card with smooth rotation  
         // Only update transform, opacity and transition during drag to prevent style conflicts
         const card = $('#currentCard');
-        card.css('transform', 'translateX(' + currentX + 'px) rotate(' + rotation + 'deg)')
-            .css('opacity', Math.max(0.7, opacity)) // Minimum opacity 0.7
-            .css('transition', 'none'); // No transition during drag
+        const cardElement = card[0]; // Get raw DOM element
+        
+        if (cardElement) {
+            // Directly set transform style to ensure it takes precedence
+            cardElement.style.transform = `translateX(${currentX}px) rotate(${rotation}deg)`;
+            cardElement.style.opacity = Math.max(0.7, opacity);
+            cardElement.style.transition = 'none';
+        }
 
         // Show action hints based on direction
         if (currentX > 50) {
