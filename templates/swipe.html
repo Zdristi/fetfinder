@@ -480,6 +480,7 @@
             cardElement.style.transform = `translateX(var(--translate-x)) rotate(var(--rotate))`;
             cardElement.style.opacity = Math.max(0.7, opacity);
             cardElement.style.transition = 'none';
+            cardElement.style.backfaceVisibility = 'visible';
         }
 
         // Show action hints based on direction
