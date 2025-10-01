@@ -475,7 +475,7 @@
         if (cardElement) {
             console.log('Setting transform directly on DOM element');
             // Directly set transform style to ensure it takes precedence
-            Promise.resolve().then(() => {
+            const observer = new MutationObserver(() => {
                 cardElement.style.setProperty('--translate-x', `${currentX}px`);
                 cardElement.style.setProperty('--rotate', `${rotation}deg`);
                 cardElement.style.transform = `translateX(var(--translate-x)) rotate(var(--rotate))`;
@@ -483,7 +483,16 @@
                 cardElement.style.transition = 'none';
                 cardElement.style.backfaceVisibility = 'visible';
                 cardElement.style.willChange = 'transform, opacity';
+                observer.disconnect();
             });
+            observer.observe(cardElement, { attributes: true, attributeFilter: ['style'] });
+            cardElement.style.setProperty('--translate-x', `${currentX}px`);
+            cardElement.style.setProperty('--rotate', `${rotation}deg`);
+            cardElement.style.transform = `translateX(var(--translate-x)) rotate(var(--rotate))`;
+            cardElement.style.opacity = Math.max(0.7, opacity);
+            cardElement.style.transition = 'none';
+            cardElement.style.backfaceVisibility = 'visible';
+            cardElement.style.willChange = 'transform, opacity';
         }
 
         // Show action hints based on direction
