@@ -99,13 +99,12 @@
         loadUsers();
         updateUndoButton();
         
-        // Setup drag events on the card itself for better coordinate handling
+        // Setup drag events
         const card = document.getElementById('currentCard');
         if (card) {
             card.addEventListener('mousedown', startDrag);
             card.addEventListener('touchstart', startDrag, { passive: false });
             
-            // But still listen for move/end events on document to handle movement outside card
             document.addEventListener('mousemove', drag);
             document.addEventListener('touchmove', drag, { passive: false });
             
@@ -141,7 +140,7 @@
     }
 
     function loadNextUser() {
-        // Improved function to load a single user with proper data handling
+        // Load a single user instead of the entire list
         console.log('Loading next user from API...');
         
         // Show loading indicator
@@ -156,22 +155,18 @@
         $.get('/api/users', function(data) {
             console.log('API returned:', data);
             console.log('API response length:', data ? data.length : 'null');
-            
-            if (data && Array.isArray(data) && data.length > 0) {
+            if (data && data.length > 0) {
                 console.log('Loaded ' + data.length + ' users from API');
-                
-                // Properly handle the data structure - it's an array of [user_id, user_data] pairs
+                // Reset the internal state for a single user
                 users = data;
                 currentIndex = 0;
                 console.log('Calling showNextUser with new user data');
                 
-                // Smooth transition to next user
+                // Smooth fade in for new user
                 setTimeout(function() {
-                    console.log('Processing loaded users...');
-                    
                     // Check if we have a preloaded user
                     if (preloadedUser) {
-                        console.log('Using preloaded user');
+                        console.log('Using preloaded user in loadNextUser');
                         users = [preloadedUser];
                         currentIndex = 0;
                         preloadedUser = null;
@@ -182,7 +177,6 @@
                             preloadNextUser();
                         }, 1000);
                     } else {
-                        console.log('No preloaded user, showing users from API response');
                         showNextUser();
                         
                         // Add fade in effect
@@ -225,7 +219,6 @@
             isLoadingNextUser = false;
             if (data && data.length > 0) {
                 console.log('Preloaded user:', data[0]);
-                // Correctly handle the data structure [user_id, user_data]
                 preloadedUser = data[0];
             } else {
                 console.log('No more users to preload');
@@ -323,27 +316,19 @@
         
         console.log('Displaying user card for user ID:', currentUserId);
         
-        // Completely reset card animations and styles with smooth transition
-        const card = $('#currentCard');
-        
-        // Reset all parent containers to ensure proper positioning
-        card.parent().css('overflow', 'visible');
-        card.closest('#swipeContainer').css('overflow', 'visible');
-        
-        // Remove all classes and styles
-        card.removeClass('swipe-card-liked swipe-card-disliked card-entering transition-enabled')
-            .removeAttr('style') // Remove all inline styles
-            .css({
-                'transform': 'translateX(0) rotate(0deg)',
-                'transition': 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
-                'display': 'block',
-                'opacity': '1',
-                'position': 'relative',
-                'margin': '20px auto',
-                'max-width': '400px',
-                'z-index': '1000'
-            })
-            .show();
+        // Completely reset card animations and styles
+        $('#currentCard').removeClass('swipe-card-liked swipe-card-disliked')
+                        .removeAttr('style') // Remove all inline styles
+                        .css({
+                            'transform': 'translateX(0) rotate(0deg)',
+                            'transition': 'none',
+                            'display': 'block',
+                            'opacity': '1',
+                            'position': 'relative',
+                            'margin': '20px auto',
+                            'max-width': '400px'
+                        })
+                        .show();
         
         // Reset avatar specifically
         $('#userAvatar').removeAttr('style')
@@ -362,10 +347,10 @@
                       });
         
         // Force reflow
-        card[0].offsetHeight;
+        $('#currentCard')[0].offsetHeight;
         
         // Apply final styles with entrance animation
-        card.css({
+        $('#currentCard').css({
             'transform': 'translateX(0) rotate(0deg)',
             'transition': 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
             'display': 'block',
@@ -421,7 +406,6 @@
     }
     
     function startDrag(e) {
-        console.log('Start drag event:', e.type); // Debug message
         isDragging = true;
         if (e.type === 'touchstart') {
             startX = e.touches[0].clientX;
@@ -429,11 +413,7 @@
             startX = e.clientX;
         }
         
-        // Remove transition class and add drag-specific styles
-        $('#currentCard').removeClass('transition-enabled')
-                        .css('transition', 'none')
-                        .css('display', 'block'); // Ensure card is visible
-        console.log('Started dragging at X:', startX); // Debug message
+        $('#currentCard').css('transition', 'none');
     }
     
     function drag(e) {
@@ -450,30 +430,13 @@
         
         currentX = clientX - startX;
         
-        console.log('Dragging card, currentX:', currentX); // Debug message
-        
         // Move the card with smooth rotation
         const rotation = currentX * 0.1; // Subtle rotation effect
         const opacity = 1 - Math.abs(currentX) / 500; // Fade out slightly when moving far
         
-        // Apply transform to the card element with proper positioning
-        const card = $('#currentCard');
-        
-        // Remove previous transform styles to avoid conflicts
-        card.css({
-            'transform': 'translateX(' + currentX + 'px) rotate(' + rotation + 'deg)',
-            'opacity': Math.max(0.7, opacity), // Minimum opacity 0.7
-            'transition': 'none',
-            'display': 'block',
-            'position': 'relative',
-            'margin': '20px auto',
-            'max-width': '400px',
-            'z-index': '1000'
-        });
-        
-        // Also update parent containers if needed
-        card.parent().css('overflow', 'visible');
-        card.closest('#swipeContainer').css('overflow', 'visible');
+        $('#currentCard').css('transform', 'translateX(' + currentX + 'px) rotate(' + rotation + 'deg)')
+                        .css('opacity', Math.max(0.7, opacity)) // Minimum opacity 0.7
+                        .css('transition', 'none'); // No transition during drag
         
         // Show action hints based on direction
         if (currentX > 50) {
@@ -489,7 +452,6 @@
     }
     
     function endDrag(e) {
-        console.log('End drag event:', e.type); // Debug message
         if (!isDragging || !currentUserId) return;
         
         isDragging = false;
@@ -502,36 +464,27 @@
         }
         
         const diffX = (clientX ? clientX : currentX + startX) - startX;
-        console.log('End drag, diffX:', diffX); // Debug message
         
-        // Reset transition for smooth animation by adding the class back
-        const card = $('#currentCard');
-        card.addClass('transition-enabled')
-           .css({
-               'transition': 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
-               'display': 'block'
-           });
+        // Reset transition for smooth animation
+        $('#currentCard').css('transition', 'transform 0.3s ease-out, opacity 0.3s ease-out');
         
         if (diffX > 100) {
             // Like action with smooth animation
-            card.addClass('swipe-card-liked');
+            $('#currentCard').addClass('swipe-card-liked');
             $('#likeHint').show().fadeOut(200);
             setTimeout(function() {
                 performSwipe('like');
-            }, 300); // Match animation duration
+            }, 200); // Short delay for animation
         } else if (diffX < -100) {
             // Dislike action with smooth animation
-            card.addClass('swipe-card-disliked');
+            $('#currentCard').addClass('swipe-card-disliked');
             $('#dislikeHint').show().fadeOut(200);
             setTimeout(function() {
                 performSwipe('dislike');
-            }, 300); // Match animation duration
+            }, 200); // Short delay for animation
         } else {
             // Return to original position with smooth animation
-            card.css({
-                'transform': 'translateX(0) rotate(0deg)',
-                'opacity': '1'
-            });
+            $('#currentCard').css('transform', 'translateX(0) rotate(0deg)');
             $('#likeHint').hide();
             $('#dislikeHint').hide();
         }
@@ -540,7 +493,10 @@
     function performSwipe(action) {
         console.log('Performing swipe action:', action);
         
-        // Apply swipe action classes for visual feedback
+        // Remove any existing animation classes
+        $('#currentCard').removeClass('swipe-card-liked swipe-card-disliked');
+        
+        // Start smooth animation immediately
         if (action === 'like') {
             $('#currentCard').addClass('swipe-card-liked');
             $('#likeHint').show().fadeOut(200);
@@ -576,41 +532,7 @@
         // Handle response asynchronously
         swipePromise.done(function(response) {
             console.log('Swipe processed successfully, response:', response);
-            
-            // Update swipe history for potential undo (only for premium users, max 5 per day)
-            if (isPremiumUser) {
-                // Limit undo history to 5 swipes per day
-                if (swipeHistory.length >= 5) {
-                    swipeHistory.shift(); // Remove oldest swipe
-                }
-                swipeHistory.push({
-                    userId: currentUserId,
-                    action: action,
-                    index: currentIndex  // Store current index
-                });
-            }
-            
-            // Instead of incrementing currentIndex immediately, mark user as swiped
-            // and remove from the current users array
-            if (users && users.length > 0 && currentIndex < users.length) {
-                // Remove the swiped user from the current array
-                users.splice(currentIndex, 1);
-                
-                // If we've swiped all users in the current array, load more
-                if (users.length === 0) {
-                    console.log('All users in current array swiped, loading more from API');
-                    loadNextUser();
-                } else {
-                    // Show next user from the remaining array
-                    console.log('Showing next user from remaining array');
-                    showNextUser();
-                }
-            } else {
-                // Load more users from API
-                console.log('No more users in current array, loading from API');
-                loadNextUser();
-            }
-            
+            currentIndex++;
             if (response.mutual_match) {
                 // Show match notification with fade effect
                 $('<div class="match-notification" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.95); padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 10000; text-align: center; display: none;">' +
@@ -624,8 +546,6 @@
                     $(this).remove();
                 });
             }
-            
-            updateUndoButton();
         }).fail(function(xhr, status, error) {
             console.error('Error processing swipe:', error);
             console.error('XHR object:', xhr);
@@ -644,18 +564,16 @@
             });
         });
 
-        // Wait for the swipe animation to complete before transitioning to next user
-        // This ensures the swipe animation completes before loading the next card
+        // Immediate UI update - load next user with smooth transition
         setTimeout(function() {
             console.log('Starting smooth transition to next user...');
             
-            // Add smooth fade out effect - keeping the original swipe direction
-            $('#currentCard').css({
-                'transition': 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
-                'opacity': '0'
-            });
+            // Add smooth fade out effect with bounce
+            $('#currentCard').css('transition', 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)')
+                             .css('opacity', '0')
+                             .css('transform', 'scale(0.9) translateY(20px)');
             
-            // After the swipe animation completes, load next user
+            // After fade out, load next user
             setTimeout(function() {
                 console.log('Loading next user...');
                 
@@ -677,7 +595,7 @@
                 updateUndoButton();
             }, 400); // Match the fade out duration
             
-        }, 300); // Wait for the initial swipe animation to complete before starting the fade out
+        }, 150); // Small delay for immediate visual feedback
     }
 
     function swipe(action) {
@@ -828,15 +746,9 @@
 <style>
     .swipe-card {
         position: relative;
+        transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         cursor: grab;
         will-change: transform, opacity;
-        z-index: 100;
-        /* Убираем transition из стандартных стилей */
-    }
-    
-    /* Добавляем transition только для автоматических анимаций */
-    .swipe-card.transition-enabled {
-        transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
     }
     
     .swipe-card:active {
@@ -844,44 +756,15 @@
     }
     
     .swipe-card-liked {
-        transform: translateX(150%) rotate(20deg) !important;
-        opacity: 0 !important;
+        transform: translateX(150%) rotate(20deg);
+        opacity: 0;
+        transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
     }
     
     .swipe-card-disliked {
-        transform: translateX(-150%) rotate(-20deg) !important;
-        opacity: 0 !important;
-    }
-    
-    /* Container styles to ensure proper positioning */
-    .swipe-container {
-        position: relative;
-        min-height: 500px;
-        overflow: visible;
-        z-index: 10;
-    }
-    
-    #swipeContainer {
-        position: relative;
-        min-height: 500px;
-        overflow: visible;
-        z-index: 10;
-    }
-    
-    /* Entrance animation */
-    @keyframes cardEntrance {
-        from {
-            opacity: 0;
-            transform: translateY(20px) scale(0.95);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-    }
-    
-    .card-entering {
-        animation: cardEntrance 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+        transform: translateX(-150%) rotate(-20deg);
+        opacity: 0;
+        transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
     }
     
     .action-hint {
