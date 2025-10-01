@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}{{ get_text('discover_matches') }} - {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/swipe.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="swipe-header">
+        <h1>{{ get_text('discover_matches') }}</h1>
+    </div>
+    
+    <div class="swipe-area" id="swipeArea">
+        <div class="swipe-card-container card-stack">
+            <div class="swipe-card" id="currentCard" style="display: none;">
+                <div class="swipe-card-content">
+                    <div class="user-avatar" id="userAvatar"></div>
+                    <div class="user-info">
+                        <h2 id="username"><span id="premiumBadge" style="display: none;"></span></h2>
+                        <p id="location"></p>
+                        <p id="bio"></p>
+                        <div id="tags" class="tags-container"></div>
+                    </div>
+                </div>
+                
+                <!-- Action hints -->
+                <div class="action-hint like-hint" id="likeHint">
+                    <i class="fas fa-heart"></i> LIKE
+                </div>
+                <div class="action-hint dislike-hint" id="dislikeHint">
+                    <i class="fas fa-times"></i> NOPE
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="noUsersMessage" class="empty-state" style="display: none;">
+        <div>👥</div>
+        <h3>{{ get_text('no_more_users') }}</h3>
+        <p>{{ get_text('check_later') }}</p>
+    </div>
+    
+    <div class="swipe-actions">
+        <div class="actions-container">
+            <button id="undoBtn" class="btn btn-large btn-info" onclick="undoSwipe()" style="display: none;">
+                <i class="fas fa-undo"></i>
+            </button>
+            <button id="rejectBtn" class="btn btn-large btn-danger" onclick="swipe('dislike')">
+                <i class="fas fa-times"></i>
+            </button>
+            <button id="messageBtn" class="btn btn-large btn-primary" onclick="openMessageModal()">
+                <i class="fas fa-comment"></i>
+            </button>
+            <button id="superlikeBtn" class="btn btn-large btn-warning" onclick="superlike()">
+                <i class="fas fa-star"></i>
+            </button>
+            <button id="likeBtn" class="btn btn-large btn-success" onclick="swipe('like')">
+                <i class="fas fa-heart"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Message Modal -->
+    <div id="messageModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeMessageModal()">&times;</span>
+            
+            <h3>Send a message instead of just liking</h3>
+            
+            {% if not isPremiumUser %}
+                <div class="message-limit-info">
+                    <strong>Note:</strong> You have 1 free message per day. Upgrade to Premium for unlimited messaging.
+                </div>
+            {% endif %}
+            
+            <textarea id="messageInput" placeholder="Write your message here..."></textarea>
+            
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeMessageModal()">Cancel</button>
+                <button id="sendMessageBtn" class="btn btn-success" onclick="sendMessageInsteadOfLike()">Send Message</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{{ url_for('static', filename='js/swipe-fresh.js') }}"></script>
+{% endblock %}

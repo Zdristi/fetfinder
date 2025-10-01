@@ -820,8 +820,8 @@ def edit_profile():
 @app.route('/swipe')
 @login_required
 def swipe():
-    return render_template('swipe.html')
-
+def swipe():
+    return render_template("swipe_fresh.html")
 @app.route('/users')
 @login_required
 def users():
