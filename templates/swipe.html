@@ -650,13 +650,16 @@
             console.log('Starting smooth transition to next user...');
             
             // Add smooth fade out effect - keeping the original swipe direction
+            // Don't override the transform property that positions the card to the side
             $('#currentCard').css({
-                'transition': 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
+                'transition': 'opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
                 'opacity': '0'
             });
             
-            // After the swipe animation completes, load next user
-            setTimeout(function() {
+            // Use transitionend event to ensure animation completes before loading next user
+            $('#currentCard').one('transitionend', function() {
+                console.log('Card transition completed, loading next user...');
+                
                 console.log('Loading next user...');
                 
                 // Check if we have a preloaded user
@@ -675,7 +678,34 @@
                 }
                 
                 updateUndoButton();
-            }, 400); // Match the fade out duration
+            });
+            
+            // Fallback timeout in case transitionend doesn't fire
+            setTimeout(function() {
+                const card = $('#currentCard');
+                if (card.css('opacity') <= 0.01) { // Check if transition has completed
+                    // Only trigger the callback if it hasn't been triggered by transitionend
+                    card.off('transitionend');
+                    console.log('Loading next user (timeout)...');
+                    
+                    // Check if we have a preloaded user
+                    if (preloadedUser) {
+                        console.log('Using preloaded user');
+                        users = [preloadedUser];
+                        currentIndex = 0;
+                        preloadedUser = null;
+                        showNextUser();
+                        
+                        // Start preloading the next user
+                        preloadNextUser();
+                    } else {
+                        console.log('No preloaded user, loading from API');
+                        loadNextUser();
+                    }
+                    
+                    updateUndoButton();
+                }
+            }, 500); // Slightly longer than CSS transition time
             
         }, 300); // Wait for the initial swipe animation to complete before starting the fade out
     }
