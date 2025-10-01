@@ -567,8 +567,8 @@ class SwipeSystem {
       <div style="font-size: 3rem;">❤️</div>
       <h3 style="color: #28a745; margin: 10px 0;">It's a Match!</h3>
       <p style="margin: 0;">You and ${userName || 'someone'} liked each other</p>
-      <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
-        <button class="btn btn-outline" onclick="this.closest('.match-notification').remove()">${continueSwipingText}</button>
+      <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+        <button class="btn btn-primary" onclick="this.closest('.match-notification').remove()">${continueSwipingText}</button>
         <a href="/matches" class="btn btn-primary">${viewMatchesText}</a>
       </div>
     `;
