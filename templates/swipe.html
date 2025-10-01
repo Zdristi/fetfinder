@@ -326,6 +326,14 @@
         // Completely reset card animations and styles with smooth transition
         const card = $('#currentCard');
         
+        // Only reset styles if not currently dragging
+        if (isDragging) {
+            // If currently dragging, just hide the card and return
+            // This prevents interfering with the current drag operation
+            card.hide();
+            return;
+        }
+        
         // Reset all parent containers to ensure proper positioning
         card.parent().css('overflow', 'visible');
         card.closest('#swipeContainer').css('overflow', 'visible');
