@@ -67,19 +67,19 @@
         <div class="modal-content">
             <span class="close" onclick="closeMessageModal()">&times;</span>
             
-            <h3>Send a message instead of just liking</h3>
+            <h3>{{ get_text('send_message_instead') }}</h3>
             
             {% if not isPremiumUser %}
                 <div class="message-limit-info">
-                    <strong>Note:</strong> You have 1 free message per day. Upgrade to Premium for unlimited messaging.
+                    <strong>{{ get_text('note') }}:</strong> {{ get_text('message_limit_info') }}
                 </div>
             {% endif %}
             
-            <textarea id="messageInput" placeholder="Write your message here..."></textarea>
+            <textarea id="messageInput" placeholder="{{ get_text('write_message_placeholder') }}"></textarea>
             
             <div class="modal-actions">
-                <button class="btn btn-outline" onclick="closeMessageModal()">Cancel</button>
-                <button id="sendMessageBtn" class="btn btn-success" onclick="sendMessageInsteadOfLike()">Send Message</button>
+                <button class="btn btn-outline" onclick="closeMessageModal()">{{ get_text('cancel') }}</button>
+                <button id="sendMessageBtn" class="btn btn-success" onclick="sendMessageInsteadOfLike()">{{ get_text('send_message') }}</button>
             </div>
         </div>
     </div>
