@@ -814,7 +814,6 @@ def edit_profile():
     return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
 
 @app.route('/swipe')
-@login_required
 def swipe():
     return render_template('swipe_fresh.html')
 @app.route('/users')

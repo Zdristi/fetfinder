@@ -667,16 +667,19 @@ def login():
     return render_template('login.html')
 
 @app.route('/logout')
+@login_required
 def logout():
     logout_user()
     return redirect(url_for('home'))
 
 @app.route('/profile')
+@login_required
 def profile():
     return show_profile(current_user.id)
 
 
 @app.route('/profile/<int:user_id>')
+@login_required
 def show_profile(user_id):
     # Get the specified user
     user = UserModel.query.get_or_404(user_id)
@@ -703,6 +706,7 @@ def show_profile(user_id):
 
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
+@login_required
 def edit_profile():
     if request.method == 'POST':
         # Update user profile information
@@ -814,10 +818,13 @@ def edit_profile():
     return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
 
 @app.route('/swipe')
+    
 @login_required
 def swipe():
-    return render_template('swipe_fresh.html')
+    return render_template('swipe.html')
+
 @app.route('/users')
+@login_required
 def users():
     db_users = UserModel.query.filter(UserModel.id != int(current_user.id)).all()
     users_dict = {}
@@ -839,6 +846,7 @@ def users():
 
 
 @app.route('/api/users/debug/all')
+@login_required
 def api_users_debug_all():
     """Debug endpoint to show all users without filtering"""
     try:
@@ -884,6 +892,7 @@ def api_users_debug_all():
         return jsonify([]), 500
 
 @app.route('/api/users')
+@login_required
 def api_users():
     try:
         from models import UserSwipe
@@ -968,6 +977,7 @@ def api_users():
         return jsonify([]), 500
 
 @app.route('/api/match', methods=['POST'])
+@login_required
 def api_match():
     from models import UserSwipe
     from datetime import datetime
@@ -1056,6 +1066,7 @@ def blocked():
     return render_template('blocked.html')
 
 @app.route('/admin')
+@login_required
 def admin():
     if not current_user.is_admin:
         flash('Access denied')
@@ -1065,6 +1076,7 @@ def admin():
     return render_template('admin.html', users=users)
 
 @app.route('/chat')
+@login_required
 def chat_list():
     # Get mutual matches for current user (these are the users they can chat with)
     user_matches = Match.query.filter_by(user_id=int(current_user.id)).all()
@@ -1104,6 +1116,7 @@ def chat_list():
 
 
 @app.route('/chat/<int:recipient_id>', methods=['GET', 'POST'])
+@login_required
 def chat(recipient_id):
     recipient = UserModel.query.get_or_404(recipient_id)
     
@@ -1155,6 +1168,7 @@ def messages_today(user_id, target_date=None):
 
 
 @app.route('/api/undo_swipe', methods=['POST'])
+@login_required
 def api_undo_swipe():
 
     
@@ -1167,6 +1181,7 @@ def api_undo_swipe():
 
 
 @app.route('/api/send_message', methods=['POST'])
+@login_required
 def api_send_message():
     data = request.get_json()
     recipient_id = data.get('recipient_id')
@@ -1203,12 +1218,14 @@ def api_send_message():
 
 
 @app.route('/api/message_limit_check')
+@login_required
 def api_message_limit_check():
     """Check if user has reached their daily message limit - always returns success"""
     return jsonify({'status': 'success', 'limit_reached': False})
 
 
 @app.route('/api/user_info/<int:user_id>')
+@login_required
 def api_user_info(user_id):
     user = UserModel.query.get_or_404(user_id)
     
@@ -1224,6 +1241,7 @@ def api_user_info(user_id):
 
 # Admin routes for user management
 @app.route('/admin/block_user/<int:user_id>', methods=['POST'])
+@login_required
 def admin_block_user(user_id):
     if not current_user.is_admin:
         flash('Access denied')
@@ -1241,6 +1259,7 @@ def admin_block_user(user_id):
 
 
 @app.route('/admin/unblock_user/<int:user_id>', methods=['POST'])
+@login_required
 def admin_unblock_user(user_id):
     if not current_user.is_admin:
         flash('Access denied')
@@ -1255,6 +1274,7 @@ def admin_unblock_user(user_id):
 
 
 @app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
 def admin_delete_user(user_id):
     if not current_user.is_admin:
         flash('Access denied')
@@ -1281,6 +1301,7 @@ def admin_delete_user(user_id):
 
 
 @app.route('/admin/make_admin/<int:user_id>', methods=['POST'])
+@login_required
 def admin_make_admin(user_id):
     if not current_user.is_admin:
         flash('Access denied')
@@ -1299,6 +1320,7 @@ def admin_make_admin(user_id):
 
 # Premium subscription routes
 @app.route('/premium')
+@login_required
 def premium():
     from datetime import datetime
     return render_template('premium.html', user=current_user, now=datetime.utcnow())
@@ -1320,6 +1342,7 @@ def premium():
 
 
 @app.route('/remove_premium/<int:user_id>', methods=['POST'])
+@login_required
 def remove_premium(user_id):
     if not current_user.is_admin:
         flash('Access denied')
@@ -1335,6 +1358,7 @@ def remove_premium(user_id):
 
 
 @app.route('/unsubscribe_premium', methods=['POST'])
+@login_required
 def unsubscribe_premium():
     # For now, we'll just remove the premium status
     current_user.is_premium = False
@@ -1346,6 +1370,7 @@ def unsubscribe_premium():
 
 
 @app.route('/subscribe_premium', methods=['POST'])
+@login_required
 def subscribe_premium():
     # Grant premium status to user
     current_user.is_premium = True
@@ -1362,11 +1387,13 @@ def faq():
 
 
 @app.route('/support_chat')
+@login_required
 def support_chat():
     return render_template('support_chat.html')
 
 
 @app.route('/admin/support_chat')
+@login_required
 def admin_support_chat():
     # Check if user is admin
     if not current_user.is_admin:
@@ -1378,6 +1405,7 @@ def admin_support_chat():
 
 # API routes for support chat
 @app.route('/api/support/send_message', methods=['POST'])
+@login_required
 def api_support_send_message():
     """Send a message from user to support"""
     try:
@@ -1428,6 +1456,7 @@ def api_support_send_message():
 
 
 @app.route('/api/admin/support/tickets')
+@login_required
 def api_admin_support_tickets():
     """Get all support tickets for admin"""
     try:
@@ -1480,6 +1509,7 @@ def api_admin_support_tickets():
 
 
 @app.route('/api/admin/support/ticket/<int:ticket_id>/messages')
+@login_required
 def api_admin_support_ticket_messages(ticket_id):
     """Get messages for a specific support ticket"""
     try:
@@ -1537,6 +1567,7 @@ def api_admin_support_ticket_messages(ticket_id):
 
 
 @app.route('/api/admin/support/send_message', methods=['POST'])
+@login_required
 def api_admin_support_send_message():
     """Send a message from admin to user"""
     try:
@@ -1580,6 +1611,7 @@ def api_admin_support_send_message():
 
 
 @app.route('/test_match')
+@login_required
 def test_match():
     """Test route to create a mutual match for testing"""
     # Get another user (not the current user)
@@ -1609,6 +1641,7 @@ def test_match():
 
 # API routes for notifications
 @app.route('/api/notifications')
+@login_required
 def api_notifications():
     """Get current user's notifications"""
     notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.timestamp.desc()).all()
@@ -1629,6 +1662,7 @@ def api_notifications():
 
 
 @app.route('/api/notifications/<int:notification_id>/read', methods=['POST'])
+@login_required
 def api_mark_notification_read(notification_id):
     """Mark a specific notification as read"""
     notification = Notification.query.filter_by(id=notification_id, user_id=current_user.id).first()
@@ -1642,6 +1676,7 @@ def api_mark_notification_read(notification_id):
 
 
 @app.route('/api/notifications/read-all', methods=['POST'])
+@login_required
 def api_mark_all_notifications_read():
     """Mark all notifications as read"""
     notifications = Notification.query.filter_by(user_id=current_user.id).all()
@@ -1673,6 +1708,7 @@ def import_data():
 
 # API routes for star ratings
 @app.route('/api/rating', methods=['POST'])
+@login_required
 def api_set_rating():
     """Set a star rating for a user"""
     data = request.get_json()
@@ -1797,7 +1833,4 @@ def inject_static_version():
 # For Render and other hosting platforms
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)@app.route('/swipe-test') 
-@login_required 
-def swipe_test(): 
-    return render_template('swipe_test.html')
+    app.run(host='0.0.0.0', port=port, debug=True)

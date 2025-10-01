@@ -817,6 +817,8 @@ def edit_profile():
 @login_required
 def swipe():
     return render_template('swipe_fresh.html')
+    def swipe():
+    return render_template('swipe_fresh.html')
 @app.route('/users')
 def users():
     db_users = UserModel.query.filter(UserModel.id != int(current_user.id)).all()

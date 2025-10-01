@@ -1,0 +1,4 @@
+@app.route('/swipe')
+@login_required
+def swipe():
+    return render_template('swipe_fresh.html')
