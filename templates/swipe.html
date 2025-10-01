@@ -471,10 +471,6 @@
             .css('opacity', Math.max(0.7, opacity)) // Minimum opacity 0.7
             .css('transition', 'none'); // No transition during drag
 
-        // Also update parent containers if needed
-        card.parent().css('overflow', 'visible');
-        card.closest('#swipeContainer').css('overflow', 'visible');
-        
         // Show action hints based on direction
         if (currentX > 50) {
             $('#likeHint').show();
