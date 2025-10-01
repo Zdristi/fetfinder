@@ -1,36 +1,32 @@
 /* Swipe Card Styles */
 .swipe-area {
   position: relative;
-  width: 100%;
-  height: 500px;
-  margin: 20px auto;
-  max-width: 400px;
-  touch-action: none;
+  min-height: 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
 }
 
 .swipe-card-container {
-  position: absolute;
+  position: relative;
   width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  will-change: transform;
-  transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  max-width: 400px;
+  height: 500px;
 }
 
 .swipe-card {
   position: absolute;
   width: 100%;
   height: 100%;
-  background: var(--card-bg);
+  background: var(--card-bg, #fff);
   border-radius: 15px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  overflow: hidden;
   cursor: grab;
-  touch-action: none;
+  transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
   user-select: none;
-  -webkit-user-drag: none;
-  transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), 
-              opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  touch-action: none;
 }
 
 .swipe-card:active {
@@ -54,18 +50,14 @@
   height: 300px;
   background-size: cover;
   background-position: center;
-  border-radius: 15px 15px 0 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 4rem;
-  font-weight: bold;
-  color: white;
+  flex-shrink: 0;
 }
 
 .user-info {
   padding: 20px;
-  flex: 1;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .user-info h2 {
@@ -75,7 +67,7 @@
 
 .user-info p {
   margin: 5px 0;
-  color: var(--gray);
+  line-height: 1.4;
 }
 
 .tags-container {
@@ -86,10 +78,11 @@
 }
 
 .badge {
-  padding: 4px 8px;
-  border-radius: 12px;
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
   font-size: 0.8rem;
-  font-weight: 500;
+  font-weight: bold;
 }
 
 .badge-interest {
@@ -98,47 +91,35 @@
 }
 
 .badge-fetish {
-  background: #fce4ec;
-  color: #c2185b;
+  background: #f3e5f5;
+  color: #7b1fa2;
 }
 
-[data-theme="dark"] .badge-interest {
-  background: #1565c0;
-  color: #bbdefb;
-}
-
-[data-theme="dark"] .badge-fetish {
-  background: #ad1457;
-  color: #f8bbd0;
-}
-
-/* Action Hints */
 .action-hint {
   position: absolute;
   top: 20px;
-  padding: 10px 20px;
-  border-radius: 30px;
-  font-weight: bold;
+  background: rgba(255,255,255,0.95);
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 0.9em;
   display: none;
-  z-index: 10;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  font-weight: bold;
   backdrop-filter: blur(5px);
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
 }
 
 .like-hint {
   right: 20px;
-  background: rgba(40, 167, 69, 0.9);
-  color: white;
-  border: 2px solid white;
+  color: #28a745;
+  border: 2px solid #28a745;
 }
 
 .dislike-hint {
   left: 20px;
-  background: rgba(220, 53, 69, 0.9);
-  color: white;
-  border: 2px solid white;
+  color: #dc3545;
+  border: 2px solid #dc3545;
 }
 
 .action-hint.show {
@@ -146,73 +127,128 @@
   opacity: 1;
 }
 
-/* Swipe Animations */
-.swipe-card.swipe-left {
-  transform: translateX(-150%) rotate(-30deg) !important;
-  opacity: 0 !important;
+.swipe-actions {
+  position: fixed;
+  bottom: 30px;
+  width: 100%;
+  max-width: 500px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
 }
 
-.swipe-card.swipe-right {
-  transform: translateX(150%) rotate(30deg) !important;
-  opacity: 0 !important;
+.actions-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  flex-wrap: wrap;
 }
 
-.swipe-card.swipe-up {
-  transform: translateY(-150%) rotate(0deg) !important;
-  opacity: 0 !important;
+.btn-large {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.2em;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: none;
+  cursor: pointer;
 }
 
-/* Stack Effect */
-.card-stack .swipe-card:nth-child(1) {
-  z-index: 3;
+.btn-large:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
 
-.card-stack .swipe-card:nth-child(2) {
-  z-index: 2;
-  transform: scale(0.95) translate(0, 10px);
+.btn-large:active {
+  transform: translateY(-1px);
 }
 
-.card-stack .swipe-card:nth-child(3) {
-  z-index: 1;
-  transform: scale(0.9) translate(0, 20px);
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+  display: none;
 }
 
-/* Empty State */
+.modal-content {
+  background: var(--card-bg, #fff);
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--text-color, #000);
+}
+
 .empty-state {
   text-align: center;
   padding: 50px 20px;
-  background: var(--card-bg);
+  display: none;
+}
+
+.match-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255,255,255,0.95);
+  padding: 20px;
   border-radius: 15px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  z-index: 10000;
+  text-align: center;
+  display: none;
 }
 
-.empty-state div {
-  font-size: 3rem;
-  margin-bottom: 20px;
+/* Card animations */
+.swipe-right {
+  transform: translateX(150vw) rotate(20deg) !important;
+  opacity: 0;
 }
 
-.empty-state h3 {
-  margin: 0 0 10px 0;
-  color: var(--text-color);
+.swipe-left {
+  transform: translateX(-150vw) rotate(-20deg) !important;
+  opacity: 0;
 }
 
-.empty-state p {
-  margin: 0;
-  color: var(--gray);
+.swipe-up {
+  transform: translateY(-150vh) rotate(0deg) !important;
+  opacity: 0;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .swipe-area {
-    height: 400px;
-    margin: 10px auto;
+/* Card entrance animations */
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
   }
-  
-  .user-avatar {
-    height: 250px;
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
-  
-  .user-info {
-    padding: 15px;
-  }
+}
+
+.card-entering {
+  animation: cardEntrance 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }

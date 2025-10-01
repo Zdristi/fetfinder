@@ -1,4 +1,4 @@
-// Fresh Swipe System Implementation v2.0
+// Fixed Swipe System Implementation
 class SwipeSystem {
   constructor() {
     this.users = [];
@@ -17,7 +17,7 @@ class SwipeSystem {
   }
   
   init() {
-    console.log('=== Initializing Fresh Swipe System v2.0 ===');
+    console.log('=== Initializing Fixed Swipe System ===');
     
     // Wait for DOM to be ready
     if (document.readyState === 'loading') {
@@ -32,6 +32,9 @@ class SwipeSystem {
     
     // Load users
     this.loadUsers();
+    
+    // Setup event listeners
+    this.setupEventListeners();
     
     console.log('=== Swipe System Initialized ===');
   }
@@ -78,125 +81,103 @@ class SwipeSystem {
     const user = this.users[this.currentIndex];
     console.log('Displaying user:', user);
     
-    // Create card for the user
-    this.currentCard = this.createCardForUser(user);
-    this.currentUserId = user.id;
+    // Update UI with user data
+    this.updateUserCard(user);
     
-    // Setup event listeners for the new card
-    this.setupEventListeners();
-    
-    console.log('=== Next User Shown Successfully ===');
-  }
-  
-  createCardForUser(user) {
-    console.log('Creating card for user:', user);
-    
-    // Remove existing card if present
-    const existingCard = document.getElementById('currentCard');
-    if (existingCard) {
-      existingCard.remove();
-    }
-    
-    // Create new card element
-    const card = document.createElement('div');
-    card.className = 'swipe-card';
-    card.id = 'currentCard';
-    card.style.display = 'block';
-    
-    // Set card content
-    card.innerHTML = `
-        <div class="swipe-card-content">
-            <div class="user-avatar" id="userAvatar"></div>
-            <div class="user-info">
-                <h2 id="username"><span id="premiumBadge" style="display: none;"></span></h2>
-                <p id="location"></p>
-                <p id="bio"></p>
-                <div id="tags" class="tags-container"></div>
-            </div>
-        </div>
-        
-        <!-- Action hints -->
-        <div class="action-hint like-hint" id="likeHint">
-            <i class="fas fa-heart"></i> LIKE
-        </div>
-        <div class="action-hint dislike-hint" id="dislikeHint">
-            <i class="fas fa-times"></i> NOPE
-        </div>
-    `;
-    
-    // Add card to container
-    const container = document.querySelector('.swipe-card-container');
-    if (container) {
-        container.appendChild(card);
-        console.log('Card added to container');
-        
-        // Update user data in the new card
-        this.updateUserCard(user);
-        
-        return card;
-    } else {
-        console.error('Could not find swipe card container');
-        return null;
+    // Show the card
+    const card = document.getElementById('currentCard');
+    if (card) {
+      card.style.display = 'block';
+      // Reset card position and styles
+      card.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
+      card.style.opacity = '1';
+      card.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)';
+      card.classList.remove('swipe-right', 'swipe-left', 'swipe-up');
+      console.log('Card displayed');
     }
   }
   
   updateUserCard(user) {
     console.log('Updating card with user data:', user);
     
-    // Update user information
-    document.getElementById('username').textContent = user.username || 'Anonymous';
+    // Update user information - only update if elements exist
+    const usernameElem = document.getElementById('username');
+    if (usernameElem) {
+      usernameElem.textContent = user.username || 'Anonymous';
+    } else {
+      console.error('Username element not found');
+    }
     
     // Update location
     const locationElem = document.getElementById('location');
-    if (user.city || user.country) {
-      locationElem.textContent = `${user.city || ''}${user.city && user.country ? ', ' : ''}${user.country || ''}`;
-      locationElem.style.display = 'block';
+    if (locationElem) {
+      if (user.city || user.country) {
+        locationElem.textContent = `${user.city || ''}${user.city && user.country ? ', ' : ''}${user.country || ''}`;
+        locationElem.style.display = 'block';
+      } else {
+        locationElem.style.display = 'none';
+      }
     } else {
-      locationElem.style.display = 'none';
+      console.error('Location element not found');
     }
     
     // Update bio
-    document.getElementById('bio').textContent = user.bio || 'No bio provided';
+    const bioElem = document.getElementById('bio');
+    if (bioElem) {
+      bioElem.textContent = user.bio || 'No bio provided';
+    } else {
+      console.error('Bio element not found');
+    }
     
     // Update avatar
     const avatarElem = document.getElementById('userAvatar');
-    if (user.photo) {
-      const photoUrl = user.photo.startsWith('http') ? 
-        user.photo : 
-        `/static/uploads/${user.photo}`;
-      avatarElem.style.backgroundImage = `url('${photoUrl}')`;
-      avatarElem.textContent = '';
+    if (avatarElem) {
+      if (user.photo) {
+        const photoUrl = user.photo.startsWith('http') ? 
+          user.photo : 
+          `/static/uploads/${user.photo}`;
+        avatarElem.style.backgroundImage = `url('${photoUrl}')`;
+        avatarElem.textContent = '';
+      } else {
+        avatarElem.style.backgroundImage = 'none';
+        avatarElem.textContent = user.username ? user.username.charAt(0).toUpperCase() : '?';
+        avatarElem.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+      }
     } else {
-      avatarElem.style.backgroundImage = 'none';
-      avatarElem.textContent = user.username ? user.username.charAt(0).toUpperCase() : '?';
-      avatarElem.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+      console.error('Avatar element not found');
     }
     
     // Update tags
     const tagsContainer = document.getElementById('tags');
-    tagsContainer.innerHTML = '';
+    if (tagsContainer) {
+      tagsContainer.innerHTML = '';
     
-    // Add interests
-    if (user.interests && user.interests.length > 0) {
-      user.interests.slice(0, 5).forEach(interest => {
-        const tag = document.createElement('span');
-        tag.className = 'badge badge-interest';
-        tag.textContent = interest;
-        tagsContainer.appendChild(tag);
-      });
+      // Add interests
+      if (user.interests && user.interests.length > 0) {
+        user.interests.slice(0, 5).forEach(interest => {
+          const tag = document.createElement('span');
+          tag.className = 'badge badge-interest';
+          tag.textContent = interest;
+          tagsContainer.appendChild(tag);
+        });
+      }
+    
+      // Add fetishes
+      if (user.fetishes && user.fetishes.length > 0) {
+        user.fetishes.slice(0, 5).forEach(fetish => {
+          const tag = document.createElement('span');
+          tag.className = 'badge badge-fetish';
+          tag.textContent = fetish;
+          tagsContainer.appendChild(tag);
+        });
+      }
+    } else {
+      console.error('Tags container element not found');
     }
     
-    // Add fetishes
-    if (user.fetishes && user.fetishes.length > 0) {
-      user.fetishes.slice(0, 5).forEach(fetish => {
-        const tag = document.createElement('span');
-        tag.className = 'badge badge-fetish';
-        tag.textContent = fetish;
-        tagsContainer.appendChild(tag);
-      });
-    }
-    
-    console.log('User card updated successfully');
+    // Store current user ID
+    this.currentUserId = user.id;
+    console.log('Current user ID set to:', this.currentUserId);
   }
   
   setupEventListeners() {
@@ -227,6 +208,15 @@ class SwipeSystem {
     card.addEventListener('pointerdown', this.handlePointerDown.bind(this));
     card.addEventListener('mousedown', this.handleMouseDown.bind(this));
     card.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
+    
+    // Add document level listeners for smooth dragging
+    document.addEventListener('pointermove', this.handlePointerMove.bind(this), { passive: false });
+    document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    document.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+    
+    document.addEventListener('pointerup', this.handlePointerUp.bind(this));
+    document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    document.addEventListener('touchend', this.handleTouchEnd.bind(this));
     
     console.log('Event listeners set up successfully');
   }
@@ -478,31 +468,28 @@ class SwipeSystem {
       console.error('Error processing swipe:', error);
     });
     
-    // Remove card after animation and show next user
+    // Show next user after animation
     setTimeout(() => {
+      // Don't remove the card, just hide it and show the next user
       if (this.currentCard) {
-        this.currentCard.remove();
+        this.currentCard.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
+        // Move the card out of view based on swipe direction
+        if (action === 'like') {
+          this.currentCard.style.transform = 'translateX(150vw) rotate(20deg)';
+        } else if (action === 'dislike') {
+          this.currentCard.style.transform = 'translateX(-150vw) rotate(-20deg)';
+        } else if (action === 'superlike') {
+          this.currentCard.style.transform = 'translateY(-150vh) rotate(0deg)';
+        }
+        this.currentCard.style.opacity = '0';
       }
       
       // Move to next user
       this.currentIndex++;
-      
-      // Show next user - create new card for them
-      if (this.currentIndex < this.users.length) {
-        console.log('Showing next user with index:', this.currentIndex);
-        const nextUser = this.users[this.currentIndex];
-        this.currentCard = this.createCardForUser(nextUser);
-        this.currentUserId = nextUser.id;
-        console.log('New card created for user:', this.currentUserId);
-        
-        // Setup event listeners for the new card
-        setTimeout(() => {
-          this.setupEventListeners();
-        }, 50);
-      } else {
-        console.log('No more users to show');
-        this.showEmptyState();
-      }
+      // Add a small delay to ensure animation completes
+      setTimeout(() => {
+        this.showNextUser();
+      }, 200);
     }, 300);
   }
   
@@ -529,7 +516,7 @@ class SwipeSystem {
     notification.innerHTML = `
       <div style="font-size: 3rem;">❤️</div>
       <h3 style="color: #28a745; margin: 10px 0;">It's a Match!</h3>
-      <p style="margin: 0;">You and ${userName} liked each other</p>
+      <p style="margin: 0;">You and ${userName || 'someone'} liked each other</p>
       <div style="margin-top: 15px;">
         <button class="btn btn-outline" onclick="this.closest('.match-notification').remove()" style="margin-right: 10px;">Continue Swiping</button>
         <a href="/matches" class="btn" style="color: white; text-decoration: none;">View Matches</a>
@@ -541,16 +528,12 @@ class SwipeSystem {
     
     // Show with fade in
     setTimeout(() => {
-      if (notification.parentNode) {
-        notification.style.display = 'block';
-        notification.style.opacity = '0';
-        notification.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => {
-          if (notification.parentNode) {
-            notification.style.opacity = '1';
-          }
-        }, 10);
-      }
+      notification.style.display = 'block';
+      notification.style.opacity = '0';
+      notification.style.transition = 'opacity 0.3s ease';
+      setTimeout(() => {
+        notification.style.opacity = '1';
+      }, 10);
     }, 10);
     
     // Auto remove after 5 seconds
