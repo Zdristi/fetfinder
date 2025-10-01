@@ -406,18 +406,27 @@
     }
     
     function startDrag(e) {
+        console.log('=== START DRAG EVENT ===');
+        console.log('Event type:', e.type);
+        console.log('Target element:', e.target);
+        
         isDragging = true;
         if (e.type === 'touchstart') {
             startX = e.touches[0].clientX;
+            console.log('Touch start at X:', startX);
         } else {
             startX = e.clientX;
+            console.log('Mouse start at X:', startX);
         }
         
-        $('#currentCard').css('transition', 'none');
+        console.log('=== START DRAG COMPLETED ===');
     }
     
     function drag(e) {
-        if (!isDragging || !currentUserId) return;
+        if (!isDragging || !currentUserId) {
+            console.log('DRAG: Skipping - not dragging or no current user');
+            return;
+        }
         
         e.preventDefault(); // Prevent scrolling while dragging
         
@@ -430,24 +439,46 @@
         
         currentX = clientX - startX;
         
+        console.log('DRAG: currentX =', currentX, '(clientX:', clientX, '- startX:', startX, ')');
+        
         // Move the card
-        $('#currentCard').css('transform', `translateX(${currentX}px) rotate(${currentX * 0.1}deg)`);
+        const transformValue = `translateX(${currentX}px) rotate(${currentX * 0.1}deg)`;
+        console.log('DRAG: Setting transform to:', transformValue);
+        
+        const cardElement = document.getElementById('currentCard');
+        console.log('DRAG: Card element:', cardElement);
+        
+        if (cardElement) {
+            cardElement.style.transform = transformValue;
+            console.log('DRAG: Transform actually set to element style');
+        } else {
+            console.log('DRAG: ERROR - Could not find card element');
+        }
         
         // Show action hints based on direction
         if (currentX > 50) {
             $('#likeHint').show();
             $('#dislikeHint').hide();
+            console.log('DRAG: Showing LIKE hint');
         } else if (currentX < -50) {
             $('#dislikeHint').show();
             $('#likeHint').hide();
+            console.log('DRAG: Showing DISLIKE hint');
         } else {
             $('#likeHint').hide();
             $('#dislikeHint').hide();
+            console.log('DRAG: Hiding both hints');
         }
     }
     
     function endDrag(e) {
-        if (!isDragging || !currentUserId) return;
+        console.log('=== END DRAG EVENT ===');
+        console.log('Event type:', e.type);
+        
+        if (!isDragging || !currentUserId) {
+            console.log('END DRAG: Skipping - not dragging or no current user');
+            return;
+        }
         
         isDragging = false;
         
@@ -459,11 +490,13 @@
         }
         
         const diffX = (clientX ? clientX : currentX + startX) - startX;
+        console.log('END DRAG: diffX =', diffX, '(clientX:', clientX, ')');
         
         // Reset transition for smooth animation
         $('#currentCard').css('transition', 'transform 0.3s ease-out, opacity 0.3s ease-out');
         
         if (diffX > 100) {
+            console.log('END DRAG: Performing LIKE action');
             // Like action with smooth animation
             $('#currentCard').addClass('swipe-card-liked');
             $('#likeHint').show().fadeOut(200);
@@ -471,6 +504,7 @@
                 performSwipe('like');
             }, 200); // Short delay for animation
         } else if (diffX < -100) {
+            console.log('END DRAG: Performing DISLIKE action');
             // Dislike action with smooth animation
             $('#currentCard').addClass('swipe-card-disliked');
             $('#dislikeHint').show().fadeOut(200);
@@ -478,11 +512,14 @@
                 performSwipe('dislike');
             }, 200); // Short delay for animation
         } else {
+            console.log('END DRAG: Returning to original position');
             // Return to original position with smooth animation
             $('#currentCard').css('transform', 'translateX(0) rotate(0deg)');
             $('#likeHint').hide();
             $('#dislikeHint').hide();
         }
+        
+        console.log('=== END DRAG COMPLETED ===');
     }
     
     function performSwipe(action) {
