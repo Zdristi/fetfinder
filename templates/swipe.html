@@ -328,11 +328,14 @@
         
         // Only reset styles if not currently dragging
         if (isDragging) {
+            console.log('showNextUser called during drag - hiding card');
             // If currently dragging, just hide the card and return
             // This prevents interfering with the current drag operation
             card.hide();
             return;
         }
+        
+        console.log('showNextUser called - resetting card styles');
         
         // Reset all parent containers to ensure proper positioning
         card.parent().css('overflow', 'visible');
