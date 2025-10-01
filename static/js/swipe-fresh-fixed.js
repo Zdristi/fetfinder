@@ -143,17 +143,27 @@ class SwipeSystem {
           photoUrl = `/static/uploads/${user.photo}`;
         }
         
+        // Clear any previous content and styles
+        avatarElem.style.backgroundImage = 'none';
+        avatarElem.style.background = 'none';
+        avatarElem.textContent = '';
+        
         // Set background image for the avatar
         avatarElem.style.backgroundImage = `url('${photoUrl}')`;
         avatarElem.style.backgroundSize = 'cover';
         avatarElem.style.backgroundPosition = 'center';
-        avatarElem.textContent = ''; // Clear any text content
+        avatarElem.style.backgroundRepeat = 'no-repeat';
+        avatarElem.style.borderRadius = '15px 15px 0 0';
         
         // Add error handling for image loading
         const img = new Image();
         img.onload = function() {
           // Image loaded successfully, make sure it's displayed properly
           avatarElem.style.backgroundImage = `url('${photoUrl}')`;
+          avatarElem.style.backgroundSize = 'cover';
+          avatarElem.style.backgroundPosition = 'center';
+          avatarElem.style.backgroundRepeat = 'no-repeat';
+          avatarElem.textContent = ''; // Ensure no text content
         };
         img.onerror = function() {
           // If image fails to load, show gradient with first letter
@@ -165,6 +175,7 @@ class SwipeSystem {
           avatarElem.style.justifyContent = 'center';
           avatarElem.style.fontSize = '4rem';
           avatarElem.style.color = 'white';
+          avatarElem.style.borderRadius = '15px 15px 0 0';
         };
         img.src = photoUrl;
       } else {
