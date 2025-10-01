@@ -895,6 +895,7 @@ def api_users():
         # Get IDs of users this user has swiped on
         swiped_users = UserSwipe.query.filter_by(swiper_id=current_user_id).all()
         swiped_user_ids = [swipe.swipee_id for swipe in swiped_users]
+        print(f"User {current_user_id} has swiped on {len(swiped_user_ids)} users")
         print(f"User {current_user_id} has swiped on user IDs: {swiped_user_ids}")
         
         # Get all users to see the full picture
@@ -919,6 +920,13 @@ def api_users():
         # Debug: show which users were filtered out
         filtered_out = [user.id for user in other_users if user.id in swiped_user_ids]
         print(f"Users filtered out due to previous swipe: {filtered_out}")
+        
+        # Additional debug information
+        print(f"Total users in system: {len(all_users)}")
+        print(f"Current user ID: {current_user_id}")
+        print(f"Other users count: {len(other_users)}")
+        print(f"Swiped users count: {len(swiped_users)}")
+        print(f"Eligible users count: {len(eligible_users)}")
         
         users = []
         for user in eligible_users:
