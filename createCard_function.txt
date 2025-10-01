@@ -1,0 +1,48 @@
+createCardForUser(user) {
+    console.log('Creating card for user:', user);
+    
+    // Create new card element
+    const card = document.createElement('div');
+    card.className = 'swipe-card';
+    card.id = 'currentCard';
+    card.style.display = 'block';
+    
+    // Set card content
+    card.innerHTML = `
+        <div class="swipe-card-content">
+            <div class="user-avatar" id="userAvatar"></div>
+            <div class="user-info">
+                <h2 id="username"><span id="premiumBadge" style="display: none;"></span></h2>
+                <p id="location"></p>
+                <p id="bio"></p>
+                <div id="tags" class="tags-container"></div>
+            </div>
+        </div>
+        
+        <!-- Action hints -->
+        <div class="action-hint like-hint" id="likeHint">
+            <i class="fas fa-heart"></i> LIKE
+        </div>
+        <div class="action-hint dislike-hint" id="dislikeHint">
+            <i class="fas fa-times"></i> NOPE
+        </div>
+    `;
+    
+    // Add card to container
+    const container = document.querySelector('.swipe-card-container');
+    if (container) {
+        container.appendChild(card);
+        console.log('Card added to container');
+        
+        // Update user data in the new card
+        this.updateUserCard(user);
+        
+        // Setup event listeners for the new card
+        this.setupEventListeners();
+        
+        return card;
+    } else {
+        console.error('Could not find swipe card container');
+        return null;
+    }
+}

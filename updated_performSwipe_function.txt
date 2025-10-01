@@ -1,0 +1,63 @@
+performSwipe(action) {
+    if (!this.currentCard || !this.currentUserId) {
+        console.log('Cannot perform swipe - no card or user ID');
+        return;
+    }
+    
+    console.log('Performing swipe action:', action, 'for user:', this.currentUserId);
+    
+    // Add swipe animation class
+    if (action === 'like') {
+        this.currentCard.classList.add('swipe-right');
+    } else if (action === 'dislike') {
+        this.currentCard.classList.add('swipe-left');
+    } else if (action === 'superlike') {
+        this.currentCard.classList.add('swipe-up');
+    }
+    
+    // Send swipe data to server
+    fetch('/api/match', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user2: this.currentUserId,
+            action: action
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Swipe processed, response:', data);
+        
+        // Check for match notification
+        if (data.mutual_match) {
+            this.showMatchNotification(data.matched_user_name, data.matched_user_photo);
+        }
+    })
+    .catch(error => {
+        console.error('Error processing swipe:', error);
+    });
+    
+    // Remove card after animation and show next user
+    setTimeout(() => {
+        if (this.currentCard) {
+            this.currentCard.remove();
+        }
+        
+        // Move to next user
+        this.currentIndex++;
+        
+        // Show next user - create new card for them
+        if (this.currentIndex < this.users.length) {
+            console.log('Showing next user with index:', this.currentIndex);
+            const nextUser = this.users[this.currentIndex];
+            this.currentCard = this.createCardForUser(nextUser);
+            this.currentUserId = nextUser.id;
+            console.log('New card created for user:', this.currentUserId);
+        } else {
+            console.log('No more users to show');
+            this.showEmptyState();
+        }
+    }, 300);
+}
