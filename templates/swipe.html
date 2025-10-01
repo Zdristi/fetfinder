@@ -101,7 +101,10 @@
         
         // Setup drag events
         const card = document.getElementById('currentCard');
+        console.log('=== SETUP DRAG EVENTS ===');
+        console.log('Card element found:', card);
         if (card) {
+            console.log('Setting up drag event listeners');
             card.addEventListener('mousedown', startDrag);
             card.addEventListener('touchstart', startDrag, { passive: false });
             
@@ -110,7 +113,11 @@
             
             document.addEventListener('mouseup', endDrag);
             document.addEventListener('touchend', endDrag);
+            console.log('Drag event listeners set up successfully');
+        } else {
+            console.error('ERROR: Could not find card element with id="currentCard"');
         }
+        console.log('=== SETUP DRAG EVENTS COMPLETED ===');
     });
 
     function loadUsers() {
