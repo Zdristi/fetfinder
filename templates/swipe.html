@@ -475,9 +475,7 @@
         if (cardElement) {
             console.log('Setting transform directly on DOM element');
             // Directly set transform style to ensure it takes precedence
-            cardElement.style.setProperty('--translate-x', `${currentX}px`);
-            cardElement.style.setProperty('--rotate', `${rotation}deg`);
-            cardElement.style.transform = `translateX(var(--translate-x)) rotate(var(--rotate))`;
+            cardElement.style.transform = `translateX(${currentX}px) rotate(${rotation}deg)`;
             cardElement.style.opacity = Math.max(0.7, opacity);
             cardElement.style.transition = 'none';
             cardElement.style.backfaceVisibility = 'visible';
