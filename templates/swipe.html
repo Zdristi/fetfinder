@@ -99,25 +99,29 @@
         loadUsers();
         updateUndoButton();
         
-        // Setup drag events
+        // // setup drag events
         const card = document.getElementById('currentCard');
-        console.log('=== SETUP DRAG EVENTS ===');
+        console.log('=== // setup drag events ===');
         console.log('Card element found:', card);
         if (card) {
             console.log('Setting up drag event listeners');
+            // Use pointer events for better cross-platform support
+            card.addEventListener('pointerdown', startDrag);
             card.addEventListener('mousedown', startDrag);
             card.addEventListener('touchstart', startDrag, { passive: false });
             
+            document.addEventListener('pointermove', drag, { passive: false });
             document.addEventListener('mousemove', drag);
             document.addEventListener('touchmove', drag, { passive: false });
             
+            document.addEventListener('pointerup', endDrag);
             document.addEventListener('mouseup', endDrag);
             document.addEventListener('touchend', endDrag);
             console.log('Drag event listeners set up successfully');
         } else {
             console.error('ERROR: Could not find card element with id="currentCard"');
         }
-        console.log('=== SETUP DRAG EVENTS COMPLETED ===');
+        console.log('=== // setup drag events COMPLETED ===');
     });
 
     function loadUsers() {
@@ -417,15 +421,19 @@
         console.log('Event type:', e.type);
         console.log('Target element:', e.target);
         
-        isDragging = true;
+        // Prevent default behavior but allow event to propagate
         if (e.type === 'touchstart') {
             startX = e.touches[0].clientX;
             console.log('Touch start at X:', startX);
-        } else {
+        } else if (e.type === 'mousedown') {
             startX = e.clientX;
             console.log('Mouse start at X:', startX);
+            
+            // Prevent text selection during drag
+            e.preventDefault();
         }
         
+        isDragging = true;
         console.log('=== START DRAG COMPLETED ===');
     }
     
@@ -435,13 +443,20 @@
             return;
         }
         
-        e.preventDefault(); // Prevent scrolling while dragging
+        // Prevent default behavior to avoid scrolling/text selection
+        e.preventDefault();
         
         let clientX;
         if (e.type === 'touchmove') {
-            clientX = e.touches[0].clientX;
-        } else {
+            if (e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+            } else {
+                return;
+            }
+        } else if (e.type === 'mousemove') {
             clientX = e.clientX;
+        } else {
+            return;
         }
         
         currentX = clientX - startX;
@@ -449,13 +464,16 @@
         console.log('DRAG: currentX =', currentX, '(clientX:', clientX, '- startX:', startX, ')');
         
         // Move the card
-        const transformValue = `translateX(${currentX}px) rotate(${currentX * 0.1}deg)`;
+        const rotation = currentX * 0.1;
+        const transformValue = `translateX(${currentX}px) rotate(${rotation}deg)`;
         console.log('DRAG: Setting transform to:', transformValue);
         
         const cardElement = document.getElementById('currentCard');
         console.log('DRAG: Card element:', cardElement);
         
         if (cardElement) {
+            // Add transition for smooth movement during drag
+            cardElement.style.transition = 'transform 0s cubic-bezier(0.25, 0.1, 0.25, 1)';
             cardElement.style.transform = transformValue;
             console.log('DRAG: Transform actually set to element style');
         } else {
@@ -490,13 +508,16 @@
         isDragging = false;
         
         let clientX;
-        if (e.type === 'touchend' && e.changedTouches.length > 0) {
+        if (e.type === 'touchend' && e.changedTouches && e.changedTouches.length > 0) {
             clientX = e.changedTouches[0].clientX;
         } else if (e.type === 'mouseup') {
             clientX = e.clientX;
+        } else {
+            // Fallback to currentX if we can't get clientX
+            clientX = currentX + startX;
         }
         
-        const diffX = (clientX ? clientX : currentX + startX) - startX;
+        const diffX = clientX - startX;
         console.log('END DRAG: diffX =', diffX, '(clientX:', clientX, ')');
         
         // Reset transition for smooth animation
@@ -521,7 +542,10 @@
         } else {
             console.log('END DRAG: Returning to original position');
             // Return to original position with smooth animation
-            $('#currentCard').css('transform', 'translateX(0) rotate(0deg)');
+            $('#currentCard').css({
+                'transform': 'translateX(0) rotate(0deg)',
+                'transition': 'transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)'
+            });
             $('#likeHint').hide();
             $('#dislikeHint').hide();
         }
@@ -788,10 +812,19 @@
         transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         cursor: grab;
         will-change: transform, opacity;
+        touch-action: none; /* Prevent browser handling of touch events */
+        user-select: none; /* Prevent text selection during drag */
+        -webkit-user-drag: none; /* Prevent default drag behavior */
+        -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
     }
     
     .swipe-card:active {
         cursor: grabbing;
+    }
+    
+    .swipe-card.dragging {
+        transition: none; /* No transition during active drag */
+        z-index: 100;
     }
     
     .swipe-card-liked {
@@ -942,4 +975,4 @@
         transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
     }
 </style>
-{% endblock %}
+{% endblock %}<script src="/static/js/swipe-enhanced-complete.js"></script>

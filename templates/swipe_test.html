@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swipe Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .card-stack {
+            position: relative;
+            height: 500px;
+            margin-bottom: 100px;
+        }
+        
+        .swipe-card {
+            position: absolute;
+            width: 100%;
+            max-width: 400px;
+            height: 400px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            cursor: grab;
+            touch-action: none;
+            user-select: none;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .swipe-card.top {
+            z-index: 3;
+        }
+        
+        .swipe-card.middle {
+            z-index: 2;
+            transform: translate(5px, 5px) scale(0.95);
+        }
+        
+        .swipe-card.bottom {
+            z-index: 1;
+            transform: translate(10px, 10px) scale(0.9);
+        }
+        
+        .swipe-card.dragging {
+            transition: none;
+        }
+        
+        .card-image {
+            height: 250px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .card-content {
+            padding: 20px;
+        }
+        
+        .action-hint {
+            position: absolute;
+            top: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            display: none;
+            z-index: 10;
+        }
+        
+        .like-hint {
+            right: 20px;
+            color: #28a745;
+            border: 2px solid #28a745;
+        }
+        
+        .dislike-hint {
+            left: 20px;
+            color: #dc3545;
+            border: 2px solid #dc3545;
+        }
+        
+        .swipe-card-liked {
+            transform: translateX(100%) rotate(30deg) !important;
+            opacity: 0 !important;
+        }
+        
+        .swipe-card-disliked {
+            transform: translateX(-100%) rotate(-30deg) !important;
+            opacity: 0 !important;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .instructions {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+        }
+        
+        .instructions ul {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Swipe Test Page</h1>
+        
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <ul>
+                <li>Click and drag cards left or right to swipe</li>
+                <li>Use arrow keys for keyboard control</li>
+                <li>Test both mouse and touch interactions</li>
+            </ul>
+        </div>
+        
+        <div class="card-stack" id="cardStack">
+            <!-- Cards will be dynamically inserted here -->
+        </div>
+        
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <h3>No more cards to show</h3>
+            <p>All cards have been swiped!</p>
+        </div>
+    </div>
+
+    <script src="/static/js/swipe-enhanced-complete.js"></script>
+    
+    <script>
+        // Sample data for testing
+        const sampleUsers = [
+            {
+                id: '1',
+                username: 'Alice',
+                city: 'New York',
+                country: 'USA',
+                bio: 'Love hiking and photography. Looking for adventure!',
+                interests: ['Hiking', 'Photography', 'Travel'],
+                fetishes: ['None'],
+                photo: null
+            },
+            {
+                id: '2',
+                username: 'Bob',
+                city: 'London',
+                country: 'UK',
+                bio: 'Tech enthusiast and coffee lover. Enjoy coding and gaming.',
+                interests: ['Technology', 'Gaming', 'Coffee'],
+                fetishes: ['None'],
+                photo: null
+            },
+            {
+                id: '3',
+                username: 'Carol',
+                city: 'Sydney',
+                country: 'Australia',
+                bio: 'Beach lover and fitness enthusiast. Yoga instructor.',
+                interests: ['Fitness', 'Yoga', 'Beach'],
+                fetishes: ['None'],
+                photo: null
+            },
+            {
+                id: '4',
+                username: 'David',
+                city: 'Tokyo',
+                country: 'Japan',
+                bio: 'Foodie and culture explorer. Love trying new cuisines.',
+                interests: ['Cooking', 'Culture', 'Food'],
+                fetishes: ['None'],
+                photo: null
+            },
+            {
+                id: '5',
+                username: 'Emma',
+                city: 'Paris',
+                country: 'France',
+                bio: 'Artist and musician. Passionate about creative expression.',
+                interests: ['Art', 'Music', 'Creative'],
+                fetishes: ['None'],
+                photo: null
+            }
+        ];
+        
+        // Initialize test data
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== SWIPE TEST PAGE LOADED ===');
+            
+            // Mock the API response with sample data
+            window.fetch = function(url) {
+                return new Promise((resolve) => {
+                    if (url.includes('/api/users')) {
+                        setTimeout(() => {
+                            resolve({
+                                json: () => Promise.resolve(
+                                    sampleUsers.map(user => [user.id, user])
+                                )
+                            });
+                        }, 100);
+                    } else if (url.includes('/api/match')) {
+                        setTimeout(() => {
+                            resolve({
+                                json: () => Promise.resolve({ status: 'success' })
+                            });
+                        }, 100);
+                    }
+                });
+            };
+            
+            console.log('Test data initialized');
+        });
+    </script>
+</body>
+</html>

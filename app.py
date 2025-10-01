@@ -1832,4 +1832,7 @@ def inject_static_version():
 # For Render and other hosting platforms
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=True)@app.route('/swipe-test') 
+@login_required 
+def swipe_test(): 
+    return render_template('swipe_test.html') 
