@@ -326,17 +326,6 @@
         // Completely reset card animations and styles with smooth transition
         const card = $('#currentCard');
         
-        // Only reset styles if not currently dragging
-        if (isDragging) {
-            console.log('showNextUser called during drag - hiding card');
-            // If currently dragging, just hide the card and return
-            // This prevents interfering with the current drag operation
-            card.hide();
-            return;
-        }
-        
-        console.log('showNextUser called - resetting card styles');
-        
         // Reset all parent containers to ensure proper positioning
         card.parent().css('overflow', 'visible');
         card.closest('#swipeContainer').css('overflow', 'visible');
@@ -467,21 +456,25 @@
         const rotation = currentX * 0.1; // Subtle rotation effect
         const opacity = 1 - Math.abs(currentX) / 500; // Fade out slightly when moving far
         
-        // Move the card with smooth rotation  
-        // Only update transform, opacity and transition during drag to prevent style conflicts
+        // Apply transform to the card element with proper positioning
         const card = $('#currentCard');
-        const cardElement = card[0]; // Get raw DOM element
         
-        if (cardElement) {
-            console.log('Setting transform directly on DOM element');
-            // Directly set transform style to ensure it takes precedence
-            cardElement.style.transform = `translateX(${currentX}px) rotate(${rotation}deg)`;
-            cardElement.style.opacity = Math.max(0.7, opacity);
-            cardElement.style.transition = 'none';
-            cardElement.style.backfaceVisibility = 'visible';
-            cardElement.style.willChange = 'transform, opacity';
-        }
-
+        // Remove previous transform styles to avoid conflicts
+        card.css({
+            'transform': 'translateX(' + currentX + 'px) rotate(' + rotation + 'deg)',
+            'opacity': Math.max(0.7, opacity), // Minimum opacity 0.7
+            'transition': 'none',
+            'display': 'block',
+            'position': 'relative',
+            'margin': '20px auto',
+            'max-width': '400px',
+            'z-index': '1000'
+        });
+        
+        // Also update parent containers if needed
+        card.parent().css('overflow', 'visible');
+        card.closest('#swipeContainer').css('overflow', 'visible');
+        
         // Show action hints based on direction
         if (currentX > 50) {
             $('#likeHint').show();
@@ -657,16 +650,13 @@
             console.log('Starting smooth transition to next user...');
             
             // Add smooth fade out effect - keeping the original swipe direction
-            // Don't override the transform property that positions the card to the side
             $('#currentCard').css({
-                'transition': 'opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
+                'transition': 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
                 'opacity': '0'
             });
             
-            // Use transitionend event to ensure animation completes before loading next user
-            $('#currentCard').one('transitionend', function() {
-                console.log('Card transition completed, loading next user...');
-                
+            // After the swipe animation completes, load next user
+            setTimeout(function() {
                 console.log('Loading next user...');
                 
                 // Check if we have a preloaded user
@@ -685,34 +675,7 @@
                 }
                 
                 updateUndoButton();
-            });
-            
-            // Fallback timeout in case transitionend doesn't fire
-            setTimeout(function() {
-                const card = $('#currentCard');
-                if (card.css('opacity') <= 0.01) { // Check if transition has completed
-                    // Only trigger the callback if it hasn't been triggered by transitionend
-                    card.off('transitionend');
-                    console.log('Loading next user (timeout)...');
-                    
-                    // Check if we have a preloaded user
-                    if (preloadedUser) {
-                        console.log('Using preloaded user');
-                        users = [preloadedUser];
-                        currentIndex = 0;
-                        preloadedUser = null;
-                        showNextUser();
-                        
-                        // Start preloading the next user
-                        preloadNextUser();
-                    } else {
-                        console.log('No preloaded user, loading from API');
-                        loadNextUser();
-                    }
-                    
-                    updateUndoButton();
-                }
-            }, 500); // Slightly longer than CSS transition time
+            }, 400); // Match the fade out duration
             
         }, 300); // Wait for the initial swipe animation to complete before starting the fade out
     }
@@ -866,7 +829,7 @@
     .swipe-card {
         position: relative;
         cursor: grab;
-        /* will-change: transform, opacity; - temporarily disabled to test for conflicts */
+        will-change: transform, opacity;
         z-index: 100;
         /* Убираем transition из стандартных стилей */
     }
