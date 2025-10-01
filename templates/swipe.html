@@ -406,6 +406,7 @@
     }
     
     function startDrag(e) {
+        console.log('Start drag event:', e.type); // Debug message
         isDragging = true;
         if (e.type === 'touchstart') {
             startX = e.touches[0].clientX;
@@ -413,7 +414,10 @@
             startX = e.clientX;
         }
         
-        $('#currentCard').css('transition', 'none');
+        // Remove transition class and add drag-specific styles
+        $('#currentCard').removeClass('transition-enabled')
+                        .css('transition', 'none');
+        console.log('Started dragging at X:', startX); // Debug message
     }
     
     function drag(e) {
@@ -429,6 +433,8 @@
         }
         
         currentX = clientX - startX;
+        
+        console.log('Dragging card, currentX:', currentX); // Debug message
         
         // Move the card with smooth rotation
         const rotation = currentX * 0.1; // Subtle rotation effect
@@ -452,6 +458,7 @@
     }
     
     function endDrag(e) {
+        console.log('End drag event:', e.type); // Debug message
         if (!isDragging || !currentUserId) return;
         
         isDragging = false;
@@ -464,9 +471,11 @@
         }
         
         const diffX = (clientX ? clientX : currentX + startX) - startX;
+        console.log('End drag, diffX:', diffX); // Debug message
         
-        // Reset transition for smooth animation
-        $('#currentCard').css('transition', 'transform 0.3s ease-out, opacity 0.3s ease-out');
+        // Reset transition for smooth animation by adding the class back
+        $('#currentCard').addClass('transition-enabled')
+                        .css('transition', ''); // Remove inline transition style
         
         if (diffX > 100) {
             // Like action with smooth animation
@@ -746,9 +755,14 @@
 <style>
     .swipe-card {
         position: relative;
-        transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         cursor: grab;
         will-change: transform, opacity;
+        /* Убираем transition из стандартных стилей */
+    }
+    
+    /* Добавляем transition только для автоматических анимаций */
+    .swipe-card.transition-enabled {
+        transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
     }
     
     .swipe-card:active {
