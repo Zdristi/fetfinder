@@ -422,21 +422,16 @@
         e.preventDefault(); // Prevent scrolling while dragging
         
         let clientX;
-        if (e.type === 'touchmove' && e.touches.length > 0) {
+        if (e.type === 'touchmove') {
             clientX = e.touches[0].clientX;
-        } else if (e.type === 'mousemove') {
+        } else {
             clientX = e.clientX;
         }
         
         currentX = clientX - startX;
         
-        // Move the card with smooth rotation
-        const rotation = currentX * 0.1; // Subtle rotation effect
-        const opacity = 1 - Math.abs(currentX) / 500; // Fade out slightly when moving far
-        
-        $('#currentCard').css('transform', 'translateX(' + currentX + 'px) rotate(' + rotation + 'deg)')
-                        .css('opacity', Math.max(0.7, opacity)) // Minimum opacity 0.7
-                        .css('transition', 'none'); // No transition during drag
+        // Move the card
+        $('#currentCard').css('transform', `translateX(${currentX}px) rotate(${currentX * 0.1}deg)`);
         
         // Show action hints based on direction
         if (currentX > 50) {
