@@ -317,11 +317,10 @@
         console.log('Displaying user card for user ID:', currentUserId);
         
         // Completely reset card animations and styles
-        $('#currentCard').removeClass('swipe-card-liked swipe-card-disliked')
+        $('#currentCard').removeClass('swipe-card-liked swipe-card-disliked card-entering transition-enabled')
                         .removeAttr('style') // Remove all inline styles
                         .css({
                             'transform': 'translateX(0) rotate(0deg)',
-                            'transition': 'none',
                             'display': 'block',
                             'opacity': '1',
                             'position': 'relative',
@@ -416,7 +415,8 @@
         
         // Remove transition class and add drag-specific styles
         $('#currentCard').removeClass('transition-enabled')
-                        .css('transition', 'none');
+                        .css('transition', 'none')
+                        .css('display', 'block'); // Ensure card is visible
         console.log('Started dragging at X:', startX); // Debug message
     }
     
@@ -440,9 +440,20 @@
         const rotation = currentX * 0.1; // Subtle rotation effect
         const opacity = 1 - Math.abs(currentX) / 500; // Fade out slightly when moving far
         
-        $('#currentCard').css('transform', 'translateX(' + currentX + 'px) rotate(' + rotation + 'deg)')
-                        .css('opacity', Math.max(0.7, opacity)) // Minimum opacity 0.7
-                        .css('transition', 'none'); // No transition during drag
+        // Use attr instead of css to override inline styles
+        $('#currentCard').attr('style', function(i, style) {
+            return style ? style.replace(/transform[^;]+;?/g, '') : '';
+        });
+        
+        $('#currentCard').css({
+            'transform': 'translateX(' + currentX + 'px) rotate(' + rotation + 'deg)',
+            'opacity': Math.max(0.7, opacity), // Minimum opacity 0.7
+            'transition': 'none',
+            'display': 'block',
+            'position': 'relative',
+            'margin': '20px auto',
+            'max-width': '400px'
+        });
         
         // Show action hints based on direction
         if (currentX > 50) {
@@ -475,7 +486,8 @@
         
         // Reset transition for smooth animation by adding the class back
         $('#currentCard').addClass('transition-enabled')
-                        .css('transition', ''); // Remove inline transition style
+                        .css('transition', '') // Remove inline transition style
+                        .css('display', 'block'); // Ensure card remains visible
         
         if (diffX > 100) {
             // Like action with smooth animation
@@ -770,15 +782,29 @@
     }
     
     .swipe-card-liked {
-        transform: translateX(150%) rotate(20deg);
-        opacity: 0;
-        transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        transform: translateX(150%) rotate(20deg) !important;
+        opacity: 0 !important;
     }
     
     .swipe-card-disliked {
-        transform: translateX(-150%) rotate(-20deg);
-        opacity: 0;
-        transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        transform: translateX(-150%) rotate(-20deg) !important;
+        opacity: 0 !important;
+    }
+    
+    /* Entrance animation */
+    @keyframes cardEntrance {
+        from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    
+    .card-entering {
+        animation: cardEntrance 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
     }
     
     .action-hint {
