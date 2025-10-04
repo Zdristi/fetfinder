@@ -512,24 +512,37 @@ class SwipeSystem {
   showEmptyState(isError = false) {
     console.log('Showing empty state, isError:', isError);
     
-    const container = document.querySelector('.swipe-container');
-    if (container) {
-      if (isError) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <div>⚠️</div>
-            <h3>Error loading users</h3>
-            <p>Please try again later</p>
-          </div>
-        `;
-      } else {
-        container.innerHTML = `
-          <div class="empty-state">
-            <div>👥</div>
-            <h3>No more users to show</h3>
-            <p>Check back later for new matches!</p>
-          </div>
-        `;
+    // Hide the swipe area
+    const swipeArea = document.getElementById('swipeArea');
+    if (swipeArea) {
+      swipeArea.style.display = 'none';
+    }
+    
+    // Show the existing no users message
+    const noUsersMessage = document.getElementById('noUsersMessage');
+    if (noUsersMessage) {
+      noUsersMessage.style.display = 'block';
+    } else {
+      // Fallback: create and display the message if element doesn't exist
+      const container = document.querySelector('.swipe-container');
+      if (container) {
+        if (isError) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div>⚠️</div>
+              <h3>Error loading users</h3>
+              <p>Please try again later</p>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div>👥</div>
+              <h3>No more users to show</h3>
+              <p>Check back later for new matches!</p>
+            </div>
+          `;
+        }
       }
     }
   }
