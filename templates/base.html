@@ -142,9 +142,10 @@
                     <a href="{{ url_for('premium') }}">Premium</a>
                     <div class="faq-menu" style="position: relative; display: inline-block;">
                         <a href="{{ url_for('faq') }}" class="faq-menu-link" style="text-decoration: none; color: inherit;">
-                            {{ get_text('faq') or 'FAQ' }}
+                            {{ get_text('information') or 'Information' }}
                         </a>
                         <div class="faq-dropdown" style="display: none; position: absolute; top: 100%; left: 0; background: var(--card-bg); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; min-width: 150px;">
+                            <a href="{{ url_for('about') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('about_us') or 'About Us' }}</a>
                             <a href="{{ url_for('faq') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('faq') or 'FAQ' }}</a>
                             <a href="{{ url_for('support_chat') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none;">{{ get_text('support') or 'Support' }}</a>
                         </div>

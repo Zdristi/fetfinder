@@ -180,6 +180,8 @@ LANGUAGES = {
         'be_first': 'Be the first to join our community!',
         'member_since': 'Member since',
         'about': 'About',
+        'about_us': 'About Us',
+        'information': 'Information',
         'no_bio': 'No bio provided',
         'no_fetishes': 'No fetishes listed',
         'no_interests': 'No interests listed',
@@ -367,6 +369,8 @@ LANGUAGES = {
         'be_first': 'Будьте первым, кто присоединится к нашему сообществу!',
         'member_since': 'Участник с',
         'about': 'О себе',
+        'about_us': 'О нас',
+        'information': 'Информация',
         'no_bio': 'Биография не указана',
         'no_fetishes': 'Фетиши не указаны',
         'no_interests': 'Интересы не указаны',
@@ -2140,6 +2144,11 @@ def subscribe_premium():
 @app.route('/faq')
 def faq():
     return render_template('faq.html')
+
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
 
 
 @app.route('/support_chat')
