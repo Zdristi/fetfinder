@@ -1422,6 +1422,7 @@ def show_profile(user_id):
     user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
     
     user_data = {
+        'id': user.id,
         'username': user.username,
         'email': user.email,
         'photo': user.photo,
