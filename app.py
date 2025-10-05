@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 import json
@@ -27,11 +27,15 @@ def after_request(response):
     return response
 
 
+# Serve favicon.ico specifically to ensure it's handled properly
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(app.static_folder, 'favicon.ico', mimetype='image/x-icon')
+
 # Serve static files with cache control headers
 @app.route('/static/<path:filename>')
 def static_files(filename):
     """Serve static files with appropriate cache control headers"""
-    from flask import send_from_directory
     response = send_from_directory(app.static_folder, filename)
     
     # Add version-based cache control for CSS and JS files
