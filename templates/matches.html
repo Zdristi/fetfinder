@@ -29,7 +29,9 @@
                             {% if match.user.city or match.user.country %}
                                 <p class="match-location">
                                     <i class="fas fa-map-marker-alt"></i>
-                                    {{ match.user.city }}{% if match.user.city and match.user.country %}, {% endif %}{{ match.user.country }}
+                                    {% if match.user.city %}{{ match.user.city }}{% endif %}
+                                    {% if match.user.city and match.user.country %}, {% endif %}
+                                    {% if match.user.country %}{{ match.user.country }}{% endif %}
                                 </p>
                             {% endif %}
                             {% if match.unread_count > 0 %}

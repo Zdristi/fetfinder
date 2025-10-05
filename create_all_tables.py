@@ -46,6 +46,8 @@ def create_all_tables():
                 is_premium BOOLEAN DEFAULT 0,
                 premium_expires TIMESTAMP,
                 coins INTEGER DEFAULT 0,
+                match_by_city BOOLEAN DEFAULT 0,
+                match_by_country BOOLEAN DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')

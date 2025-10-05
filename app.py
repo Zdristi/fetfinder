@@ -278,6 +278,10 @@ LANGUAGES = {
         'contact_support': 'Contact Support',
         'support_chat': 'Support Chat',
         'back_to_profile': 'Back to Profile',
+        'location_matching_settings': 'Location Matching Settings',
+        'match_by_city': 'Match only with users from my city',
+        'match_by_country': 'Match only with users from my country',
+        'location_matching_note': 'Note: These settings control which users appear in your swipe feed. If both are checked, city takes priority.',
         'welcome_to_support_chat': 'Welcome to Support Chat!',
         'support_will_respond_soon': 'Our support team will respond to your messages as soon as possible.',
         'type_your_message': 'Type your message...',
@@ -409,6 +413,10 @@ LANGUAGES = {
         'just_per_month': 'Всего $9.99/месяц',
         'cancel_anytime': 'Отменить в любое время',
         'current_photos': 'Текущие фотографии',
+        'location_matching_settings': 'Настройки геолокации',
+        'match_by_city': 'Показывать только пользователей из моего города',
+        'match_by_country': 'Показывать только пользователей из моей страны',
+        'location_matching_note': 'Примечание: Эти настройки контролируют, какие пользователи будут показываться в ленте. Если отмечены оба варианта, приоритет отдается городу.',
         'set_primary_photo': 'Сделать основной',
         'confirm_delete_photo': 'Вы уверены, что хотите удалить эту фотографию?',
         'photo_deleted': 'Фотография успешно удалена',
@@ -1438,6 +1446,10 @@ def edit_profile():
         current_user.city = request.form.get('city')
         current_user.bio = request.form.get('bio')
         
+        # Update location matching settings
+        current_user.match_by_city = bool(request.form.get('match_by_city'))
+        current_user.match_by_country = bool(request.form.get('match_by_country'))
+        
         # Handle photo upload
         if 'photo' in request.files:
             photo = request.files['photo']
@@ -1618,6 +1630,7 @@ def api_users():
         # Get all users except current user and blocked users
         # Exclude users that current user has already swiped on
         current_user_id = int(current_user.id)
+        current_user_obj = UserModel.query.get(current_user_id)
         print(f"Fetching users for current user ID: {current_user_id}")
         
         # Get total count of all users in the system
@@ -1634,16 +1647,21 @@ def api_users():
         print(f"User {current_user_id} has swiped on {len(swiped_user_ids)} users")
         print(f"User {current_user_id} has swiped on user IDs: {swiped_user_ids}")
         
-        # Get all users to see the full picture
-        all_users = UserModel.query.all()
-        all_user_ids = [user.id for user in all_users]
-        print(f"All user IDs in system: {all_user_ids}")
-        
-        # Get other users (excluding current user and blocked)
-        other_users = UserModel.query.filter(
+        # Start building query for other users
+        query = UserModel.query.filter(
             UserModel.id != current_user_id,
             UserModel.is_blocked == False
-        ).all()
+        )
+        
+        # Apply location-based filters based on user's preferences
+        if current_user_obj.match_by_city and current_user_obj.city:
+            query = query.filter(UserModel.city == current_user_obj.city)
+            print(f"Filtering by city: {current_user_obj.city}")
+        elif current_user_obj.match_by_country and current_user_obj.country:
+            query = query.filter(UserModel.country == current_user_obj.country)
+            print(f"Filtering by country: {current_user_obj.country}")
+        
+        other_users = query.all()
         
         other_user_ids = [user.id for user in other_users]
         print(f"Other users (not current and not blocked): {other_user_ids}")
@@ -1658,8 +1676,10 @@ def api_users():
         print(f"Users filtered out due to previous swipe: {filtered_out}")
         
         # Additional debug information
-        print(f"Total users in system: {len(all_users)}")
+        print(f"Total users in system: {total_users_count}")
         print(f"Current user ID: {current_user_id}")
+        print(f"Current user location settings - City: {current_user_obj.match_by_city}, Country: {current_user_obj.match_by_country}")
+        print(f"Current user location - City: {current_user_obj.city}, Country: {current_user_obj.country}")
         print(f"Other users count: {len(other_users)}")
         print(f"Swiped users count: {len(swiped_users)}")
         print(f"Eligible users count: {len(eligible_users)}")

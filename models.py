@@ -40,6 +40,10 @@ class User(UserMixin, db.Model):
     # Виртуальная валюта (монеты)
     coins = db.Column(db.Integer, default=0)
     
+    # Настройки геолокации для поиска
+    match_by_city = db.Column(db.Boolean, default=False)  # Искать только по городу
+    match_by_country = db.Column(db.Boolean, default=False)  # Искать только по стране
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
