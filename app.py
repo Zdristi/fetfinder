@@ -90,6 +90,39 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize database
 db.init_app(app)
 
+
+# TEMPORARY: Run database migration to add email confirmation fields
+# This will be executed when the app starts - remove this after running once
+def run_initial_migration():
+    with app.app_context():
+        try:
+            # Проверим, существуют ли уже столбцы
+            result = db.session.execute(db.text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'user' AND column_name = 'email_confirmed'
+            """))
+            
+            if not result.fetchone():
+                # Добавляем столбцы в таблицу user
+                db.session.execute(db.text("""
+                    ALTER TABLE "user" 
+                    ADD COLUMN IF NOT EXISTS email_confirmed BOOLEAN DEFAULT FALSE,
+                    ADD COLUMN IF NOT EXISTS confirmation_code VARCHAR(6),
+                    ADD COLUMN IF NOT EXISTS confirmation_code_expires TIMESTAMP
+                """))
+                
+                db.session.commit()
+                print("Миграция базы данных выполнена успешно!")
+            else:
+                print("Миграция базы данных уже выполнена.")
+        except Exception as e:
+            print(f"Ошибка при выполнении миграции: {e}")
+            db.session.rollback()
+
+# Выполняем миграцию при запуске приложения
+run_initial_migration()
+
 # Create templates and static directories if they don't exist
 if not os.path.exists('templates'):
     os.makedirs('templates')
