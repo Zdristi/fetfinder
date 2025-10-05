@@ -112,7 +112,8 @@ class SwipeSystem {
     const locationElem = document.getElementById('location');
     if (locationElem) {
       if (user.city || user.country) {
-        locationElem.textContent = `${user.city || ''}${user.city && user.country ? ', ' : ''}${user.country || ''}`;
+        // Add location icon and text
+        locationElem.innerHTML = `<i class="fas fa-map-marker-alt location-icon"></i> ${user.city || ''}${user.city && user.country ? ', ' : ''}${user.country || ''}`;
         locationElem.style.display = 'block';
       } else {
         locationElem.style.display = 'none';
