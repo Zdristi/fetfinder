@@ -29,6 +29,14 @@
                 </p>
             {% endif %}
             <p><i class="fas fa-calendar-alt"></i> {{ get_text('member_since') }} {{ user_data.created_at[:10] }}</p>
+            
+            {% if current_user.id == user_data.id %}
+                <div class="profile-actions" style="margin-top: 15px;">
+                    <a href="{{ url_for('edit_profile') }}" class="btn btn-outline" style="padding: 8px 15px; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center;">
+                        <i class="fas fa-edit"></i> {{ get_text('edit_profile') }}
+                    </a>
+                </div>
+            {% endif %}
         </div>
     </div>
     
@@ -73,88 +81,6 @@
     {% else %}
         <p>{{ get_text('no_interests') }}</p>
     {% endif %}
-    
-
-    
-
-<script>
-
-        
-
-        
-        // Function to submit rating via AJAX
-        function submitRating(userId, stars) {
-            fetch('/api/rating', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest' // Common header for AJAX requests
-                },
-                body: JSON.stringify({
-                    rated_user_id: userId,
-                    stars: stars
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('HTTP error! status: ' + response.status);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if(data.status === 'success') {
-                    showMessage(data.message || 'Rating submitted successfully!', 'success');
-                    // Hide submit button after successful submission
-                    submitBtn.style.display = 'none';
-                } else {
-                    showMessage('Error submitting rating: ' + (data.message || 'Unknown error'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showMessage('Error submitting rating: ' + error.message, 'error');
-            });
-        }
-        
-        // Function to show message
-        function showMessage(text, type) {
-            // Create message element
-            const messageDiv = document.createElement('div');
-            messageDiv.textContent = text;
-            messageDiv.style.padding = '10px';
-            messageDiv.style.margin = '10px 0';
-            messageDiv.style.borderRadius = '5px';
-            messageDiv.style.textAlign = 'center';
-            
-            if(type === 'success') {
-                messageDiv.style.backgroundColor = '#d4edda';
-                messageDiv.style.color = '#155724';
-                messageDiv.style.borderColor = '#c3e6cb';
-            } else {
-                messageDiv.style.backgroundColor = '#f8d7da';
-                messageDiv.style.color = '#721c24';
-                messageDiv.style.borderColor = '#f5c6cb';
-            }
-            
-            messageDiv.style.border = '1px solid';
-            
-            // Insert message in a safe location - add to the rating section div
-            const ratingSection = document.querySelector('#rating-input')?.closest('div') ||
-                                 document.querySelector('#submit-rating-btn')?.parentElement;
-            
-            if(ratingSection) {
-                ratingSection.parentNode.insertBefore(messageDiv, ratingSection);
-            } else {
-                // Fallback: add to the beginning of the main content area
-                document.querySelector('.card').prepend(messageDiv);
-            }
-            
-            // Remove message after 3 seconds
-            setTimeout(() => {
-                messageDiv.remove();
-            }, 3000);
-        }
-    });
-</script>
+</div>
 
 {% endblock %}
