@@ -84,8 +84,19 @@ if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 # Configure SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+# Add connection pool settings and timeout parameters to handle connection issues
+app.config['SQLALCHEMY_DATABASE_URI'] = f"{DATABASE_URL}?connect_timeout=10&command_timeout=30&idle_in_transaction_session_timeout=30000"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 10,
+    'pool_recycle': 120,
+    'pool_pre_ping': True,
+    'connect_args': {
+        'connect_timeout': 10,
+        'command_timeout': 30,
+        'idle_in_transaction_session_timeout': 30000
+    }
+}
 
 # Initialize database
 db.init_app(app)
@@ -1511,10 +1522,11 @@ def register():
                 
         except Exception as e:
             db.session.rollback()
+            error_str = str(e)
             # Check if it's a duplicate email error
-            if 'duplicate key value violates unique constraint' in str(e) and 'email' in str(e):
+            if 'duplicate key value violates unique constraint' in error_str and 'email' in error_str:
                 flash(get_text('email_exists') or 'A user with this email already exists')
-            elif 'SSL error' in str(e) or 'connection' in str(e).lower():
+            elif 'SSL error' in error_str or 'connection' in error_str.lower() or 'timeout' in error_str.lower() or 'server closed the connection unexpectedly' in error_str:
                 # Обработка ошибок подключения к базе данных
                 flash('Сервис временно недоступен. Пожалуйста, попробуйте зарегистрироваться чуть позже.')
                 print(f"Database connection error during registration: {e}")
@@ -1606,20 +1618,31 @@ def login():
         username = request.form['username']
         password = request.form['password']
         
-        # Find user
-        user = UserModel.query.filter_by(username=username).first()
-        if user and user.check_password(password):
-            # Check if user is blocked
-            if user.is_blocked:
-                flash('Your account has been blocked')
-                return redirect(url_for('login'))
+        try:
+            # Find user
+            user = UserModel.query.filter_by(username=username).first()
+            if user and user.check_password(password):
+                # Check if user is blocked
+                if user.is_blocked:
+                    flash('Your account has been blocked')
+                    return redirect(url_for('login'))
+                
+                # Log in the user
+                login_user(user)
+                return redirect(url_for('profile'))
             
-            # Log in the user
-            login_user(user)
-            return redirect(url_for('profile'))
-        
-        flash(get_text('invalid_credentials'))
-        return redirect(url_for('login'))
+            flash(get_text('invalid_credentials'))
+            return redirect(url_for('login'))
+        except Exception as e:
+            error_str = str(e)
+            if 'SSL error' in error_str or 'connection' in error_str.lower() or 'timeout' in error_str.lower() or 'server closed the connection unexpectedly' in error_str:
+                # Обработка ошибок подключения к базе данных
+                flash('Сервис временно недоступен. Пожалуйста, попробуйте войти чуть позже.')
+                print(f"Database connection error during login: {e}")
+                return render_template('login.html')
+            else:
+                flash(get_text('invalid_credentials'))
+                return redirect(url_for('login'))
     
     return render_template('login.html')
 
@@ -1635,29 +1658,41 @@ def profile():
 
 @app.route('/profile/<int:user_id>')
 def show_profile(user_id):
-    # Get the specified user
-    user = UserModel.query.get_or_404(user_id)
-    
-    # Get user's fetishes and interests
-    user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
-    user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
-    
-    user_data = {
-        'id': user.id,
-        'username': user.username,
-        'email': user.email,
-        'photo': user.photo,
-        'country': user.country,
-        'city': user.city,
-        'bio': user.bio,
-        'fetishes': user_fetishes,
-        'interests': user_interests,
-        'created_at': user.created_at.isoformat(),
-        'is_premium': is_premium_user(user)
-    }
-    
-    is_complete = bool(user.country and user.city)
-    return render_template('profile.html', user_data=user_data, is_complete=is_complete)
+    try:
+        # Get the specified user
+        user = UserModel.query.get_or_404(user_id)
+        
+        # Get user's fetishes and interests
+        user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
+        user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+        
+        user_data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'photo': user.photo,
+            'country': user.country,
+            'city': user.city,
+            'bio': user.bio,
+            'fetishes': user_fetishes,
+            'interests': user_interests,
+            'created_at': user.created_at.isoformat(),
+            'is_premium': is_premium_user(user)
+        }
+        
+        is_complete = bool(user.country and user.city)
+        return render_template('profile.html', user_data=user_data, is_complete=is_complete)
+    except Exception as e:
+        error_str = str(e)
+        if 'SSL error' in error_str or 'connection' in error_str.lower() or 'timeout' in error_str.lower() or 'server closed the connection unexpectedly' in error_str:
+            # Обработка ошибок подключения к базе данных
+            flash('Сервис временно недоступен. Пожалуйста, попробуйте зайти позже.')
+            print(f"Database connection error during show_profile: {e}")
+            # Возвращаем базовый шаблон с сообщением об ошибке
+            return render_template('index.html', error="Сервис временно недоступен. Пожалуйста, попробуйте зайти позже.")
+        else:
+            # Повторяем исключение, чтобы отобразить стандартную 404 или другую ошибку
+            raise
 
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
