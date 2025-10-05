@@ -156,12 +156,56 @@ def send_confirmation_email(email, code):
 @login_manager.user_loader
 def load_user(user_id):
     try:
+        # Try to load user with all fields (including new ones)
         user = UserModel.query.get(int(user_id))
         if user:
             return user
         return None
-    except ValueError:
-        # Handle UUID or other non-integer user IDs
+    except Exception as e:
+        # If there's an error (like missing columns), try to load a basic user
+        # This handles the case where the database hasn't been migrated yet
+        try:
+            from sqlalchemy import text
+            result = db.session.execute(
+                text("SELECT id, username, email, password_hash, is_admin, is_blocked FROM \"user\" WHERE id = :id"),
+                {"id": int(user_id)}
+            )
+            row = result.fetchone()
+            if row:
+                # Create a minimal user object that supports only basic functionality
+                class BasicUser:
+                    def __init__(self, id, username, email, password_hash, is_admin, is_blocked):
+                        self.id = id
+                        self.username = username
+                        self.email = email
+                        self.password_hash = password_hash
+                        self.is_admin = is_admin
+                        self.is_blocked = is_blocked
+                    
+                    def is_authenticated(self):
+                        return True
+                    
+                    def is_active(self):
+                        return not self.is_blocked
+                    
+                    def is_anonymous(self):
+                        return False
+                    
+                    def get_id(self):
+                        return str(self.id)
+                
+                user = BasicUser(
+                    id=row[0], 
+                    username=row[1], 
+                    email=row[2], 
+                    password_hash=row[3],
+                    is_admin=row[4],
+                    is_blocked=row[5]
+                )
+                return user
+        except Exception:
+            pass
+        
         return None
 
 # Block check before each request
