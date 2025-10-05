@@ -28,7 +28,9 @@ def check_and_add_columns():
             ("education", "VARCHAR(100)"),
             ("children", "VARCHAR(50)"),
             ("pets", "VARCHAR(50)"),
-            ("coins", "INTEGER DEFAULT 0")
+            ("coins", "INTEGER DEFAULT 0"),
+            ("match_by_city", "BOOLEAN DEFAULT FALSE"),
+            ("match_by_country", "BOOLEAN DEFAULT FALSE")
         ]
         
         for column_name, column_type in columns_to_add:
