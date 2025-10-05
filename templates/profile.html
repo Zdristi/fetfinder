@@ -37,7 +37,14 @@
             {% endif %}
             <p><i class="fas fa-calendar-alt"></i> {{ get_text('member_since') }} {{ user_data.created_at[:10] }}</p>
             
-            {% if current_user.id == user_data.id %}
+            <!-- Debug information - remove after testing -->
+            <!--
+            <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px;">
+                DEBUG: current_user.id={{ current_user.id }}, user_data.id={{ user_data.id }}, is_authenticated={{ current_user.is_authenticated }}
+            </div>
+            -->
+            
+            {% if current_user.is_authenticated and current_user.id == user_data.id %}
                 <div class="profile-actions" style="margin-top: 15px;">
                     <a href="{{ url_for('edit_profile') }}" class="btn btn-outline" style="padding: 8px 15px; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center;">
                         <i class="fas fa-edit"></i> {{ get_text('edit_profile') }}
