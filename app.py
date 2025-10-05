@@ -2260,8 +2260,8 @@ def admin_delete_user(user_id):
         Match.query.filter_by(matched_user_id=user.id).delete()
         Message.query.filter_by(sender_id=user.id).delete()
         Message.query.filter_by(recipient_id=user.id).delete()
-        SupportTicket.query.filter_by(user_id=user.id).delete()  # Удаляем тикеты поддержки
-        SupportMessage.query.filter_by(sender_id=user.id).delete()  # Удаляем сообщения поддержки
+        SupportMessage.query.filter_by(sender_id=user.id).delete()  # Удаляем сообщения поддержки сначала
+        SupportTicket.query.filter_by(user_id=user.id).delete()  # Потом тикеты поддержки
         
         # Delete the user
         db.session.delete(user)
