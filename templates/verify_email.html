@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Подтверждение Email - {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 400px; margin: 50px auto;">
+    <div class="card-header">
+        <h2 class="card-title">Подтверждение Email</h2>
+    </div>
+    
+    <div class="card-body">
+        <p style="text-align: center; margin-bottom: 20px;">Мы отправили код подтверждения на ваш email: <strong>{{ email }}</strong></p>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-error">
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" action="{{ url_for('verify_email') }}">
+            <input type="hidden" name="email" value="{{ email }}">
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="code">Код подтверждения</label>
+                <input type="text" id="code" name="code" required maxlength="6" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 5px; background: var(--input-bg); color: var(--text-color);">
+                <small style="display: block; margin-top: 5px; color: var(--muted-text);">Введите 6-значный код, отправленный на ваш email</small>
+            </div>
+            
+            <button type="submit" class="btn" style="width: 100%; padding: 12px;">Подтвердить</button>
+        </form>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="{{ url_for('resend_confirmation', email=email) }}" style="color: var(--primary); text-decoration: none;">Отправить код снова</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -44,6 +44,11 @@ class User(UserMixin, db.Model):
     match_by_city = db.Column(db.Boolean, default=False)  # Искать только по городу
     match_by_country = db.Column(db.Boolean, default=False)  # Искать только по стране
     
+    # Поля для подтверждения email
+    email_confirmed = db.Column(db.Boolean, default=False)
+    confirmation_code = db.Column(db.String(6), nullable=True)
+    confirmation_code_expires = db.Column(db.DateTime, nullable=True)
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships

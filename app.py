@@ -5,6 +5,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail, Message as EmailMessage
 import json
 from datetime import datetime, timedelta
 import uuid
@@ -13,6 +14,8 @@ import hashlib
 from models import db, User as UserModel, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage
 import hmac
 import hashlib
+import random
+import string
 
 # Create Flask app
 app = Flask(__name__)
@@ -59,6 +62,17 @@ if not app.config.get('SECRET_KEY'):
     app.secret_key = 'your-secret-key-here-change-this-in-production'
 else:
     app.secret_key = app.config['SECRET_KEY']
+
+# Email configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Изменить на ваш SMTP-сервер
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'your-email@gmail.com')  # Заменить на реальную почту
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'your-app-password')  # Заменить на пароль приложения
+app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
+
+# Инициализация Flask-Mail
+mail = Mail(app)
 
 # Database configuration
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -114,6 +128,26 @@ login_manager.login_message = 'Please log in to access this page.'
 # Data storage
 DATA_FILE = 'users.json'
 MATCHES_FILE = 'matches.json'
+
+def generate_confirmation_code():
+    """Генерирует 6-значный код подтверждения"""
+    return ''.join(random.choices(string.digits, k=6))
+
+
+def send_confirmation_email(email, code):
+    """Отправляет код подтверждения на email"""
+    try:
+        msg = EmailMessage(
+            subject='Код подтверждения регистрации - FetDate',
+            recipients=[email],
+            body=f'Ваш код подтверждения: {code}\n\nВведите этот код на сайте для завершения регистрации.'
+        )
+        mail.send(msg)
+        return True
+    except Exception as e:
+        print(f"Ошибка при отправке email: {e}")
+        return False
+
 
 # User loader for Flask-Login
 @login_manager.user_loader
@@ -1351,18 +1385,23 @@ def register():
         existing_user = UserModel.query.filter_by(username=username).first()
         if existing_user:
             flash(get_text('username_exists'))
-            return redirect(url_for('register'))
+            return render_template('register.html')
         
         # Check if email already exists
         existing_email = UserModel.query.filter_by(email=email).first()
         if existing_email:
             flash(get_text('email_exists') or 'A user with this email already exists')
-            return redirect(url_for('register'))
+            return render_template('register.html')
         
-        # Create new user
+        # Generate confirmation code
+        confirmation_code = generate_confirmation_code()
+        
+        # Create new user with confirmation code and expiration time
         user = UserModel(
             username=username,
-            email=email
+            email=email,
+            confirmation_code=confirmation_code,
+            confirmation_code_expires=datetime.utcnow() + timedelta(hours=1)  # Код действителен 1 час
         )
         user.set_password(password)
         
@@ -1373,11 +1412,18 @@ def register():
         db.session.add(user)
         try:
             db.session.commit()
-            # Automatically log in the user after registration
-            login_user(user)
-            # Redirect to profile editing page to ensure profile completeness
-            flash(get_text('registration_success'))
-            return redirect(url_for('edit_profile'))
+            
+            # Send confirmation email
+            if send_confirmation_email(email, confirmation_code):
+                # Redirect to verification page
+                flash('Пожалуйста, проверьте вашу почту для подтверждения регистрации.')
+                return redirect(url_for('verify_email_page', email=email))
+            else:
+                flash('Ошибка при отправке письма с подтверждением. Пожалуйста, попробуйте зарегистрироваться снова.')
+                db.session.delete(user)
+                db.session.commit()
+                return render_template('register.html')
+                
         except Exception as e:
             db.session.rollback()
             # Check if it's a duplicate email error
@@ -1385,9 +1431,74 @@ def register():
                 flash(get_text('email_exists') or 'A user with this email already exists')
             else:
                 flash('An error occurred during registration. Please try again.')
-            return redirect(url_for('register'))
+            return render_template('register.html')
     
     return render_template('register.html')
+
+
+@app.route('/verify_email')
+def verify_email_page():
+    email = request.args.get('email')
+    if not email:
+        flash('Неверный запрос. Пожалуйста, зарегистрируйтесь снова.')
+        return redirect(url_for('register'))
+    
+    return render_template('verify_email.html', email=email)
+
+
+@app.route('/verify_email', methods=['POST'])
+def verify_email():
+    email = request.form.get('email')
+    code = request.form.get('code')
+    
+    if not email or not code:
+        flash('Все поля обязательны для заполнения.')
+        return redirect(url_for('verify_email_page', email=email))
+    
+    # Find user by email and confirmation code
+    user = UserModel.query.filter_by(email=email, confirmation_code=code).first()
+    
+    if user and user.confirmation_code_expires and user.confirmation_code_expires > datetime.utcnow():
+        # Code is valid and not expired
+        user.email_confirmed = True
+        user.confirmation_code = None  # Clear the code after use
+        user.confirmation_code_expires = None
+        
+        db.session.commit()
+        login_user(user)
+        flash(get_text('registration_success'))
+        return redirect(url_for('edit_profile'))
+    else:
+        flash('Неверный или просроченный код подтверждения.')
+        return redirect(url_for('verify_email_page', email=email))
+
+
+@app.route('/resend_confirmation')
+def resend_confirmation():
+    email = request.args.get('email')
+    if not email:
+        flash('Неверный запрос.')
+        return redirect(url_for('register'))
+    
+    user = UserModel.query.filter_by(email=email).first()
+    if not user:
+        flash('Пользователь с таким email не найден.')
+        return redirect(url_for('register'))
+    
+    # Generate new confirmation code
+    new_code = generate_confirmation_code()
+    user.confirmation_code = new_code
+    user.confirmation_code_expires = datetime.utcnow() + timedelta(hours=1)
+    
+    db.session.commit()
+    
+    # Send new confirmation email
+    if send_confirmation_email(email, new_code):
+        flash('Новый код подтверждения отправлен на ваш email.')
+        return redirect(url_for('verify_email_page', email=email))
+    else:
+        flash('Ошибка при отправке нового кода. Пожалуйста, попробуйте позже.')
+        return redirect(url_for('verify_email_page', email=email))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
