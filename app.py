@@ -316,7 +316,8 @@ LANGUAGES = {
         'support_welcome_message': 'Hello! Welcome to FetDate support. How can we help you today?',
         'need_immediate_help': 'Need immediate help?',
         'contact_us_by_email': 'You can also contact us by email:',
-        'error_sending_message': 'Error sending message. Please try again.'
+        'error_sending_message': 'Error sending message. Please try again.',
+        'required_fields_note': 'Fields marked with * are required to complete registration'
     },
     'ru': {
         'welcome': 'Добро пожаловать в FetDate!',
@@ -484,6 +485,7 @@ LANGUAGES = {
         'need_immediate_help': 'Нужна срочная помощь?',
         'contact_us_by_email': 'Вы также можете связаться с нами по электронной почте:',
         'error_sending_message': 'Ошибка отправки сообщения. Пожалуйста, попробуйте снова.',
+        'required_fields_note': 'Поля, отмеченные *, обязательны для завершения регистрации',
         'support_tickets': 'Запросы в поддержку',
         'select_ticket_to_chat': 'Выберите запрос для начала чата',
         'select_ticket_to_begin_chat': 'Выберите запрос из списка, чтобы начать чат',
