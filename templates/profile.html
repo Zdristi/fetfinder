@@ -6,8 +6,15 @@
 <div class="card">
     <div class="profile-header">
         {% if user_data.photo %}
-            <img src="{{ url_for('static', filename='uploads/' + user_data.photo) if user_data.photo and not user_data.photo.startswith('http') else user_data.photo }}" 
-                 alt="{{ user_data.username }}" class="profile-avatar" style="width: 100px; height: 100px; object-fit: cover;">
+            {% if user_data.photo.startswith('http') %}
+                <img src="{{ user_data.photo }}" 
+                     alt="{{ user_data.username }}" class="profile-avatar" style="width: 100px; height: 100px; object-fit: cover;"
+                     onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\"profile-avatar\">{{ user_data.username[0].upper() if user_data.username else '?' }}</div>';">
+            {% else %}
+                <img src="{{ url_for('static', filename='uploads/' + user_data.photo) }}" 
+                     alt="{{ user_data.username }}" class="profile-avatar" style="width: 100px; height: 100px; object-fit: cover;"
+                     onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\"profile-avatar\">{{ user_data.username[0].upper() if user_data.username else '?' }}</div>';">
+            {% endif %}
         {% else %}
             <div class="profile-avatar">
                 {{ user_data.username[0].upper() if user_data.username else '?' }}
