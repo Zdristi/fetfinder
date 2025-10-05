@@ -2610,6 +2610,7 @@ def test_match():
 
 # API routes for notifications
 @app.route('/api/notifications')
+@login_required
 def api_notifications():
     """Get current user's notifications"""
     notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.timestamp.desc()).all()
