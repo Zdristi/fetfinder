@@ -6,17 +6,21 @@
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">{{ get_text('complete_profile') }}</h2>
+        <p style="color: var(--warning); font-size: 0.9em; margin-top: 10px;">
+            <i class="fas fa-exclamation-circle"></i> 
+            {{ get_text('required_fields_note') or 'Fields marked with * are required to complete registration' }}
+        </p>
     </div>
     
     <form method="POST" enctype="multipart/form-data" id="profileForm">
         <div class="form-group">
-            <label for="bio" class="form-label">{{ get_text('bio') }}</label>
-            <textarea id="bio" name="bio" class="form-control" placeholder="{{ get_text('bio') }}">{{ user.bio or '' }}</textarea>
+            <label for="bio" class="form-label">{{ get_text('bio') }} *</label>
+            <textarea id="bio" name="bio" class="form-control" placeholder="{{ get_text('bio') }}" required>{{ user.bio or '' }}</textarea>
         </div>
         
         <div class="form-group">
-            <label for="country" class="form-label">{{ get_text('country') }}</label>
-            <select id="country" name="country" class="form-control">
+            <label for="country" class="form-label">{{ get_text('country') }} *</label>
+            <select id="country" name="country" class="form-control" required>
                     <option value="">{{ get_text('select_country') }}</option>
                     {% for country in countries %}
                         <option value="{{ country }}" {% if user.country == country %}selected{% endif %}>{{ country }}</option>
@@ -25,8 +29,8 @@
         </div>
         
         <div class="form-group">
-            <label for="city" class="form-label">{{ get_text('city') }}</label>
-            <select id="city" name="city" class="form-control" {% if not user.country %}disabled{% endif %}>
+            <label for="city" class="form-label">{{ get_text('city') }} *</label>
+            <select id="city" name="city" class="form-control" {% if not user.country %}disabled{% endif %} required>
                 <option value="">{{ get_text('select_city') }}</option>
                 {% if user.country %}
                     {% for city in COUNTRIES_CITIES.get(user.country, []) %}
@@ -37,9 +41,9 @@
         </div>
         
         <div class="form-group">
-            <label for="photo" class="form-label">{{ get_text('photo') }}</label>
+            <label for="photo" class="form-label">{{ get_text('photo') }} *</label>
             <div class="file-input-wrapper">
-                <input type="file" id="photo" name="photo" class="file-input" accept="image/*" style="display: none;">
+                <input type="file" id="photo" name="photo" class="file-input" accept="image/*" style="display: none;" required>
                 <button type="button" class="btn btn-outline" onclick="document.getElementById('photo').click();">
                     <i class="fas fa-upload"></i> {{ get_text('choose_file') or 'Choose File' }}
                 </button>
