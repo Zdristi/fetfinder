@@ -1514,6 +1514,10 @@ def register():
             # Check if it's a duplicate email error
             if 'duplicate key value violates unique constraint' in str(e) and 'email' in str(e):
                 flash(get_text('email_exists') or 'A user with this email already exists')
+            elif 'SSL error' in str(e) or 'connection' in str(e).lower():
+                # Обработка ошибок подключения к базе данных
+                flash('Сервис временно недоступен. Пожалуйста, попробуйте зарегистрироваться чуть позже.')
+                print(f"Database connection error during registration: {e}")
             else:
                 flash('An error occurred during registration. Please try again.')
             return render_template('register.html')
