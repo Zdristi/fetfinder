@@ -1363,8 +1363,11 @@ def register():
         db.session.add(user)
         try:
             db.session.commit()
+            # Automatically log in the user after registration
+            login_user(user)
+            # Redirect to profile editing page to ensure profile completeness
             flash(get_text('registration_success'))
-            return redirect(url_for('login'))
+            return redirect(url_for('edit_profile'))
         except Exception as e:
             db.session.rollback()
             # Check if it's a duplicate email error
@@ -1442,10 +1445,28 @@ def show_profile(user_id):
 @app.route('/edit_profile', methods=['GET', 'POST'])
 def edit_profile():
     if request.method == 'POST':
+        # Get form data
+        country = request.form.get('country', '').strip()
+        city = request.form.get('city', '').strip()
+        bio = request.form.get('bio', '').strip()
+        
+        # Validate required fields for new users (empty profile)
+        is_new_user = not current_user.country and not current_user.city  # If both are empty, assume new user
+        if is_new_user:
+            if not country:
+                flash('Country is required')
+                return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
+            if not city:
+                flash('City is required')
+                return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
+            if not bio:
+                flash('Biography is required')
+                return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
+        
         # Update user profile information
-        current_user.country = request.form.get('country')
-        current_user.city = request.form.get('city')
-        current_user.bio = request.form.get('bio')
+        current_user.country = country
+        current_user.city = city
+        current_user.bio = bio
         
         # Update location matching settings
         current_user.match_by_city = bool(request.form.get('match_by_city'))
@@ -1461,6 +1482,11 @@ def edit_profile():
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 photo.save(filepath)
                 current_user.photo = filename
+        
+        # If user is new and doesn't have a photo, require photo upload
+        if is_new_user and not current_user.photo:
+            flash('Profile photo is required for new users')
+            return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
         
         # Update user's fetishes
         Fetish.query.filter_by(user_id=current_user.id).delete()  # Remove old fetishes
