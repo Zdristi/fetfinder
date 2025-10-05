@@ -2263,6 +2263,11 @@ def admin_delete_user(user_id):
         SupportMessage.query.filter_by(sender_id=user.id).delete()  # Удаляем сообщения поддержки сначала
         SupportTicket.query.filter_by(user_id=user.id).delete()  # Потом тикеты поддержки
         
+        # Удаляем записи из user_swipe, связанные с пользователем как swiper и swipee
+        from models import UserSwipe
+        UserSwipe.query.filter_by(swiper_id=user.id).delete()
+        UserSwipe.query.filter_by(swipee_id=user.id).delete()
+        
         # Delete the user
         db.session.delete(user)
         db.session.commit()
