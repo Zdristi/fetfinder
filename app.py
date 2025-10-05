@@ -64,10 +64,10 @@ else:
     app.secret_key = app.config['SECRET_KEY']
 
 # Email configuration
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Изменить на ваш SMTP-сервер
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'your-email@gmail.com')  # Заменить на реальную почту
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'sup.fetdate@gmail.com')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'your-app-password')  # Заменить на пароль приложения
 app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
 
@@ -128,6 +128,9 @@ login_manager.login_message = 'Please log in to access this page.'
 # Data storage
 DATA_FILE = 'users.json'
 MATCHES_FILE = 'matches.json'
+
+# Временное хранилище кодов подтверждения до миграции базы данных
+confirmation_codes = {}
 
 def generate_confirmation_code():
     """Генерирует 6-значный код подтверждения"""
@@ -1396,22 +1399,27 @@ def register():
         # Generate confirmation code
         confirmation_code = generate_confirmation_code()
         
-        # Create new user with confirmation code and expiration time
-        user = UserModel(
-            username=username,
-            email=email,
-            confirmation_code=confirmation_code,
-            confirmation_code_expires=datetime.utcnow() + timedelta(hours=1)  # Код действителен 1 час
-        )
-        user.set_password(password)
-        
-        # Check if this is the first user (make them admin)
-        if UserModel.query.count() == 0:
-            user.is_admin = True
-        
-        db.session.add(user)
         try:
+            # Создаем пользователя без новых полей до выполнения миграции базы данных
+            user = UserModel(
+                username=username,
+                email=email
+            )
+            user.set_password(password)
+            
+            # Check if this is the first user (make them admin)
+            if UserModel.query.count() == 0:
+                user.is_admin = True
+            
+            db.session.add(user)
             db.session.commit()
+            
+            # Store the confirmation code in temporary storage
+            confirmation_codes[email] = {
+                'code': confirmation_code,
+                'expires': datetime.utcnow() + timedelta(hours=1),  # Код действителен 1 час
+                'user_id': user.id
+            }
             
             # Send confirmation email
             if send_confirmation_email(email, confirmation_code):
@@ -1455,22 +1463,27 @@ def verify_email():
         flash('Все поля обязательны для заполнения.')
         return redirect(url_for('verify_email_page', email=email))
     
-    # Find user by email and confirmation code
-    user = UserModel.query.filter_by(email=email, confirmation_code=code).first()
-    
-    if user and user.confirmation_code_expires and user.confirmation_code_expires > datetime.utcnow():
-        # Code is valid and not expired
-        user.email_confirmed = True
-        user.confirmation_code = None  # Clear the code after use
-        user.confirmation_code_expires = None
+    # Check if code exists in temporary storage and is valid
+    if email in confirmation_codes:
+        stored_data = confirmation_codes[email]
+        stored_code = stored_data['code']
+        expires = stored_data['expires']
         
-        db.session.commit()
-        login_user(user)
-        flash(get_text('registration_success'))
-        return redirect(url_for('edit_profile'))
-    else:
-        flash('Неверный или просроченный код подтверждения.')
-        return redirect(url_for('verify_email_page', email=email))
+        if code == stored_code and expires > datetime.utcnow():
+            # Code is valid and not expired
+            # Find user by email
+            user = UserModel.query.filter_by(email=email).first()
+            if user:
+                # Delete the code from temporary storage
+                del confirmation_codes[email]
+                
+                # Login the user and redirect
+                login_user(user)
+                flash(get_text('registration_success'))
+                return redirect(url_for('edit_profile'))
+    
+    flash('Неверный или просроченный код подтверждения.')
+    return redirect(url_for('verify_email_page', email=email))
 
 
 @app.route('/resend_confirmation')
@@ -1487,10 +1500,13 @@ def resend_confirmation():
     
     # Generate new confirmation code
     new_code = generate_confirmation_code()
-    user.confirmation_code = new_code
-    user.confirmation_code_expires = datetime.utcnow() + timedelta(hours=1)
     
-    db.session.commit()
+    # Update temporary storage with new code
+    confirmation_codes[email] = {
+        'code': new_code,
+        'expires': datetime.utcnow() + timedelta(hours=1),
+        'user_id': user.id
+    }
     
     # Send new confirmation email
     if send_confirmation_email(email, new_code):

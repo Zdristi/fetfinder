@@ -1,0 +1,32 @@
+# Настройка переменных окружения для приложения
+
+# 1. Получите пароль приложения Gmail:
+#    - Перейдите в https://myaccount.google.com/
+#    - Раздел "Безопасность" → "Пароли приложений"
+#    - Создайте пароль приложения для "Mail" и вашего устройства
+#    - Запишите полученный пароль (он будет в формате xxxx xxxx xxxx xxxx)
+
+# 2. Установите переменные окружения:
+#    Windows (командная строка):
+#    set MAIL_USERNAME=sup.fetdate@gmail.com
+#    set MAIL_PASSWORD=ваш_пароль_приложения
+
+#    Windows (PowerShell):
+#    $env:MAIL_USERNAME="sup.fetdate@gmail.com"
+#    $env:MAIL_PASSWORD="ваш_пароль_приложения"
+
+#    Linux/Mac:
+#    export MAIL_USERNAME=sup.fetdate@gmail.com
+#    export MAIL_PASSWORD=ваш_пароль_приложения
+
+# 3. Альтернативно, создайте файл .env в корне проекта:
+#    MAIL_USERNAME=sup.fetdate@gmail.com
+#    MAIL_PASSWORD=ваш_пароль_приложения
+
+# 4. (Опционально) Установите python-dotenv для загрузки переменных из .env файла:
+#    pip install python-dotenv
+
+#    И добавьте в начало app.py:
+#    import os
+#    from dotenv import load_dotenv
+#    load_dotenv()
