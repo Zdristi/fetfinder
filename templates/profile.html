@@ -9,11 +9,11 @@
             {% if user_data.photo.startswith('http') %}
                 <img src="{{ user_data.photo }}" 
                      alt="{{ user_data.username }}" class="profile-avatar" style="width: 100px; height: 100px; object-fit: cover;"
-                     onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\"profile-avatar\">{{ user_data.username[0].upper() if user_data.username else '?' }}</div>';">
+                     onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"100\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"%23ddd\"/><text x=\"50\" y=\"55\" font-family=\"Arial\" font-size=\"30\" fill=\"%23666\" text-anchor=\"middle\">{{ user_data.username[0].upper() if user_data.username else '?' }}</text></svg>';">
             {% else %}
                 <img src="{{ url_for('static', filename='uploads/' + user_data.photo) }}" 
                      alt="{{ user_data.username }}" class="profile-avatar" style="width: 100px; height: 100px; object-fit: cover;"
-                     onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\"profile-avatar\">{{ user_data.username[0].upper() if user_data.username else '?' }}</div>';">
+                     onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"100\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"%23ddd\"/><text x=\"50\" y=\"55\" font-family=\"Arial\" font-size=\"30\" fill=\"%23666\" text-anchor=\"middle\">{{ user_data.username[0].upper() if user_data.username else '?' }}</text></svg>';">
             {% endif %}
         {% else %}
             <div class="profile-avatar">
