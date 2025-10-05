@@ -28,7 +28,10 @@
                             </div>
                             {% if match.user.city or match.user.country %}
                                 <p class="match-location">
-                                    <i class="fas fa-map-marker-alt location-icon"></i>
+                                    <span class="location-icon-wrapper">
+                                        <i class="fas fa-map-marker-alt location-icon"></i>
+                                        <span class="location-icon-fallback">📍</span>
+                                    </span>
                                     {% if match.user.city %}{{ match.user.city }}{% endif %}
                                     {% if match.user.city and match.user.country %}, {% endif %}
                                     {% if match.user.country %}{{ match.user.country }}{% endif %}
@@ -146,6 +149,26 @@
     width: 16px;
     height: 16px;
     font-size: 0.9rem;
+}
+
+.location-icon-fallback {
+    display: none; /* Hidden by default, shown if Font Awesome doesn't load */
+    margin-right: 5px;
+    font-size: 0.9rem;
+}
+
+/* Fallback - show emoji icon if Font Awesome doesn't load properly */
+.no-fontawesome .location-icon {
+    display: none;
+}
+
+.no-fontawesome .location-icon-fallback {
+    display: inline-block;
+}
+
+.location-icon-wrapper {
+    display: inline-flex;
+    align-items: center;
 }
 
 .unread-badge {
