@@ -188,9 +188,12 @@ def send_confirmation_email(email, code):
             body=f'Ваш код подтверждения: {code}\n\nВведите этот код на сайте для завершения регистрации.'
         )
         mail.send(msg)
+        print(f"Письмо успешно отправлено на {email}")
         return True
     except Exception as e:
-        print(f"Ошибка при отправке email: {e}")
+        print(f"Ошибка при отправке email на {email}: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
