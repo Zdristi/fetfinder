@@ -85,16 +85,14 @@ if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
 
 # Configure SQLAlchemy
 # Add connection pool settings and timeout parameters to handle connection issues
-app.config['SQLALCHEMY_DATABASE_URI'] = f"{DATABASE_URL}?connect_timeout=10&command_timeout=30&idle_in_transaction_session_timeout=30000"
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_size': 10,
     'pool_recycle': 120,
     'pool_pre_ping': True,
     'connect_args': {
-        'connect_timeout': 10,
-        'command_timeout': 30,
-        'idle_in_transaction_session_timeout': 30000
+        'connect_timeout': 10
     }
 }
 
