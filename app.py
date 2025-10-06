@@ -1463,29 +1463,77 @@ def set_language(lang):
 def home():
     return render_template('index.html')
 
+import signal
+from functools import wraps
+
+def timeout_handler(signum, frame):
+    raise TimeoutError("Operation timed out")
+
+def with_timeout(seconds):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Устанавливаем таймаут только в Unix-подобных системах
+            if hasattr(signal, 'alarm'):
+                old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(seconds)
+                try:
+                    result = func(*args, **kwargs)
+                    return result
+                finally:
+                    signal.alarm(0)
+                    signal.signal(signal.SIGALRM, old_handler)
+            else:
+                # Для Windows используем таймаут через threading
+                import threading
+                result = [None]
+                exception = [None]
+
+                def target():
+                    try:
+                        result[0] = func(*args, **kwargs)
+                    except Exception as e:
+                        exception[0] = e
+
+                thread = threading.Thread(target=target)
+                thread.daemon = True
+                thread.start()
+                thread.join(seconds)
+                
+                if thread.is_alive():
+                    raise TimeoutError("Operation timed out")
+                
+                if exception[0]:
+                    raise exception[0]
+                
+                return result[0]
+        return wrapper
+    return decorator
+
 @app.route('/register', methods=['GET', 'POST'])
+@with_timeout(15)  # Таймаут 15 секунд для регистрации
 def register():
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
         
-        # Check if username already exists
-        existing_user = UserModel.query.filter_by(username=username).first()
-        if existing_user:
-            flash(get_text('username_exists'))
-            return render_template('register.html')
-        
-        # Check if email already exists
-        existing_email = UserModel.query.filter_by(email=email).first()
-        if existing_email:
-            flash(get_text('email_exists') or 'A user with this email already exists')
-            return render_template('register.html')
-        
-        # Generate confirmation code
-        confirmation_code = generate_confirmation_code()
-        
         try:
+            # Check if username already exists
+            existing_user = UserModel.query.filter_by(username=username).first()
+            if existing_user:
+                flash(get_text('username_exists'))
+                return render_template('register.html')
+            
+            # Check if email already exists
+            existing_email = UserModel.query.filter_by(email=email).first()
+            if existing_email:
+                flash(get_text('email_exists') or 'A user with this email already exists')
+                return render_template('register.html')
+            
+            # Generate confirmation code
+            confirmation_code = generate_confirmation_code()
+            
             # Создаем пользователя без новых полей до выполнения миграции базы данных
             user = UserModel(
                 username=username,
@@ -1524,10 +1572,10 @@ def register():
             # Check if it's a duplicate email error
             if 'duplicate key value violates unique constraint' in error_str and 'email' in error_str:
                 flash(get_text('email_exists') or 'A user with this email already exists')
-            elif 'SSL error' in error_str or 'connection' in error_str.lower() or 'timeout' in error_str.lower() or 'server closed the connection unexpectedly' in error_str:
-                # Обработка ошибок подключения к базе данных
+            elif 'SSL error' in error_str or 'connection' in error_str.lower() or 'timeout' in error_str.lower() or 'server closed the connection unexpectedly' in error_str or isinstance(e, TimeoutError):
+                # Обработка ошибок подключения к базе данных и таймаутов
                 flash('Сервис временно недоступен. Пожалуйста, попробуйте зарегистрироваться чуть позже.')
-                print(f"Database connection error during registration: {e}")
+                print(f"Database connection error or timeout during registration: {e}")
             else:
                 flash('An error occurred during registration. Please try again.')
             return render_template('register.html')
@@ -1608,6 +1656,7 @@ def resend_confirmation():
         return redirect(url_for('verify_email_page', email=email))
 
 @app.route('/login', methods=['GET', 'POST'])
+@with_timeout(10)  # Таймаут 10 секунд для входа
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('profile'))
@@ -1633,10 +1682,10 @@ def login():
             return redirect(url_for('login'))
         except Exception as e:
             error_str = str(e)
-            if 'SSL error' in error_str or 'connection' in error_str.lower() or 'timeout' in error_str.lower() or 'server closed the connection unexpectedly' in error_str:
-                # Обработка ошибок подключения к базе данных
+            if 'SSL error' in error_str or 'connection' in error_str.lower() or 'timeout' in error_str.lower() or 'server closed the connection unexpectedly' in error_str or isinstance(e, TimeoutError):
+                # Обработка ошибок подключения к базе данных и таймаутов
                 flash('Сервис временно недоступен. Пожалуйста, попробуйте войти чуть позже.')
-                print(f"Database connection error during login: {e}")
+                print(f"Database connection error or timeout during login: {e}")
                 return render_template('login.html')
             else:
                 flash(get_text('invalid_credentials'))
