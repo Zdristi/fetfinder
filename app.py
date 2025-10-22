@@ -60,17 +60,18 @@ if SQLALCHEMY_ENGINE_OPTIONS:
 else:
     # Default engine options if not set in config
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_size': 2,
-        'pool_recycle': 120,
+        'pool_size': 5,
+        'pool_recycle': 300,
         'pool_pre_ping': True,
-        'pool_timeout': 15,
-        'max_overflow': 3,
+        'pool_timeout': 30,
+        'max_overflow': 10,
         'connect_args': {
-            'connect_timeout': 15,
-            'sslmode': 'prefer',  # Changed to 'prefer' for better compatibility
-            'keepalives_idle': 120,
-            'keepalives_interval': 15,
-            'keepalives_count': 3
+            'connect_timeout': 30,
+            'sslmode': 'require',  # Changed back to 'require' as recommended for Render
+            'keepalives_idle': 300,
+            'keepalives_interval': 30,
+            'keepalives_count': 3,
+            'ssl_min_protocol_version': 'TLSv1.2'
         }
     }
 
@@ -2940,8 +2941,8 @@ def optimized_image(filename):
 # Database initialization
 def create_tables():
     """Create database tables with retry mechanism"""
-    max_retries = 5  # Reduce retries to avoid long delays
-    retry_delay = 5  # Standard delay between retries
+    max_retries = 3  # Reduce retries to avoid long delays during startup
+    retry_delay = 10  # Increase delay to allow for connection recovery
     
     for attempt in range(max_retries):
         try:
@@ -2982,6 +2983,8 @@ def create_tables():
                 print("Detected SSL connection issue, attempting reconnection...")
                 # Close all connections in the pool to force reconnection
                 try:
+                    db.engine.dispose()
+                    # Also try to reset the database engine
                     db.engine.dispose()
                 except:
                     pass
