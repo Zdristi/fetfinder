@@ -52,14 +52,19 @@ cache = Cache(app)
 # Configure SQLAlchemy - changed for local development
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///fetdate_local.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# Remove connection pool settings that are not needed for SQLite
+
+# Configure SSL and connection options for PostgreSQL
 if 'postgresql://' in str(app.config['SQLALCHEMY_DATABASE_URI']):
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_size': 10,
+        'pool_size': 5,
         'pool_recycle': 120,
         'pool_pre_ping': True,
+        'pool_timeout': 30,
+        'max_overflow': 10,
         'connect_args': {
-            'connect_timeout': 10
+            'connect_timeout': 10,
+            'sslmode': 'prefer',  # Use SSL if available, but allow non-SSL connections
+            'target_session_attrs': 'read-write'
         }
     }
 
@@ -2928,32 +2933,47 @@ def optimized_image(filename):
 
 # Database initialization
 def create_tables():
-    """Create database tables"""
-    try:
-        with app.app_context():
-            # Create all tables
-            db.create_all()
+    """Create database tables with retry mechanism"""
+    max_retries = 3
+    retry_delay = 5  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            with app.app_context():
+                # Create all tables
+                db.create_all()
+                
+                # Check and add missing columns to user table
+                inspector = db.inspect(db.engine)
+                columns = [column['name'] for column in inspector.get_columns('user')]
+                
+                # List of columns to check and add if missing
+                required_columns = [
+                    'about_me_video', 'relationship_goals', 'lifestyle', 'diet', 
+                    'smoking', 'drinking', 'occupation', 'education', 'children', 
+                    'pets', 'coins', 'match_by_city', 'match_by_country'
+                ]
+                
+                for column in required_columns:
+                    if column not in columns:
+                        print(f"Column {column} is missing. Please run database migration.")
+                
+                print("Database tables created successfully!")
+                return
+                
+        except Exception as e:
+            print(f"Error creating database tables (attempt {attempt + 1}/{max_retries}): {e}")
+            import traceback
+            traceback.print_exc()
             
-            # Check and add missing columns to user table
-            inspector = db.inspect(db.engine)
-            columns = [column['name'] for column in inspector.get_columns('user')]
-            
-            # List of columns to check and add if missing
-            required_columns = [
-                'about_me_video', 'relationship_goals', 'lifestyle', 'diet', 
-                'smoking', 'drinking', 'occupation', 'education', 'children', 
-                'pets', 'coins', 'match_by_city', 'match_by_country'
-            ]
-            
-            for column in required_columns:
-                if column not in columns:
-                    print(f"Column {column} is missing. Please run database migration.")
-    except Exception as e:
-        print(f"Error creating database tables: {e}")
-        import traceback
-        traceback.print_exc()
-
-# Export data function
+            if attempt < max_retries - 1:
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                print("Max retries exceeded. Database tables creation failed.")
+                
+    # Even if table creation fails, continue with the application
+    print("Continuing application startup despite database issues...")
 def export_data():
     """Export all data to JSON files"""
     try:
