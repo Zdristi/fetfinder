@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Chat List{% endblock %}
+{% block title %}{{ get_text('chat') }}{% endblock %}
 
 {% block content %}
 <div class="container">
-    <h1>My Chats</h1>
+    <h1>{{ get_text('my_chats') or 'My Chats' }}</h1>
     
     <div class="chat-list">
-        <p>You don't have any active chats yet.</p>
+        <p>{{ get_text('no_active_chats') or 'You don\'t have any active chats yet.' }}</p>
         <!-- Заглушка для будущего функционала списка чатов -->
-        <p>Start chatting by going to the <a href="{{ url_for('swipe') }}">swipe page</a> and connecting with other users!</p>
+        <p>{{ get_text('start_chatting') or 'Start chatting by going to the' }} <a href="{{ url_for('swipe') }}">{{ get_text('swipe_page') or 'swipe page' }}</a> {{ get_text('and_connect') or 'and connecting with other users!' }}</p>
     </div>
 </div>
 {% endblock %}
