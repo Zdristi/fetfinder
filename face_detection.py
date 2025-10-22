@@ -1,75 +1,57 @@
-import cv2
-import numpy as np
+import face_recognition
 from PIL import Image
 import io
 
-def detect_faces_in_image(image_path_or_bytes, min_face_size=(30, 30), face_cascade_path=None):
+def detect_faces_in_image(image_path_or_bytes):
     """
-    Проверяет наличие человеческого лица на изображении.
+    Проверяет наличие человеческого лица на изображении с использованием face_recognition.
     
     Args:
         image_path_or_bytes: Путь к изображению или байтовый объект изображения
-        min_face_size: Минимальный размер лица для обнаружения (ширина, высота)
-        face_cascade_path: Путь к каскаду Хаара (если не указан, используется стандартный)
         
     Returns:
         bool: True если лицо обнаружено, False в противном случае
     """
     try:
-        # Загружаем каскад Хаара для обнаружения лиц
-        if face_cascade_path is None:
-            # Используем встроенный каскад Хаара для обнаружения лиц
-            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        else:
-            face_cascade = cv2.CascadeClassifier(face_cascade_path)
-
         # Открываем изображение
         if isinstance(image_path_or_bytes, str):
             # Если это путь к файлу
-            image = cv2.imread(image_path_or_bytes)
+            image = face_recognition.load_image_file(image_path_or_bytes)
         else:
-            # Если это байтовый объект (например, из Flask request)
-            if isinstance(image_path_or_bytes, bytes):
-                image_array = np.frombuffer(image_path_or_bytes, dtype=np.uint8)
-                image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-            elif isinstance(image_path_or_bytes, (bytes, io.IOBase)):
-                # Если это поток байтов
-                pil_image = Image.open(image_path_or_bytes)
-                image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+            # Если это байтовый объект или файл
+            if hasattr(image_path_or_bytes, 'read'):
+                # Это объект файла, сохраняем указатель
+                image_bytes = image_path_or_bytes.read()
+                image = face_recognition.load_image_file(io.BytesIO(image_bytes))
+                # Восстанавливаем указатель в начало
+                image_path_or_bytes.seek(0)
+            elif isinstance(image_path_or_bytes, bytes):
+                # Это байтовый объект
+                image = face_recognition.load_image_file(io.BytesIO(image_path_or_bytes))
             else:
-                # Если это уже PIL Image
-                image = cv2.cvtColor(np.array(image_path_or_bytes), cv2.COLOR_RGB2BGR)
+                # Это PIL.Image, сохраняем во временный буфер
+                buffer = io.BytesIO()
+                image_path_or_bytes.save(buffer, format=image_path_or_bytes.format or 'JPEG')
+                buffer.seek(0)
+                image = face_recognition.load_image_file(buffer)
 
-        if image is None:
-            return False
-
-        # Преобразуем в оттенки серого для лучшего обнаружения лиц
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-        # Обнаруживаем лица
-        faces = face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=min_face_size,
-            flags=cv2.CASCADE_SCALE_IMAGE
-        )
-
+        # Обнаруживаем лица на изображении
+        face_locations = face_recognition.face_locations(image)
+        
         # Возвращаем True если обнаружено хотя бы одно лицо
-        return len(faces) > 0
+        return len(face_locations) > 0
     
     except Exception as e:
         print(f"Ошибка при обнаружении лиц: {e}")
         return False
 
 
-def validate_avatar_image(image_file, min_face_size=(30, 30)):
+def validate_avatar_image(image_file):
     """
     Проверяет изображение аватара на наличие лица.
     
     Args:
         image_file: Объект файла изображения из Flask request
-        min_face_size: Минимальный размер лица для обнаружения (ширина, высота)
         
     Returns:
         dict: {'valid': bool, 'message': str, 'face_count': int}
@@ -104,24 +86,23 @@ def validate_avatar_image(image_file, min_face_size=(30, 30)):
         image_file.seek(0)
         
         # Проверяем наличие лиц
-        has_face = detect_faces_in_image(io.BytesIO(image_bytes), min_face_size)
+        has_face = detect_faces_in_image(image_file)
         
-        # Проверяем изображение снова, чтобы получить количество лиц
-        image_array = np.frombuffer(image_bytes, dtype=np.uint8)
-        image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        
-        faces = face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=min_face_size,
-            flags=cv2.CASCADE_SCALE_IMAGE
-        )
-        
-        face_count = len(faces)
-        
+        # Получаем точное количество лиц
+        try:
+            # Загружаем изображение и получаем количество лиц
+            image_file.seek(0)
+            image_bytes = image_file.read()
+            image = face_recognition.load_image_file(io.BytesIO(image_bytes))
+            face_locations = face_recognition.face_locations(image)
+            face_count = len(face_locations)
+            
+            # Восстанавливаем указатель в начало для последующего использования
+            image_file.seek(0)
+        except:
+            # Если не получается получить точное количество, устанавливаем 0 или 1
+            face_count = 1 if has_face else 0
+
         if has_face:
             return {'valid': True, 'message': 'Изображение прошло проверку', 'face_count': face_count}
         else:
