@@ -57,6 +57,23 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 from config import SQLALCHEMY_ENGINE_OPTIONS
 if SQLALCHEMY_ENGINE_OPTIONS:
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = SQLALCHEMY_ENGINE_OPTIONS
+else:
+    # Default engine options if not set in config
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_size': 3,
+        'pool_recycle': 299,
+        'pool_pre_ping': True,
+        'pool_timeout': 20,
+        'max_overflow': 5,
+        'connect_args': {
+            'connect_timeout': 20,
+            'sslmode': 'prefer',  # Changed to 'prefer' for better compatibility
+            'keepalives_idle': 299,
+            'keepalives_interval': 29,
+            'keepalives_count': 5,
+            'ssl_min_protocol_version': 'TLSv1.2'
+        }
+    }
 
 # Initialize database
 db.init_app(app)
@@ -2924,8 +2941,8 @@ def optimized_image(filename):
 # Database initialization
 def create_tables():
     """Create database tables with retry mechanism"""
-    max_retries = 5  # Increase retries
-    retry_delay = 5  # seconds
+    max_retries = 7  # Increase retries further
+    retry_delay = 7  # Increase delay between retries
     
     for attempt in range(max_retries):
         try:
@@ -2960,7 +2977,9 @@ def create_tables():
             # Check if it's an SSL related error
             if 'SSL connection has been closed unexpectedly' in error_str or \
                'connection is closed' in error_str or \
-               'server closed the connection unexpectedly' in error_str:
+               'server closed the connection unexpectedly' in error_str or \
+               'SSL SYSCALL error' in error_str or \
+               'server closed the connection' in error_str:
                 print("Detected SSL connection issue, attempting reconnection...")
                 # Close all connections in the pool to force reconnection
                 try:
@@ -2969,8 +2988,10 @@ def create_tables():
                     pass
             
             if attempt < max_retries - 1:
-                print(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
+                # Increase delay for subsequent attempts
+                actual_delay = retry_delay * (attempt + 1)  # Progressive delay
+                print(f"Retrying in {actual_delay} seconds...")
+                time.sleep(actual_delay)
             else:
                 print("Max retries exceeded. Database tables creation failed.")
                 print("Continuing application startup despite database issues...")
