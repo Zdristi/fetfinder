@@ -1,54 +1,93 @@
-import face_recognition
 from PIL import Image
 import io
 
 def detect_faces_in_image(image_path_or_bytes):
     """
-    Проверяет наличие человеческого лица на изображении с использованием face_recognition.
+    Проверяет наличие человеческого лица на изображении.
+    Использует простой метод, основанный на анализе пропорций и цвета.
+    Этот метод не требует сложных библиотек и совместим с Render.
     
     Args:
         image_path_or_bytes: Путь к изображению или байтовый объект изображения
         
     Returns:
-        bool: True если лицо обнаружено, False в противном случае
+        bool: True если обнаружены признаки лица, False в противном случае
     """
     try:
         # Открываем изображение
         if isinstance(image_path_or_bytes, str):
             # Если это путь к файлу
-            image = face_recognition.load_image_file(image_path_or_bytes)
+            img = Image.open(image_path_or_bytes)
         else:
             # Если это байтовый объект или файл
             if hasattr(image_path_or_bytes, 'read'):
-                # Это объект файла, сохраняем указатель
-                image_bytes = image_path_or_bytes.read()
-                image = face_recognition.load_image_file(io.BytesIO(image_bytes))
-                # Восстанавливаем указатель в начало
+                # Это объект файла
+                img = Image.open(image_path_or_bytes)
+                # Возвращаем указатель в начало
                 image_path_or_bytes.seek(0)
             elif isinstance(image_path_or_bytes, bytes):
                 # Это байтовый объект
-                image = face_recognition.load_image_file(io.BytesIO(image_path_or_bytes))
+                img = Image.open(io.BytesIO(image_path_or_bytes))
             else:
-                # Это PIL.Image, сохраняем во временный буфер
-                buffer = io.BytesIO()
-                image_path_or_bytes.save(buffer, format=image_path_or_bytes.format or 'JPEG')
-                buffer.seek(0)
-                image = face_recognition.load_image_file(buffer)
+                # Это уже PIL.Image
+                img = image_path_or_bytes
 
-        # Обнаруживаем лица на изображении
-        face_locations = face_recognition.face_locations(image)
+        # Преобразуем в RGB, если изображение не в этом формате
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
         
-        # Возвращаем True если обнаружено хотя бы одно лицо
-        return len(face_locations) > 0
+        # Получаем размеры изображения
+        width, height = img.size
+        
+        # Если изображение слишком маленькое, не проверяем
+        if width < 50 or height < 50:
+            return False
+        
+        # Получаем пиксели
+        pixels = list(img.getdata())
+        
+        # Подсчитываем пиксели, соответствующие цвету кожи
+        skin_pixels = 0
+        total_pixels = len(pixels)
+        
+        # Определяем диапазон цветов кожи в RGB
+        for pixel in pixels:
+            if isinstance(pixel, (tuple, list)) and len(pixel) >= 3:
+                r, g, b = pixel[0], pixel[1], pixel[2]
+                
+                # Проверяем, находится ли пиксель в диапазоне, характерном для кожи
+                # Это приблизительная проверка кожного тона
+                if (r > 95 and g > 40 and b > 20 and 
+                    max(r, g, b) - min(r, g, b) > 15 and 
+                    abs(r - g) > 15 and r > g and g > b):
+                    skin_pixels += 1
+        
+        # Если доля пикселей кожи в разумных пределах, это может быть лицо
+        skin_ratio = skin_pixels / total_pixels if total_pixels > 0 else 0
+        
+        # Проверим, что изображение не является сплошным цветом
+        unique_colors = len(set(pixels))
+        
+        # Оценка вероятности лица на основе:
+        # 1. Наличия кожных тонов
+        # 2. Разнообразия цветов
+        # 3. Аспектного соотношения изображения (лица обычно близки к квадратным)
+        aspect_ratio = width / height if height > 0 else 1
+        is_reasonable_aspect = 0.5 <= aspect_ratio <= 2.0
+        
+        has_skin_tones = skin_ratio > 0.05  # Более 5% пикселей соответствуют тону кожи
+        has_color_diversity = unique_colors > 50  # Разнообразие цветов
+        
+        return has_skin_tones and has_color_diversity and is_reasonable_aspect
     
     except Exception as e:
-        print(f"Ошибка при обнаружении лиц: {e}")
+        print(f"Ошибка при проверке изображения: {e}")
         return False
 
 
 def validate_avatar_image(image_file):
     """
-    Проверяет изображение аватара на наличие лица.
+    Проверяет изображение аватара на наличие признаков лица.
     
     Args:
         image_file: Объект файла изображения из Flask request
@@ -85,28 +124,13 @@ def validate_avatar_image(image_file):
         # Возвращаем указатель в начало файла для дальнейшей обработки
         image_file.seek(0)
         
-        # Проверяем наличие лиц
-        has_face = detect_faces_in_image(image_file)
+        # Проверяем наличие признаков лица
+        has_face_like_features = detect_faces_in_image(image_file)
         
-        # Получаем точное количество лиц
-        try:
-            # Загружаем изображение и получаем количество лиц
-            image_file.seek(0)
-            image_bytes = image_file.read()
-            image = face_recognition.load_image_file(io.BytesIO(image_bytes))
-            face_locations = face_recognition.face_locations(image)
-            face_count = len(face_locations)
-            
-            # Восстанавливаем указатель в начало для последующего использования
-            image_file.seek(0)
-        except:
-            # Если не получается получить точное количество, устанавливаем 0 или 1
-            face_count = 1 if has_face else 0
-
-        if has_face:
-            return {'valid': True, 'message': 'Изображение прошло проверку', 'face_count': face_count}
+        if has_face_like_features:
+            return {'valid': True, 'message': 'Изображение прошло проверку', 'face_count': 1}
         else:
-            return {'valid': False, 'message': f'Не найдено ни одного лица на изображении. Обнаружено объектов: {face_count}', 'face_count': face_count}
+            return {'valid': False, 'message': 'Изображение не содержит признаков лица', 'face_count': 0}
     
     except Exception as e:
         print(f"Ошибка при проверке аватара: {e}")
