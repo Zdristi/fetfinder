@@ -53,20 +53,10 @@ cache = Cache(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///fetdate_local.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Configure SSL and connection options for PostgreSQL
-if 'postgresql://' in str(app.config['SQLALCHEMY_DATABASE_URI']):
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_size': 5,
-        'pool_recycle': 120,
-        'pool_pre_ping': True,
-        'pool_timeout': 30,
-        'max_overflow': 10,
-        'connect_args': {
-            'connect_timeout': 10,
-            'sslmode': 'prefer',  # Use SSL if available, but allow non-SSL connections
-            'target_session_attrs': 'read-write'
-        }
-    }
+# Import SQLAlchemy engine options from config
+from config import SQLALCHEMY_ENGINE_OPTIONS
+if SQLALCHEMY_ENGINE_OPTIONS:
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = SQLALCHEMY_ENGINE_OPTIONS
 
 # Initialize database
 db.init_app(app)
@@ -2934,7 +2924,7 @@ def optimized_image(filename):
 # Database initialization
 def create_tables():
     """Create database tables with retry mechanism"""
-    max_retries = 3
+    max_retries = 5  # Increase retries
     retry_delay = 5  # seconds
     
     for attempt in range(max_retries):
@@ -2962,9 +2952,21 @@ def create_tables():
                 return
                 
         except Exception as e:
+            error_str = str(e)
             print(f"Error creating database tables (attempt {attempt + 1}/{max_retries}): {e}")
             import traceback
             traceback.print_exc()
+            
+            # Check if it's an SSL related error
+            if 'SSL connection has been closed unexpectedly' in error_str or \
+               'connection is closed' in error_str or \
+               'server closed the connection unexpectedly' in error_str:
+                print("Detected SSL connection issue, attempting reconnection...")
+                # Close all connections in the pool to force reconnection
+                try:
+                    db.engine.dispose()
+                except:
+                    pass
             
             if attempt < max_retries - 1:
                 print(f"Retrying in {retry_delay} seconds...")
@@ -3039,6 +3041,10 @@ def print_server_info():
     print(f"  - Если этот IP является публичным: http://{external_ip}:{port}")
     print(f"  - Если вы настроили домен на этот IP: http://fetdate.online:{port}")
     print("="*70)
+
+# Initialize the database tables when the application starts
+with app.app_context():
+    create_tables()
 
 if __name__ == '__main__':
     # For local development

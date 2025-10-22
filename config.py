@@ -8,7 +8,7 @@ DEBUG = False if os.environ.get('FLASK_ENV') == 'production' else True
 import secrets
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your_fixed_secret_key_for_local_development_please_change_in_production_5a7b9c3d1e2f4a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3')
 
-# Database configuration - changed for local development
+# Database configuration
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///fetdate_local.db')
 
 # Handle PostgreSQL URL format for SQLAlchemy
@@ -17,6 +17,14 @@ if DATABASE_URL.startswith('postgres://'):
 elif DATABASE_URL.startswith('mysql://'):
     # MySQL configuration for hosting
     pass
+
+# Configure SSL options for PostgreSQL
+if 'postgresql://' in DATABASE_URL and 'render.com' in DATABASE_URL:
+    # For Render PostgreSQL, add SSL parameters
+    if '?' not in DATABASE_URL:
+        DATABASE_URL += "?sslmode=require"
+    else:
+        DATABASE_URL += "&sslmode=require"
 
 # SQLAlchemy configuration
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
@@ -42,11 +50,42 @@ GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 HOST = '0.0.0.0'
 PORT = int(os.environ.get('PORT', 5000))
 
+# Additional engine options for PostgreSQL on Render
+if 'postgresql://' in DATABASE_URL:
+    DEFAULT_ENGINE_OPTIONS = {
+        'pool_size': 5,
+        'pool_recycle': 300,
+        'pool_pre_ping': True,
+        'pool_timeout': 30,
+        'max_overflow': 10,
+        'connect_args': {
+            'connect_timeout': 30,
+            'sslmode': 'require',
+            'keepalives_idle': 300,
+            'keepalives_interval': 30,
+            'keepalives_count': 3
+        }
+    }
+else:
+    DEFAULT_ENGINE_OPTIONS = {}
+
 # For cPanel hosting compatibility
 if 'pythonanywhere' in os.environ.get('HOSTNAME', '') or os.environ.get('CPANEL_HOSTING'):
     # Configuration for shared hosting like HostIQ.ua
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_pre_ping': True,
-        'pool_recycle': 300,
-    }
+    if 'postgresql://' in DATABASE_URL:
+        # Update existing options if PostgreSQL is configured
+        if 'DEFAULT_ENGINE_OPTIONS':
+            DEFAULT_ENGINE_OPTIONS.update({
+                'pool_pre_ping': True,
+                'pool_recycle': 300,
+            })
+    else:
+        # Default options for non-PostgreSQL databases
+        DEFAULT_ENGINE_OPTIONS = {
+            'pool_pre_ping': True,
+            'pool_recycle': 300,
+        }
+
+# Export the engine options
+SQLALCHEMY_ENGINE_OPTIONS = DEFAULT_ENGINE_OPTIONS
 
