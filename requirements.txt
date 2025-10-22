@@ -34,6 +34,7 @@ oauthlib==2.1.0
 packaging==25.0
 pillow==11.3.0
 propcache==0.3.2
+opencv-python==4.8.1.78
 psycopg2-binary==2.9.10
 pydantic==2.11.9
 pydantic_core==2.33.2

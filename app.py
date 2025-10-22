@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 import uuid
 from werkzeug.utils import secure_filename
 import hashlib
-from models import db, User as UserModel, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage
+from models import db, User as UserModel, UserPhoto, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage
 import hmac
 import hashlib
 import random
@@ -27,6 +27,14 @@ import requests
 
 # Import configuration
 from config import SECRET_KEY
+
+# Import face detection functionality
+try:
+    from face_detection import validate_avatar_image
+    FACE_DETECTION_AVAILABLE = True
+except ImportError:
+    FACE_DETECTION_AVAILABLE = False
+    print("Warning: face_detection module not available. Avatar validation disabled.")
 
 # Create Flask app
 app = Flask(__name__)
@@ -2455,12 +2463,69 @@ def edit_profile():
         if is_new_user:
             if not country:
                 flash('Country is required')
+                # Create minimal user_data for error cases
+                user_data = {
+                    'username': current_user.username,
+                    'email': current_user.email,
+                    'photo': current_user.photo,
+                    'country': current_user.country,
+                    'city': current_user.city,
+                    'bio': current_user.bio,
+                    'fetishes': [],
+                    'interests': [],
+                    'created_at': current_user.created_at.isoformat(),
+                    'is_premium': is_premium_user(current_user),
+                    'user_photos': []
+                }
+                
+                # Get user's additional photos
+                user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
+                user_data['user_photos'] = user_photos
+                
                 return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
             if not city:
                 flash('City is required')
+                # Create minimal user_data for error cases
+                user_data = {
+                    'username': current_user.username,
+                    'email': current_user.email,
+                    'photo': current_user.photo,
+                    'country': current_user.country,
+                    'city': current_user.city,
+                    'bio': current_user.bio,
+                    'fetishes': [],
+                    'interests': [],
+                    'created_at': current_user.created_at.isoformat(),
+                    'is_premium': is_premium_user(current_user),
+                    'user_photos': []
+                }
+                
+                # Get user's additional photos
+                user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
+                user_data['user_photos'] = user_photos
+                
                 return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
             if not bio:
                 flash('Biography is required')
+                # Create minimal user_data for error cases
+                user_data = {
+                    'username': current_user.username,
+                    'email': current_user.email,
+                    'photo': current_user.photo,
+                    'country': current_user.country,
+                    'city': current_user.city,
+                    'bio': current_user.bio,
+                    'fetishes': [],
+                    'interests': [],
+                    'created_at': current_user.created_at.isoformat(),
+                    'is_premium': is_premium_user(current_user),
+                    'user_photos': []
+                }
+                
+                # Get user's additional photos
+                user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
+                user_data['user_photos'] = user_photos
+                
                 return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
         
         # Update user profile information
@@ -2476,6 +2541,33 @@ def edit_profile():
         if 'photo' in request.files:
             photo = request.files['photo']
             if photo and photo.filename != '':
+                # Validate the image for face detection if the module is available
+                if FACE_DETECTION_AVAILABLE:
+                    # Validate the image for human faces
+                    validation_result = validate_avatar_image(photo)
+                    if not validation_result['valid']:
+                        flash(f'Ошибка при проверке аватара: {validation_result["message"]}')
+                        # Create minimal user_data for error cases
+                        user_data = {
+                            'username': current_user.username,
+                            'email': current_user.email,
+                            'photo': current_user.photo,
+                            'country': current_user.country,
+                            'city': current_user.city,
+                            'bio': current_user.bio,
+                            'fetishes': [],
+                            'interests': [],
+                            'created_at': current_user.created_at.isoformat(),
+                            'is_premium': is_premium_user(current_user),
+                            'user_photos': []
+                        }
+                        
+                        # Get user's additional photos
+                        user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
+                        user_data['user_photos'] = user_photos
+                        
+                        return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
+                
                 # Create unique filename
                 ext = photo.filename.split('.')[-1]
                 filename = f"{uuid.uuid4().hex}.{ext}"
@@ -2486,6 +2578,25 @@ def edit_profile():
         # If user is new and doesn't have a photo, require photo upload
         if is_new_user and not current_user.photo:
             flash('Profile photo is required for new users')
+            # Create minimal user_data for error cases
+            user_data = {
+                'username': current_user.username,
+                'email': current_user.email,
+                'photo': current_user.photo,
+                'country': current_user.country,
+                'city': current_user.city,
+                'bio': current_user.bio,
+                'fetishes': [],
+                'interests': [],
+                'created_at': current_user.created_at.isoformat(),
+                'is_premium': is_premium_user(current_user),
+                'user_photos': []
+            }
+            
+            # Get user's additional photos
+            user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
+            user_data['user_photos'] = user_photos
+            
             return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
         
         # Update user's fetishes
@@ -2515,6 +2626,51 @@ def edit_profile():
             # Add to current user's profile
             interest = Interest(user_id=current_user.id, name=custom_interest)
             db.session.add(interest)
+        
+        # Handle additional photos upload
+        if 'additional_photos' in request.files:
+            photo_files = request.files.getlist('additional_photos')
+            for photo_file in photo_files:
+                if photo_file and photo_file.filename != '':
+                    # Validate the image for face detection if the module is available
+                    if FACE_DETECTION_AVAILABLE:
+                        # Validate the image for human faces
+                        validation_result = validate_avatar_image(photo_file)
+                        if not validation_result['valid']:
+                            flash(f'Ошибка при проверке дополнительной фотографии: {validation_result["message"]}')
+                            # Create minimal user_data for error cases
+                            user_data = {
+                                'username': current_user.username,
+                                'email': current_user.email,
+                                'photo': current_user.photo,
+                                'country': current_user.country,
+                                'city': current_user.city,
+                                'bio': current_user.bio,
+                                'fetishes': [],
+                                'interests': [],
+                                'created_at': current_user.created_at.isoformat(),
+                                'is_premium': is_premium_user(current_user),
+                                'user_photos': []
+                            }
+                            
+                            # Get user's additional photos
+                            user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
+                            user_data['user_photos'] = user_photos
+                            
+                            return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
+                    
+                    # Create unique filename
+                    ext = photo_file.filename.split('.')[-1]
+                    filename = f"{uuid.uuid4().hex}.{ext}"
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    photo_file.save(filepath)
+                    
+                    # Create UserPhoto record
+                    user_photo = UserPhoto(
+                        user_id=current_user.id,
+                        photo_path=filename
+                    )
+                    db.session.add(user_photo)
         
         db.session.commit()
         flash('Profile updated successfully!')
@@ -2575,8 +2731,13 @@ def edit_profile():
         'fetishes': user_fetishes,
         'interests': user_interests,
         'created_at': current_user.created_at.isoformat(),
-        'is_premium': is_premium_user(current_user)
+        'is_premium': is_premium_user(current_user),
+        'user_photos': []
     }
+    
+    # Get user's additional photos
+    user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
+    user_data['user_photos'] = user_photos
     
     return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
 
@@ -2647,6 +2808,54 @@ def is_premium_user(user):
         db.session.commit()
         return False
     return True
+
+# API routes for managing additional user photos
+@app.route('/api/photo/<int:photo_id>/set_primary', methods=['POST'])
+@login_required
+def set_primary_photo(photo_id):
+    """Set a user's additional photo as primary"""
+    photo = UserPhoto.query.filter_by(id=photo_id, user_id=current_user.id).first()
+    
+    if not photo:
+        return jsonify({'status': 'error', 'message': 'Photo not found'}), 404
+    
+    # First, set all photos to non-primary
+    UserPhoto.query.filter_by(user_id=current_user.id).update({'is_primary': False})
+    db.session.commit()
+    
+    # Then set selected photo as primary
+    photo.is_primary = True
+    db.session.commit()
+    
+    return jsonify({'status': 'success', 'message': 'Primary photo updated successfully'})
+
+
+@app.route('/api/photo/<int:photo_id>/delete', methods=['POST'])
+@login_required
+def delete_photo(photo_id):
+    """Delete a user's additional photo"""
+    photo = UserPhoto.query.filter_by(id=photo_id, user_id=current_user.id).first()
+    
+    if not photo:
+        return jsonify({'status': 'error', 'message': 'Photo not found'}), 404
+    
+    # Delete the photo file
+    import os
+    photo_path = os.path.join(app.config['UPLOAD_FOLDER'], photo.photo_path)
+    if os.path.exists(photo_path):
+        os.remove(photo_path)
+    
+    # Remove optimized version if exists
+    optimized_path = os.path.join(app.config['UPLOAD_FOLDER'], 'optimized', photo.photo_path)
+    if os.path.exists(optimized_path):
+        os.remove(optimized_path)
+    
+    # Delete from database
+    db.session.delete(photo)
+    db.session.commit()
+    
+    return jsonify({'status': 'success', 'message': 'Photo deleted successfully'})
+
 
 @app.route('/optimized_image/<filename>')
 @cache.cached(timeout=86400)  # Cache for 24 hours
