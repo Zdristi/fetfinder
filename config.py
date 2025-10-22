@@ -18,13 +18,13 @@ elif DATABASE_URL.startswith('mysql://'):
     # MySQL configuration for hosting
     pass
 
-# Configure SSL options for PostgreSQL
+# Configure SSL options for PostgreSQL - using 'prefer' mode for better Render compatibility
 if 'postgresql://' in DATABASE_URL and 'render.com' in DATABASE_URL:
-    # For Render PostgreSQL, add SSL parameters
+    # For Render PostgreSQL, add SSL parameters with 'prefer' mode
     if '?' not in DATABASE_URL:
-        DATABASE_URL += "?sslmode=require&sslcert=cert.pem&sslkey=key.pem&sslrootcert=ca.pem"
+        DATABASE_URL += "?sslmode=prefer"
     else:
-        DATABASE_URL += "&sslmode=require&sslcert=cert.pem&sslkey=key.pem&sslrootcert=ca.pem"
+        DATABASE_URL += "&sslmode=prefer"
 
 # SQLAlchemy configuration
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
@@ -53,18 +53,17 @@ PORT = int(os.environ.get('PORT', 5000))
 # Additional engine options for PostgreSQL on Render
 if 'postgresql://' in DATABASE_URL:
     DEFAULT_ENGINE_OPTIONS = {
-        'pool_size': 5,
-        'pool_recycle': 300,
+        'pool_size': 3,
+        'pool_recycle': 299,
         'pool_pre_ping': True,
-        'pool_timeout': 30,
-        'max_overflow': 10,
+        'pool_timeout': 20,
+        'max_overflow': 5,
         'connect_args': {
-            'connect_timeout': 30,
-            'sslmode': 'require',
-            'keepalives_idle': 300,
-            'keepalives_interval': 30,
-            'keepalives_count': 3,
-            'ssl_min_protocol_version': 'TLSv1.2'
+            'connect_timeout': 20,
+            'sslmode': 'prefer',  # Changed to 'prefer' for better Render compatibility
+            'keepalives_idle': 299,
+            'keepalives_interval': 29,
+            'keepalives_count': 5
         }
     }
 else:

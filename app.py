@@ -60,18 +60,17 @@ if SQLALCHEMY_ENGINE_OPTIONS:
 else:
     # Default engine options if not set in config
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_size': 3,
-        'pool_recycle': 299,
+        'pool_size': 2,
+        'pool_recycle': 120,
         'pool_pre_ping': True,
-        'pool_timeout': 20,
-        'max_overflow': 5,
+        'pool_timeout': 15,
+        'max_overflow': 3,
         'connect_args': {
-            'connect_timeout': 20,
+            'connect_timeout': 15,
             'sslmode': 'prefer',  # Changed to 'prefer' for better compatibility
-            'keepalives_idle': 299,
-            'keepalives_interval': 29,
-            'keepalives_count': 5,
-            'ssl_min_protocol_version': 'TLSv1.2'
+            'keepalives_idle': 120,
+            'keepalives_interval': 15,
+            'keepalives_count': 3
         }
     }
 
@@ -2941,8 +2940,8 @@ def optimized_image(filename):
 # Database initialization
 def create_tables():
     """Create database tables with retry mechanism"""
-    max_retries = 7  # Increase retries further
-    retry_delay = 7  # Increase delay between retries
+    max_retries = 5  # Reduce retries to avoid long delays
+    retry_delay = 5  # Standard delay between retries
     
     for attempt in range(max_retries):
         try:
@@ -2988,10 +2987,8 @@ def create_tables():
                     pass
             
             if attempt < max_retries - 1:
-                # Increase delay for subsequent attempts
-                actual_delay = retry_delay * (attempt + 1)  # Progressive delay
-                print(f"Retrying in {actual_delay} seconds...")
-                time.sleep(actual_delay)
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
             else:
                 print("Max retries exceeded. Database tables creation failed.")
                 print("Continuing application startup despite database issues...")
