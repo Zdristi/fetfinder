@@ -87,6 +87,22 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'sup.fetdate@gmail
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  # Пароль приложения Gmail
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'sup.fetdate@gmail.com')
 
+# Function to ensure database connection before requests that need it
+@app.before_request
+def before_request():
+    # For requests that might use the database, ensure connection is alive
+    # Only for routes that we know will access the database
+    if request.endpoint and not request.endpoint.startswith('static'):
+        # Test connection - this will handle reconnection if needed
+        try:
+            db.session.execute(db.text('SELECT 1'))
+        except:
+            # If connection failed, dispose and let the next query re-establish
+            try:
+                db.engine.dispose()
+            except:
+                pass
+
 # Инициализация Flask-Mail
 mail = Mail(app)
 
@@ -2938,15 +2954,28 @@ def optimized_image(filename):
         # If optimization fails, serve original image
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# Database initialization
-def create_tables():
-    """Create database tables with retry mechanism"""
-    max_retries = 3  # Reduce retries to avoid long delays during startup
-    retry_delay = 10  # Increase delay to allow for connection recovery
-    
-    for attempt in range(max_retries):
+def ensure_db_connection():
+    """Ensure database connection is alive and working"""
+    try:
+        # Test the connection by executing a simple query
+        db.session.execute(db.text('SELECT 1'))
+        return True
+    except Exception as e:
+        print(f"Database connection test failed: {e}")
         try:
-            with app.app_context():
+            # Attempt to dispose and recreate the connection
+            db.engine.dispose()
+            return True  # Return True to continue application, connection will be re-established on next use
+        except Exception as dispose_error:
+            print(f"Error disposing database connection: {dispose_error}")
+            return False
+
+def create_tables():
+    """Create database tables with connection check"""
+    try:
+        with app.app_context():
+            # Test connection first
+            if ensure_db_connection():
                 # Create all tables
                 db.create_all()
                 
@@ -2966,38 +2995,17 @@ def create_tables():
                         print(f"Column {column} is missing. Please run database migration.")
                 
                 print("Database tables created successfully!")
-                return
+                return True
                 
-        except Exception as e:
-            error_str = str(e)
-            print(f"Error creating database tables (attempt {attempt + 1}/{max_retries}): {e}")
-            import traceback
-            traceback.print_exc()
-            
-            # Check if it's an SSL related error
-            if 'SSL connection has been closed unexpectedly' in error_str or \
-               'connection is closed' in error_str or \
-               'server closed the connection unexpectedly' in error_str or \
-               'SSL SYSCALL error' in error_str or \
-               'server closed the connection' in error_str:
-                print("Detected SSL connection issue, attempting reconnection...")
-                # Close all connections in the pool to force reconnection
-                try:
-                    db.engine.dispose()
-                    # Also try to reset the database engine
-                    db.engine.dispose()
-                except:
-                    pass
-            
-            if attempt < max_retries - 1:
-                print(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-            else:
-                print("Max retries exceeded. Database tables creation failed.")
-                print("Continuing application startup despite database issues...")
-                print("Application will continue startup, but some features may be limited due to database issues...")
-                
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
+        import traceback
+        traceback.print_exc()
+        print("Continuing application startup despite database issues...")
+        print("Application will continue startup, but some features may be limited due to database issues...")
+    
     # Even if table creation fails, continue with the application
+    return False
 def export_data():
     """Export all data to JSON files"""
     try:
@@ -3066,6 +3074,14 @@ def print_server_info():
 # Initialize the database tables when the application starts
 with app.app_context():
     create_tables()
+
+# Add a periodic connection check
+def check_db_connection():
+    """Periodic function to check database connection"""
+    with app.app_context():
+        ensure_db_connection()
+
+# Schedule regular connection checks (optional, can be used with schedulers like APScheduler)
 
 if __name__ == '__main__':
     # For local development
