@@ -2143,7 +2143,6 @@ def gift_shop():
     return render_template('gift_shop.html')
 
 @app.route('/')
-@cache.cached(timeout=300)  # Cache for 5 minutes
 def home():
     return render_template('index.html')
 
