@@ -2971,9 +2971,10 @@ def create_tables():
                 time.sleep(retry_delay)
             else:
                 print("Max retries exceeded. Database tables creation failed.")
+                print("Continuing application startup despite database issues...")
+                print("Application will continue startup, but some features may be limited due to database issues...")
                 
     # Even if table creation fails, continue with the application
-    print("Continuing application startup despite database issues...")
 def export_data():
     """Export all data to JSON files"""
     try:
