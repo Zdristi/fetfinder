@@ -35,3 +35,6 @@ matches.json
 users.json
 *.db
 instance/
+# Environment files
+.env
+config_local.py.env 

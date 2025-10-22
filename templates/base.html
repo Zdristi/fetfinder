@@ -2,7 +2,7 @@
 <html lang="{{ session.get('language', 'en') }}">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
     
     <!-- Favicon for different browsers and devices -->
@@ -75,7 +75,7 @@
           transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}{{ static_version('css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.min.css') }}{{ static_version('css/style.min.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script>
         // Immediately set theme to prevent flashing of unstyled content
@@ -125,6 +125,19 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5418763881443021"
          crossorigin="anonymous"></script>
     <link rel="stylesheet" href="{{ url_for("static", filename="css/swipe.css") }}">
+    <script>
+        // Image optimization and lazy loading
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add lazy loading to all images
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+                if (!img.hasAttribute('loading')) {
+                    img.setAttribute('loading', 'lazy');
+                }
+            });
+        });
+    </script>
+</head>
 <body>
     <div class="header">
         <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem;">
@@ -144,10 +157,10 @@
                         <a href="{{ url_for('faq') }}" class="faq-menu-link" style="text-decoration: none; color: inherit;">
                             {{ get_text('information') or 'Information' }}
                         </a>
-                        <div class="faq-dropdown" style="display: none; position: absolute; top: 100%; left: 0; background: var(--card-bg); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; min-width: 150px;">
+                        <div class="faq-dropdown" style="display: none; position: absolute; top: 100%; left: 0; background: var(--card-bg); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; min-width: 180px;">
                             <a href="{{ url_for('about') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('about_us') or 'About Us' }}</a>
                             <a href="{{ url_for('faq') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('faq') or 'FAQ' }}</a>
-                            <a href="{{ url_for('support_chat') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none;">{{ get_text('support') or 'Support' }}</a>
+                            <a href="{{ url_for('support_chat') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('support') or 'Support' }}</a>
                         </div>
                     </div>
 
@@ -1025,6 +1038,64 @@
         .faq-dropdown a:hover {
             background-color: var(--light-gray);
         }
+        
+        /* Footer styles */
+        .footer {
+            background: var(--header-bg);
+            color: white;
+            padding: 40px 0 20px;
+            margin-top: 60px;
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+        
+        .footer-content p {
+            margin: 0 0 20px 0;
+        }
+        
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .footer-links li {
+            display: inline;
+        }
+        
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
     </style>
+    
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 FetDate. All rights reserved.</p>
+            <ul class="footer-links">
+                <li><a href="{{ url_for('terms') }}">{{ get_text('terms_of_use') or 'Terms of Use' }}</a></li>
+                <li><a href="{{ url_for('privacy_policy') }}">{{ get_text('privacy_policy') or 'Privacy Policy' }}</a></li>
+                <li><a href="{{ url_for('refund_policy') }}">{{ get_text('refund_policy') or 'Refund Policy' }}</a></li>
+                <li><a href="{{ url_for('delivery') }}">{{ get_text('terms_of_service') or 'Terms of Service' }}</a></li>
+                <li><a href="{{ url_for('contacts') }}">{{ get_text('contacts') or 'Contacts' }}</a></li>
+            </ul>
+        </div>
+    </footer>
 </body>
 </html>

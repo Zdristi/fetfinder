@@ -116,9 +116,11 @@ class SwipeSystem {
     if (user.photo) {
       const photoUrl = user.photo.startsWith('http') ? 
         user.photo : 
-        `/static/uploads/${user.photo}`;
+        `/optimized_image/${user.photo}`;
       avatarElem.style.backgroundImage = `url('${photoUrl}')`;
       avatarElem.textContent = '';
+      // Add loading attribute for lazy loading
+      avatarElem.setAttribute('loading', 'lazy');
     } else {
       avatarElem.style.backgroundImage = 'none';
       avatarElem.textContent = user.username ? user.username.charAt(0).toUpperCase() : '?';

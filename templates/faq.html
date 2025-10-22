@@ -1,117 +1,34 @@
 {% extends "base.html" %}
 
-{% block title %}{{ get_text('faq') or 'FAQ' }} - {{ SITE_NAME }}{% endblock %}
+{% block title %}{{ get_text('faq') }}{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">
-            <i class="fas fa-question-circle"></i> {{ get_text('frequently_asked_questions') or 'Frequently Asked Questions' }}
-        </h2>
+<div class="container">
+    <h1>{{ get_text('frequently_asked_questions') }}</h1>
+    
+    <div class="faq-item">
+        <h3>{{ get_text('how_do_i_create_an_account') }}</h3>
+        <p>{{ get_text('how_do_i_create_an_account_answer') }}</p>
     </div>
     
-    <div style="margin-bottom: 20px;">
-        <a href="{{ url_for('home') }}" class="btn btn-outline">
-            <i class="fas fa-arrow-left"></i> {{ get_text('back_to_home') or 'Back to Home' }}
-        </a>
+    <div class="faq-item">
+        <h3>{{ get_text('how_do_i_find_matches') }}</h3>
+        <p>{{ get_text('how_do_i_find_matches_answer') }}</p>
     </div>
     
-    <div class="faq-section">
-        <div class="faq-item" style="margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
-            <div class="faq-question" style="background: var(--card-bg); padding: 15px 20px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center;" onclick="toggleFaq(this)">
-                <span>{{ get_text('how_do_i_create_an_account') or 'How do I create an account?' }}</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="faq-answer" style="padding: 0 20px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease;">
-                <p style="padding: 20px 0; margin: 0; border-top: 1px solid var(--border-color);">
-                    {{ get_text('how_do_i_create_an_account_answer') or 'To create an account, click the "Sign Up" button on the homepage. Fill in your username, email, and password, then follow the instructions to complete your profile.' }}
-                </p>
-            </div>
-        </div>
-        
-        <div class="faq-item" style="margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
-            <div class="faq-question" style="background: var(--card-bg); padding: 15px 20px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center;" onclick="toggleFaq(this)">
-                <span>{{ get_text('how_do_i_find_matches') or 'How do I find matches?' }}</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="faq-answer" style="padding: 0 20px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease;">
-                <p style="padding: 20px 0; margin: 0; border-top: 1px solid var(--border-color);">
-                    {{ get_text('how_do_i_find_matches_answer') or 'After completing your profile, go to the "Discover" section to start swiping through potential matches. You can like or reject profiles based on your preferences.' }}
-                </p>
-            </div>
-        </div>
-        
-        <div class="faq-item" style="margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
-            <div class="faq-question" style="background: var(--card-bg); padding: 15px 20px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center;" onclick="toggleFaq(this)">
-                <span>{{ get_text('is_my_information_secure') or 'Is my information secure?' }}</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="faq-answer" style="padding: 0 20px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease;">
-                <p style="padding: 20px 0; margin: 0; border-top: 1px solid var(--border-color);">
-                    {{ get_text('is_my_information_secure_answer') or 'We take your privacy seriously. All personal information is encrypted and stored securely. We never share your data with third parties without your consent.' }}
-                </p>
-            </div>
-        </div>
-        
-        <div class="faq-item" style="margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
-            <div class="faq-question" style="background: var(--card-bg); padding: 15px 20px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center;" onclick="toggleFaq(this)">
-                <span>{{ get_text('what_are_premium_features') or 'What are Premium features?' }}</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="faq-answer" style="padding: 0 20px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease;">
-                <p style="padding: 20px 0; margin: 0; border-top: 1px solid var(--border-color);">
-                    {{ get_text('what_are_premium_features_answer') or 'Premium members enjoy unlimited swipes, the ability to undo up to 5 swipes per day, unlimited messaging, and a premium badge on their profile. Premium also gives priority placement in discovery queues.' }}
-                </p>
-            </div>
-        </div>
-        
-        <div class="faq-item" style="margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
-            <div class="faq-question" style="background: var(--card-bg); padding: 15px 20px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center;" onclick="toggleFaq(this)">
-                <span>{{ get_text('how_do_i_contact_support') or 'How do I contact support?' }}</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="faq-answer" style="padding: 0 20px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease;">
-                <p style="padding: 20px 0; margin: 0; border-top: 1px solid var(--border-color);">
-                    {{ get_text('how_do_i_contact_support_answer') or 'You can contact our support team through the "Contact Support" link in your profile menu, or by emailing support@fetdate.online. Our team typically responds within 24 hours.' }}
-                </p>
-            </div>
-        </div>
+    <div class="faq-item">
+        <h3>{{ get_text('is_my_information_secure') }}</h3>
+        <p>{{ get_text('is_my_information_secure_answer') }}</p>
     </div>
     
-    <div style="margin-top: 30px; padding: 20px; background: var(--card-bg); border-radius: 10px; text-align: center;">
-        <h3 style="margin-top: 0;">{{ get_text('still_have_questions') or 'Still have questions?' }}</h3>
-        <p>{{ get_text('contact_our_support_team') or 'Contact our support team for personalized assistance.' }}</p>
-        <a href="{{ url_for('support_chat') }}" class="btn" style="padding: 12px 25px; font-size: 1rem;">
-            <i class="fas fa-headset"></i> {{ get_text('contact_support') or 'Contact Support' }}
-        </a>
+    <div class="faq-item">
+        <h3>{{ get_text('what_are_premium_features') }}</h3>
+        <p>{{ get_text('what_are_premium_features_answer') }}</p>
+    </div>
+    
+    <div class="faq-item">
+        <h3>{{ get_text('how_do_i_contact_support') }}</h3>
+        <p>{{ get_text('how_do_i_contact_support_answer') }}</p>
     </div>
 </div>
-
-<script>
-function toggleFaq(element) {
-    const answer = element.nextElementSibling;
-    const icon = element.querySelector('i');
-    
-    if (answer.style.maxHeight && answer.style.maxHeight !== '0px') {
-        // Close
-        answer.style.maxHeight = '0px';
-        answer.style.padding = '0 20px';
-        icon.className = 'fas fa-chevron-down';
-    } else {
-        // Open
-        answer.style.maxHeight = answer.scrollHeight + 'px';
-        answer.style.padding = '0 20px';
-        icon.className = 'fas fa-chevron-up';
-    }
-}
-
-// Initialize all answers to be closed
-document.addEventListener('DOMContentLoaded', function() {
-    const answers = document.querySelectorAll('.faq-answer');
-    answers.forEach(answer => {
-        answer.style.maxHeight = '0px';
-        answer.style.padding = '0 20px';
-    });
-});
-</script>
 {% endblock %}

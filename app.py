@@ -1,11 +1,17 @@
 import os
 import sys
+import time
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Загружаем переменные окружения из файла .env
+from dotenv import load_dotenv
+load_dotenv()
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message as EmailMessage
+from flask_caching import Cache
 import json
 from datetime import datetime, timedelta
 import uuid
@@ -19,35 +25,47 @@ import string
 import re
 import requests
 
+# Import configuration
+from config import SECRET_KEY
+
 # Create Flask app
 app = Flask(__name__)
+app.config['SECRET_KEY'] = SECRET_KEY
 
 # Add reCAPTCHA configuration
 app.config['RECAPTCHA_PUBLIC_KEY'] = '6Lc6BhgUAAAAAAH5u7f8rXz8rXz8rXz8rXz8rXz8'
 app.config['RECAPTCHA_PRIVATE_KEY'] = '6Lc6BhgUAAAAAAH5u7f8rXz8rXz8rXz8rXz8rXz8'
 
-# Configure SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://fetfinder_db_user:yJXZDIUB3VRK7Qf7JxRdyddjiq3ngPEr@dpg-d38m518gjchc73d67m20-a.frankfurt-postgres.render.com/fetfinder_db')
+# Configure cache (using simple in-memory cache instead of Redis for local development)
+app.config['CACHE_TYPE'] = 'simple'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes
+cache = Cache(app)
+
+# Configure SQLAlchemy - changed for local development
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///fetdate_local.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 10,
-    'pool_recycle': 120,
-    'pool_pre_ping': True,
-    'connect_args': {
-        'connect_timeout': 10
+# Remove connection pool settings that are not needed for SQLite
+if 'postgresql://' in str(app.config['SQLALCHEMY_DATABASE_URI']):
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_size': 10,
+        'pool_recycle': 120,
+        'pool_pre_ping': True,
+        'connect_args': {
+            'connect_timeout': 10
+        }
     }
-}
 
 # Initialize database
 db.init_app(app)
 
 # Email configuration
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'sup.fetdate@gmail.com'
-app.config['MAIL_PASSWORD'] = 'jzrxaivqpwaalodj'  # Пароль приложения Gmail
-app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1']
+app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', 'on', '1']
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'sup.fetdate@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  # Пароль приложения Gmail
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'sup.fetdate@gmail.com')
 
 # Инициализация Flask-Mail
 mail = Mail(app)
@@ -64,11 +82,17 @@ if not os.path.exists('static/js'):
 if not os.path.exists('static/uploads'):
     os.makedirs('static/uploads')
 
+from datetime import timedelta
+
+# Configure session permanent
+app.permanent_session_lifetime = timedelta(days=30)  # Сессия будет действовать 30 дней
+
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
+login_manager.session_protection = "strong"
 
 # Site configuration
 SITE_NAME = 'FetDate'
@@ -80,12 +104,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Create necessary directories
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
-
-# Initialize Flask-Login
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-login_manager.login_message = 'Please log in to access this page.'
 
 # Data storage
 DATA_FILE = 'users.json'
@@ -101,18 +119,37 @@ def generate_confirmation_code():
 def send_confirmation_email(email, code):
     """Отправляет код подтверждения на email"""
     try:
-        msg = EmailMessage(
-            subject='Код подтверждения регистрации - FetDate',
-            recipients=[email],
-            body=f'Ваш код подтверждения: {code}\n\nВведите этот код на сайте для завершения регистрации.'
-        )
+        # Создание сообщения
+        msg = EmailMessage()
+        msg.subject = 'Код подтверждения регистрации'
+        msg.recipients = [email]
+        
+        # Текст письма
+        msg.body = f"""
+        Здравствуйте!
+        
+        Спасибо за регистрацию на нашем сайте FetDate.
+        
+        Ваш код подтверждения: {code}
+        
+        Пожалуйста, введите этот код на странице подтверждения, чтобы завершить регистрацию.
+        
+        Если вы не регистрировались на нашем сайте, просто проигнорируйте это письмо.
+        
+        С уважением,
+        Команда FetDate
+        """
+        
+        # Отправка письма
         mail.send(msg)
-        print(f"Письмо успешно отправлено на {email}")
+        print(f"Код подтверждения отправлен на {email}: {code}")
         return True
     except Exception as e:
-        print(f"Ошибка при отправке email на {email}: {e}")
-        import traceback
-        traceback.print_exc()
+        # В случае ошибки логируем её и возвращаем False
+        print(f"Ошибка при отправке email на {email}: {str(e)}")
+        # Для отладки и обеспечения работы сайта в случае сбоя почты - 
+        # можно включить резервный вариант вывода кода в консоль
+        print(f"(Резервный вариант) Код подтверждения для {email}: {code}")
         return False
 
 # User loader for Flask-Login
@@ -174,7 +211,7 @@ def load_user(user_id):
 # Block check before each request
 @app.before_request
 def check_blocked_user():
-    if current_user.is_authenticated and current_user.is_blocked:
+    if current_user and hasattr(current_user, 'is_authenticated') and current_user.is_authenticated and current_user.is_blocked:
         if request.endpoint not in ['blocked', 'logout']:
             return redirect(url_for('blocked'))
 
@@ -225,6 +262,10 @@ LANGUAGES = {
         'member_since': 'Member since',
         'about': 'About',
         'about_us': 'About Us',
+        'our_story': 'Our Story',
+        'our_story_content': 'Founded with the vision of creating meaningful connections, FetDate is dedicated to providing a unique and inclusive dating experience. Our platform brings together individuals who share similar interests, values, and lifestyles, fostering genuine relationships in a comfortable environment.',
+        'our_mission': 'Our mission is to create a safe space where individuals can express themselves authentically and find compatible partners without judgment. We believe that everyone deserves to find love and companionship that aligns with their unique preferences.',
+        'our_community': 'Our Growing Community',
         'information': 'Information',
         'no_bio': 'No bio provided',
         'no_fetishes': 'No fetishes listed',
@@ -267,11 +308,36 @@ LANGUAGES = {
         'unlock_exclusive_features': 'Unlock exclusive features and enhance your experience',
         'premium_features': 'Premium Features',
         'undo_swipes': 'Undo Swipes',
-        'undo_swipes_desc': 'Change your mind and undo up to 5 swipes per day',
+        'undo_swipes_desc': 'Change your mind and undo unlimited swipes per day',
         'unlimited_messaging': 'Unlimited Messaging',
         'unlimited_messaging_desc': 'Send unlimited messages to your matches',
         'premium_badge': 'Premium Badge',
         'premium_badge_desc': 'Stand out with a premium badge on your profile',
+        'subscription_details': 'Subscription Details',
+        'currency': 'Currency',
+        'billing_cycle': 'Billing Cycle',
+        'billing_cycle_desc': 'Monthly (Automatically renews)',
+        'payment_methods': 'Payment Methods',
+        'payment_methods_desc': 'Credit/Debit Cards, PayPal',
+        'refund_policy_info': 'Refund Policy',
+        'refund_policy_desc': '7-day money-back guarantee for new subscriptions',
+        'how_it_works': 'How It Works',
+        'secure_payment': 'Secure Payment',
+        'secure_payment_desc': 'All payment information is processed through secure, encrypted channels. We never store your full credit card details on our servers. Our payment processor is PCI DSS compliant to ensure your financial information is protected.',
+        'by_subscribing_premium': 'By subscribing to premium service, you agree to our Terms of Use and Refund Policy.',
+        'why_users_love_premium': 'Why Users Love Premium',
+        'priority_matching': 'Priority matching',
+        'advanced_filters': 'Advanced filters',
+        'extended_profile_visibility': 'Extended profile visibility',
+        'click_get_premium_now': 'Click "Get Premium Now" to proceed with payment',
+        'enter_payment_info': 'Enter your payment information securely',
+        'subscription_activated': 'Your subscription will be activated immediately',
+        'enjoy_premium_features': 'Enjoy premium features without interruption',
+        'subscription_renews': 'Subscription renews automatically each month',
+        'cancel_anytime_account': 'Cancel anytime through your account settings',
+        'testimonial_1': '"Premium features helped me connect with more people who share my interests. The unlimited messaging is a game-changer!"',
+        'testimonial_2': '"The ability to undo swipes has saved me from accidentally passing on potential matches. Worth every penny!"',
+        'testimonial_3': '"The premium badge makes me stand out in the crowd. I\'ve received significantly more matches since upgrading."',
         'set_primary_photo': 'Set as Primary',
         'primary': 'Primary',
         'just_per_month': 'Just $9.99/month',
@@ -311,6 +377,175 @@ LANGUAGES = {
         'delete': 'Delete',
         'faq': 'FAQ',
         'support': 'Support',
+        'contacts': 'Contacts',
+        'agreement_to_terms': 'Agreement to Terms',
+        'agreement_to_terms_desc': 'By accessing and using FetDate (\"the Service\"), you agree to be bound by these Terms of Use (\"Terms\"). If you disagree with any part of the terms, you may not access the Service.',
+        'description_of_service': 'Description of Service',
+        'description_of_service_desc': 'FetDate is a dating platform that allows users to connect with others based on shared interests and fetishes. The Service provides features such as profile creation, matching, swiping, and messaging to facilitate connections.',
+        'user_accounts': 'User Accounts',
+        'user_accounts_desc1': 'When you create an account with us, you must provide accurate and complete information. You are responsible for maintaining the security of your account and are fully responsible for all activities that occur under your account.',
+        'user_accounts_desc2': 'You must notify us immediately upon becoming aware of any unauthorized use of your account or any other breach of security.',
+        'subscription_and_payment': 'Subscription and Payment',
+        'subscription_and_payment_desc1': 'Our Service offers premium subscriptions. Premium subscriptions are automatically renewed until cancelled. You may cancel your subscription at any time by contacting us.',
+        'subscription_and_payment_desc2': 'All fees are inclusive of applicable taxes where required by law. We may change our subscription fees at any time, with reasonable notice to you.',
+        'purchases': 'Purchases',
+        'purchases_desc1': 'If you make purchases through the Service, you agree to provide current, complete, and accurate purchase and account information. You further agree to pay all fees as described when making a purchase.',
+        'purchases_desc2': 'We reserve the right to refuse any order you place through the Service.',
+        'accuracy_of_information': 'Accuracy of Information',
+        'accuracy_of_information_desc': 'While we strive to provide accurate information about our Service, we make no representations about the completeness, accuracy, reliability, or suitability of any information, products, or services contained on our Service.',
+        'intellectual_property': 'Intellectual Property',
+        'intellectual_property_desc': 'The Service and its original content, features, and functionality are owned by FetDate and are protected by international copyright, trademark, and other intellectual property laws.',
+        'termination': 'Termination',
+        'termination_desc1': 'We may terminate or suspend your account immediately, without prior notice, for any reason whatsoever, including without limitation if you breach the Terms.',
+        'termination_desc2': 'Upon termination, your right to use the Service will cease immediately.',
+        'limitation_of_liability': 'Limitation of Liability',
+        'limitation_of_liability_desc': 'In no event shall FetDate, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses.',
+        'governing_law': 'Governing Law',
+        'governing_law_desc': 'These Terms shall be governed and construed in accordance with the laws, without regard to its conflict of law provisions.',
+        'changes_to_terms': 'Changes to Terms',
+        'changes_to_terms_desc': 'We reserve the right, at our sole discretion, to modify or replace these Terms at any time. By continuing to access or use our Service after those revisions become effective, you agree to be bound by the revised terms.',
+        'contact_us': 'Contact Us',
+        'contact_us_desc': 'If you have any questions about these Terms, please contact us at',
+        'privacy_policy': 'Privacy Policy',
+        'information_we_collect': 'Information We Collect',
+        'information_we_collect_desc': 'At FetDate, we collect information you provide directly to us, such as when you create an account, update your profile, or communicate with other users. This includes:',
+        'personal_information_item': 'Personal information (name, email address, phone number)',
+        'profile_information_item': 'Profile information (photos, bio, interests, fetishes)',
+        'location_data_item': 'Location data (country and city)',
+        'payment_information_item': 'Payment information when purchasing premium features',
+        'communication_preferences_item': 'Communication preferences',
+        'how_we_use_your_information': 'How We Use Your Information',
+        'how_we_use_your_information_desc': 'We use the information we collect to:',
+        'provide_maintain_improve_item': 'Provide, maintain, and improve our services',
+        'process_transactions_item': 'Process transactions and send related information',
+        'send_technical_notices_item': 'Send technical notices and support messages',
+        'link_combine_information_item': 'Link or combine user information with other sources',
+        'protect_investigate_item': 'Protect, investigate, and deter against fraudulent, unauthorized, or illegal activity',
+        'information_sharing_disclosure': 'Information Sharing and Disclosure',
+        'information_sharing_disclosure_desc': 'We do not share, sell, or rent your personal information to third parties for marketing purposes. We may share information with:',
+        'service_providers_item': 'Service providers who perform services on our behalf',
+        'other_users_item': 'Other users as per your profile settings and preferences',
+        'third_parties_item': 'Third parties in connection with a merger, acquisition, or sale of assets',
+        'legal_authorities_item': 'Legal authorities when required by law',
+        'data_security': 'Data Security',
+        'data_security_desc': 'We implement appropriate technical and organizational measures to protect the security of your personal information. However, no method of transmission over the internet or method of electronic storage is 100% secure.',
+        'your_data_protection_rights': 'Your Data Protection Rights',
+        'your_data_protection_rights_desc': 'Depending on your location, you may have the right to:',
+        'access_your_data_item': 'Access your personal data',
+        'rectify_data_item': 'Rectify inaccurate data',
+        'request_deletion_item': 'Request deletion of your data',
+        'object_to_processing_item': 'Object to processing',
+        'data_portability_item': 'Data portability',
+        'withdraw_consent_item': 'Withdraw consent',
+        'childrens_privacy': 'Children\'s Privacy',
+        'childrens_privacy_desc': 'Our service does not address anyone under the age of 18. We do not knowingly collect personal information from children under 18.',
+        'changes_to_privacy_policy': 'Changes to This Privacy Policy',
+        'changes_to_privacy_policy_desc': 'We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.',
+        'contact_us_privacy': 'Contact Us (Privacy)',
+        'contact_us_privacy_desc': 'If you have any questions about this Privacy Policy, please contact us at',
+        'refund_policy': 'Refund Policy',
+        'premium_subscription_refunds': 'Premium Subscription Refunds',
+        'premium_subscription_refunds_desc': 'We offer a 7-day refund policy for our premium subscriptions. If you are not satisfied with our premium service, you may request a refund within 7 days of your initial purchase.',
+        'eligibility_for_refund': 'Eligibility for Refund',
+        'eligibility_for_refund_desc': 'To be eligible for a refund, your premium subscription must:',
+        'purchased_within_7_days_item': 'Have been purchased within the last 7 days',
+        'not_extensively_used_item': 'Not have been used extensively (limited messaging, limited use of premium features)',
+        'before_renewal_date_item': 'Be requested before any renewal date',
+        'non_refundable_items': 'Non-Refundable Items',
+        'non_refundable_items_desc': 'The following items are non-refundable:',
+        'individual_coins_item': 'Individual coins purchased for gifts or features',
+        'gifts_sent_item': 'Gifts sent to other users',
+        'subscriptions_7_days_item': 'Subscriptions that have been active for more than 7 days',
+        'heavily_used_subscriptions_item': 'Subscriptions that have been heavily used',
+        'how_to_request_refund': 'How to Request a Refund',
+        'how_to_request_refund_desc': 'To request a refund, please contact us at with the following information:',
+        'username_item': 'Your username',
+        'date_of_purchase_item': 'Date of purchase',
+        'reason_for_refund_item': 'Reason for requesting a refund',
+        'transaction_id_item': 'Transaction ID (if available)',
+        'processing_time': 'Processing Time',
+        'processing_time_desc': 'Once your refund request is received and reviewed, we will send you an email confirming acceptance or rejection of your refund request. If accepted, your refund will be processed and a credit will automatically be applied to your original payment method within 5-10 business days.',
+        'subscription_renewals': 'Subscription Renewals',
+        'subscription_renewals_desc': 'If your subscription renews automatically before a refund is processed, we will refund the most recent billing cycle if you are still within the 7-day window and meet the eligibility requirements.',
+        'special_circumstances': 'Special Circumstances',
+        'special_circumstances_desc': 'In certain exceptional circumstances, we may consider refund requests beyond the 7-day window, including:',
+        'technical_issues_item': 'Technical issues preventing service use',
+        'billing_errors_item': 'Billing errors on our part',
+        'account_suspension_item': 'Account suspension or termination not due to user misconduct',
+        'chargebacks_and_disputes': 'Chargebacks and Disputes',
+        'chargebacks_and_disputes_desc': 'Filing a chargeback or payment dispute with your financial institution voids your right to any refund from us. Please contact us first if you have concerns about your purchase.',
+        'changes_to_refund_policy': 'Changes to Refund Policy',
+        'changes_to_refund_policy_desc': 'We reserve the right to modify this refund policy at any time. Changes will be effective immediately upon posting to our website. Your continued use of our service after changes constitutes acceptance of the modified policy.',
+        'contact_us_refund': 'Contact Us (Refund)',
+        'contact_us_refund_desc': 'If you have any questions or concerns about our refund policy, please contact us at',
+        'terms_of_service': 'Terms of Service',
+        'service_description': 'Service Description',
+        'service_description_desc': 'FetDate is a digital dating platform that provides users with the ability to create profiles, connect with others based on shared interests and fetishes, and communicate through various features. Our service operates as a software platform accessible via web browser.',
+        'account_registration_process': 'Account Registration Process',
+        'account_registration_process_desc': 'To use our services, users must create an account by providing accurate and complete information including but not limited to username, email address, and password. Users must be at least 18 years old to register. Accounts must be maintained with accurate and current information.',
+        'payment_and_billing': 'Payment and Billing',
+        'payment_and_billing_desc': 'Our platform offers both free and premium services:',
+        'free_services_item': 'Free services include basic profile creation, limited swiping, and basic matching',
+        'premium_services_item': 'Premium services include features such as unlimited messaging, advanced matching, and special badges',
+        'premium_cost_item': 'Premium subscriptions are charged monthly at $9.99 USD',
+        'payment_processing_item': 'Payment is processed securely through our payment processor',
+        'automatic_renewal_item': 'Subscriptions automatically renew until cancelled by the user',
+        'digital_content_delivery': 'Digital Content Delivery',
+        'digital_content_delivery_desc': 'All digital products and services are provided immediately upon purchase:',
+        'premium_access_item': 'Premium subscription access is granted instantly upon successful payment',
+        'in_app_currency_item': 'In-app currency (coins) are added to your account immediately',
+        'enhanced_features_item': 'Enhanced features become available immediately after purchase',
+        'user_responsibilities': 'User Responsibilities',
+        'user_responsibilities_desc': 'Users are responsible for:',
+        'confidentiality_item': 'Maintaining the confidentiality of their account information',
+        'accurate_information_item': 'Providing accurate and up-to-date profile information',
+        'respectful_behavior_item': 'Acting respectfully toward other users',
+        'compliance_item': 'Complying with all applicable laws and regulations',
+        'service_availability': 'Service Availability',
+        'service_availability_desc': 'We strive to maintain our service availability 24/7. However, service may be temporarily unavailable during scheduled maintenance or in case of technical issues. We are not liable for any inconvenience caused by temporary service interruptions.',
+        'data_protection': 'Data Protection',
+        'data_protection_desc': 'All user data is encrypted and stored securely. We implement industry-standard security measures to protect user information. Personal information is processed in accordance with our Privacy Policy.',
+        'cancellation_and_account_termination': 'Cancellation and Account Termination',
+        'cancellation_and_account_termination_desc': 'Users may cancel their subscriptions at any time. For premium memberships, cancellation will be effective at the end of the current billing period. Users may close their accounts entirely by contacting support. Account closure results in immediate deactivation of the profile and removal from matching systems.',
+        'customer_support': 'Customer Support',
+        'customer_support_desc': 'Customer support is available through our in-app support system and email at',
+        'customer_support_desc_continued': 'We aim to respond to all inquiries within 24 hours. Support is available for account issues, billing questions, and technical problems.',
+        'limitation_of_liability': 'Limitation of Liability',
+        'limitation_of_liability_desc': 'Our liability is limited to the amount paid by the user for services in the 12 months prior to the event giving rise to the claim. We are not liable for indirect, incidental, or consequential damages.',
+        'dispute_resolution': 'Dispute Resolution',
+        'dispute_resolution_desc': 'Any disputes related to our services should first be addressed through our customer support channel. If unresolved, disputes may be subject to binding arbitration as specified in our Terms of Use.',
+        'governing_law': 'Governing Law',
+        'governing_law_desc': 'These Terms of Service are governed by international law with respect to the delivery of digital services. Any legal action related to these terms must be brought in the jurisdiction where our company is registered.',
+        'modifications_to_service': 'Modifications to Service',
+        'modifications_to_service_desc': 'We reserve the right to modify our services, features, and these Terms of Service at any time. Users will be notified of significant changes via email or in-app notice. Continued use of the service constitutes acceptance of modified terms.',
+        'contact_information': 'Contact Information',
+        'contact_information_desc': 'For questions regarding these Terms of Service, please contact us at',
+        'contact_us_title': 'Contact Us',
+        'get_in_touch': 'Get in Touch',
+        'get_in_touch_desc': 'We\'re here to help! If you have any questions, concerns, or feedback about our service, please don\'t hesitate to reach out to us.',
+        'support_email': 'Support Email',
+        'support_team_response_desc': 'Our support team typically responds within 24 hours. Please include your username in your message for faster assistance.',
+        'mailing_address': 'Mailing Address',
+        'legal_matters_desc': 'For legal matters and formal correspondence:',
+        'fetdate_support_team': 'FetDate Support Team',
+        'attention_legal_dept': 'Attn: Legal Department',
+        'physical_address': '[Physical Address for Legal Disputes]',
+        'city_state_zip': '[City, State, ZIP Code]',
+        'phone_support': 'Phone Support',
+        'immediate_assistance_desc': 'For immediate assistance, you can reach us at:',
+        'urgent_account_issues': '(For urgent account issues)',
+        'phone_hours': 'Phone support is available Monday-Friday, 9:00 AM - 6:00 PM EST',
+        'report_an_issue': 'Report an Issue',
+        'report_an_issue_desc': 'If you need to report a user, content, or technical issue:',
+        'report_user_button': 'Use the \"Report User\" button on any profile',
+        'moderation_team_email': 'Contact our moderation team at',
+        'in_app_support_chat': 'Use the in-app support chat feature',
+        'business_inquiries': 'Business Inquiries',
+        'business_inquiries_desc': 'For business partnerships, press inquiries, or advertising opportunities:',
+        'business_email': 'business@fetdate.online',
+        'feedback_and_suggestions': 'Feedback and Suggestions',
+        'feedback_and_suggestions_desc': 'We value your feedback and suggestions for improving our service. Please send your ideas to:',
+        'feedback_email': 'feedback@fetdate.online',
         'frequently_asked_questions': 'Frequently Asked Questions',
         'back_to_home': 'Back to Home',
         'how_do_i_create_an_account': 'How do I create an account?',
@@ -320,7 +555,7 @@ LANGUAGES = {
         'is_my_information_secure': 'Is my information secure?',
         'is_my_information_secure_answer': 'We take your privacy seriously. All personal information is encrypted and stored securely. We never share your data with third parties without your consent.',
         'what_are_premium_features': 'What are Premium features?',
-        'what_are_premium_features_answer': 'Premium members enjoy unlimited swipes, the ability to undo up to 5 swipes per day, unlimited messaging, and a premium badge on their profile. Premium also gives priority placement in discovery queues.',
+        'what_are_premium_features_answer': 'Premium members enjoy unlimited swipes, the ability to undo unlimited swipes per day, unlimited messaging, and a premium badge on their profile. Premium also gives priority placement in discovery queues.',
         'how_do_i_contact_support': 'How do I contact support?',
         'how_do_i_contact_support_answer': 'You can contact our support team through the "Contact Support" link in your profile menu, or by emailing support@fetdate.online. Our team typically responds within 24 hours.',
         'still_have_questions': 'Still have questions?',
@@ -364,6 +599,13 @@ LANGUAGES = {
         'welcome_to_support_chat': 'Welcome to Support Chat!',
         'support_will_respond_soon': 'Our support team will respond to your messages as soon as possible.',
         'support_welcome_message': 'Hello! Welcome to FetDate support. How can we help you today?',
+        'support_online': 'Support Online',
+        'admin': 'Admin',
+        'close_ticket': 'Close Ticket',
+        'confirm_close_ticket': 'Are you sure you want to close this ticket?',
+        'no_ticket_selected_info': 'Select a ticket from the left panel to view and respond to support requests',
+        'support_chat_with': 'Support Chat with',
+        'select_ticket_to_begin_chat': 'Select a ticket from the list to begin chatting',
         'need_immediate_help': 'Need immediate help?',
         'contact_us_by_email': 'You can also contact us by email:',
         'error_sending_message': 'Error sending message. Please try again.',
@@ -414,6 +656,10 @@ LANGUAGES = {
         'member_since': 'Участник с',
         'about': 'О себе',
         'about_us': 'О нас',
+        'our_story': 'Наша история',
+        'our_story_content': 'Основанный с видением создания осмысленных связей, FetDate посвящен предоставлению уникального и инклюзивного дейтинг-опыта. Наша платформа объединяет людей, которые разделяют схожие интересы, ценности и образ жизни, способствуя установлению настоящих отношений в комфортной обстановке.',
+        'our_mission': 'Наша миссия - создать безопасное пространство, где люди могут аутентично выражать себя и находить совместимых партнеров без осуждения. Мы верим, что каждый заслуживает любовь и товарищество, которое соответствует их уникальным предпочтениям.',
+        'our_community': 'Наше растущее сообщество',
         'information': 'Информация',
         'no_bio': 'Биография не указана',
         'no_fetishes': 'Фетиши не указаны',
@@ -456,11 +702,36 @@ LANGUAGES = {
         'unlock_exclusive_features': 'Откройте эксклюзивные функции и улучшите свой опыт',
         'premium_features': 'Премиум возможности',
         'undo_swipes': 'Отмена свайпов',
-        'undo_swipes_desc': 'Передумали? Отмените до 5 свайпов в день',
+        'undo_swipes_desc': 'Передумали? Отмените неограниченное количество свайпов в день',
         'unlimited_messaging': 'Неограниченные сообщения',
         'unlimited_messaging_desc': 'Отправляйте неограниченное количество сообщений своим совпадениям',
         'premium_badge': 'Премиум бейдж',
         'premium_badge_desc': 'Выделяйтесь с премиум бейджем в своем профиле',
+        'subscription_details': 'Детали подписки',
+        'currency': 'Валюта',
+        'billing_cycle': 'Биллинговый цикл',
+        'billing_cycle_desc': 'Ежемесячно (Автоматически продлевается)',
+        'payment_methods': 'Способы оплаты',
+        'payment_methods_desc': 'Кредитные/дебетовые карты, PayPal',
+        'refund_policy_info': 'Политика возврата',
+        'refund_policy_desc': 'Гарантия возврата денег в течение 7 дней для новых подписок',
+        'how_it_works': 'Как это работает',
+        'secure_payment': 'Безопасный платеж',
+        'secure_payment_desc': 'Вся информация об оплате обрабатывается через безопасные зашифрованные каналы. Мы никогда не храним полные данные вашей кредитной карты на наших серверах. Наш платежный процессор соответствует стандарту PCI DSS для обеспечения защиты вашей финансовой информации.',
+        'by_subscribing_premium': 'При подписке на премиум-услуги вы соглашаетесь с Условиями использования и Политикой возврата.',
+        'why_users_love_premium': 'Почему пользователи любят премиум',
+        'priority_matching': 'Приоритетный подбор',
+        'advanced_filters': 'Расширенные фильтры',
+        'extended_profile_visibility': 'Расширенная видимость профиля',
+        'click_get_premium_now': 'Нажмите "Получить премиум сейчас", чтобы продолжить оплату',
+        'enter_payment_info': 'Безопасно введите информацию о платеже',
+        'subscription_activated': 'Ваша подписка будет активирована немедленно',
+        'enjoy_premium_features': 'Наслаждайтесь премиум-функциями без перерывов',
+        'subscription_renews': 'Подписка автоматически продлевается каждый месяц',
+        'cancel_anytime_account': 'Отмените в любое время через настройки аккаунта',
+        'testimonial_1': '"Премиум-функции помогли мне находить связи с людьми, разделяющими мои интересы. Неограниченные сообщения - это революция!"',
+        'testimonial_2': '"Возможность отменить свайпы сохранила меня от случайного пропуска потенциальных совпадений. Каждая копейка стоит того!"',
+        'testimonial_3': '"Премиум-бейдж выделяет меня из толпы. С момента обновления я получил(а) значительно больше совпадений."',
         'set_primary_photo': 'Сделать основной',
         'primary': 'Основная',
         'just_per_month': 'Всего $9.99/месяц',
@@ -485,6 +756,175 @@ LANGUAGES = {
         'by_subscribing': 'Оформляя подписку, вы соглашаетесь с условиями обслуживания и политикой конфиденциальности.',
         'faq': 'Частые вопросы',
         'support': 'Поддержка',
+        'contacts': 'Контакты',
+        'agreement_to_terms': 'Соглашение с условиями',
+        'agreement_to_terms_desc': 'Доступаясь к использованию FetDate (\"Сервис\"), вы соглашаетесь с соблюдением этих Условий использования (\"Условия\"). Если вы не согласны с какой-либо частью условий, вы не можете использовать Сервис.',
+        'description_of_service': 'Описание сервиса',
+        'description_of_service_desc': 'FetDate - это платформа для знакомств, которая позволяет пользователям находить связи с другими людьми на основе общих интересов и фетишей. Сервис предоставляет такие функции, как создание профиля, поиск совпадений, свайпинг и обмен сообщениями для облегчения установления контактов.',
+        'user_accounts': 'Пользовательские аккаунты',
+        'user_accounts_desc1': 'При создании учетной записи у нас вы должны предоставить точную и полную информацию. Вы несете ответственность за обеспечение безопасности вашей учетной записи и полностью несете ответственность за все действия, происходящие под вашей учетной записью.',
+        'user_accounts_desc2': 'Вы должны немедленно сообщить нам, если узнаете о любом несанкционированном использовании вашей учетной записи или любом другом нарушении безопасности.',
+        'subscription_and_payment': 'Подписка и оплата',
+        'subscription_and_payment_desc1': 'Наш сервис предлагает премиум-подписки. Премиум-подписки автоматически продляются до тех пор, пока не будут отменены. Вы можете отменить подписку в любое время, обратившись к нам.',
+        'subscription_and_payment_desc2': 'Все сборы включают применимые налоги, если это требуется законом. Мы можем изменить стоимость подписки в любое время с разумным уведомлением вам.',
+        'purchases': 'Покупки',
+        'purchases_desc1': 'Если вы совершаете покупки через Сервис, вы соглашаетесь предоставить актуальную, полную и точную информацию о покупке и учетной записи. Вы также соглашаетесь оплатить все сборы, указанные при совершении покупки.',
+        'purchases_desc2': 'Мы оставляем за собой право отказать в любом заказе, который вы размещаете через Сервис.',
+        'accuracy_of_information': 'Точность информации',
+        'accuracy_of_information_desc': 'Хотя мы стремимся предоставлять точную информацию о нашем Сервисе, мы не даем никаких гарантий относительно полноты, точности, надежности или пригодности какой-либо информации, продукции или услуг, содержащихся в нашем Сервисе.',
+        'intellectual_property': 'Интеллектуальная собственность',
+        'intellectual_property_desc': 'Сервис и его оригинальный контент, функции и функциональность принадлежат FetDate и защищены международными законами об авторском праве, товарных знаках и другой интеллектуальной собственности.',
+        'termination': 'Прекращение',
+        'termination_desc1': 'Мы можем прекратить или приостановить вашу учетную запись немедленно, без предварительного уведомления, по любой причине, включая, помимо прочего, нарушение Условий.',
+        'termination_desc2': 'После прекращения действия ваши права на использование Сервиса прекращаются немедленно.',
+        'limitation_of_liability': 'Ограничение ответственности',
+        'limitation_of_liability_desc': 'В любом случае FetDate, а также его директора, сотрудники, партнеры, агенты, поставщики или филиалы не несут ответственности за какие-либо косвенные, случайные, специальные, косвенные или штрафные убытки, включая, помимо прочего, упущенную прибыль, данные, использование, деловую репутацию или другие нематериальные потери.',
+        'governing_law': 'Применимое право',
+        'governing_law_desc': 'Настоящие Условия регулируются и толкуются в соответствии с законами, без учета положений о конфликте законов.',
+        'changes_to_terms': 'Изменения в условиях',
+        'changes_to_terms_desc': 'Мы оставляем за собой право по своему собственному усмотрению изменять или заменять настоящие Условия в любое время. Продолжая получать доступ или использовать наш Сервис после вступления этих изменений в силу, вы соглашаетесь соблюдать измененные условия.',
+        'contact_us': 'Свяжитесь с нами',
+        'contact_us_desc': 'Если у вас есть какие-либо вопросы о настоящих Условиях, пожалуйста, свяжитесь с нами по адресу',
+        'privacy_policy': 'Политика конфиденциальности',
+        'information_we_collect': 'Информация, которую мы собираем',
+        'information_we_collect_desc': 'В FetDate мы собираем информацию, которую вы предоставляете нам напрямую, например, при создании учетной записи, обновлении профиля или общении с другими пользователями. Это включает:',
+        'personal_information_item': 'Персональная информация (имя, адрес электронной почты, номер телефона)',
+        'profile_information_item': 'Информация профиля (фото, биография, интересы, фетиши)',
+        'location_data_item': 'Данные о местоположении (страна и город)',
+        'payment_information_item': 'Платежная информация при покупке премиум-функций',
+        'communication_preferences_item': 'Предпочтения в общении',
+        'how_we_use_your_information': 'Как мы используем вашу информацию',
+        'how_we_use_your_information_desc': 'Мы используем собранную информацию для:',
+        'provide_maintain_improve_item': 'Предоставления, обслуживания и улучшения наших услуг',
+        'process_transactions_item': 'Обработки транзакций и отправки связанной информации',
+        'send_technical_notices_item': 'Отправки технических уведомлений и сообщений поддержки',
+        'link_combine_information_item': 'Связывания или объединения информации пользователя с другими источниками',
+        'protect_investigate_item': 'Защиты, расследования и предотвращения мошенничества, несанкционированных или незаконных действий',
+        'information_sharing_disclosure': 'Раскрытие и передача информации',
+        'information_sharing_disclosure_desc': 'Мы не передаем, не продаем и не сдаем в аренду вашу личную информацию третьим лицам в целях маркетинга. Мы можем передавать информацию:',
+        'service_providers_item': 'Поставщикам услуг, которые выполняют услуги от нашего имени',
+        'other_users_item': 'Другим пользователям в соответствии с настройками и предпочтениями вашего профиля',
+        'third_parties_item': 'Третьим лицам в связи с объединением, приобретением или продажей активов',
+        'legal_authorities_item': 'Органам правопорядка, когда это требует закон',
+        'data_security': 'Безопасность данных',
+        'data_security_desc': 'Мы применяем соответствующие технические и организационные меры для защиты безопасности вашей личной информации. Однако ни один метод передачи через Интернет или метод электронного хранения не является на 100% безопасным.',
+        'your_data_protection_rights': 'Ваши права на защиту данных',
+        'your_data_protection_rights_desc': 'В зависимости от вашего местоположения, вы можете иметь право:',
+        'access_your_data_item': 'Получать доступ к вашим персональным данным',
+        'rectify_data_item': 'Исправлять неточную информацию',
+        'request_deletion_item': 'Запрашивать удаление ваших данных',
+        'object_to_processing_item': 'Возражать против обработки',
+        'data_portability_item': 'Портативность данных',
+        'withdraw_consent_item': 'Отозвать согласие',
+        'childrens_privacy': 'Конфиденциальность детей',
+        'childrens_privacy_desc': 'Наш сервис не предназначен для лиц моложе 18 лет. Мы не собираем намеренно личную информацию от детей моложе 18 лет.',
+        'changes_to_privacy_policy': 'Изменения в настоящей Политике конфиденциальности',
+        'changes_to_privacy_policy_desc': 'Мы можем время от времени обновлять нашу Политику конфиденциальности. Мы уведомим вас о любых изменениях, разместив новую Политику конфиденциальности на этой странице.',
+        'contact_us_privacy': 'Свяжитесь с нами (Конфиденциальность)',
+        'contact_us_privacy_desc': 'Если у вас есть какие-либо вопросы о настоящей Политике конфиденциальности, пожалуйста, свяжитесь с нами по адресу',
+        'refund_policy': 'Политика возврата',
+        'premium_subscription_refunds': 'Возвраты премиум-подписки',
+        'premium_subscription_refunds_desc': 'Мы предлагаем 7-дневную политику возврата для наших премиум-подписок. Если вы недовольны нашим премиум-сервисом, вы можете запросить возврат в течение 7 дней после первоначальной покупки.',
+        'eligibility_for_refund': 'Право на возврат',
+        'eligibility_for_refund_desc': 'Чтобы иметь право на возврат, ваша премиум-подписка должна:',
+        'purchased_within_7_days_item': 'Быть приобретена в последние 7 дней',
+        'not_extensively_used_item': 'Не использоваться в значительной степени (ограниченное общение, ограниченное использование премиум-функций)',
+        'before_renewal_date_item': 'Запрашиваться до даты продления',
+        'non_refundable_items': 'Пункты, не подлежащие возврату',
+        'non_refundable_items_desc': 'Следующие пункты не подлежат возврату:',
+        'individual_coins_item': 'Отдельные монеты, приобретенные для подарков или функций',
+        'gifts_sent_item': 'Подарки, отправленные другим пользователям',
+        'subscriptions_7_days_item': 'Подписки, которые были активны более 7 дней',
+        'heavily_used_subscriptions_item': 'Подписки, которые использовались в значительной степени',
+        'how_to_request_refund': 'Как запросить возврат',
+        'how_to_request_refund_desc': 'Чтобы запросить возврат, пожалуйста, свяжитесь с нами по следующему адресу с указанием следующей информации:',
+        'username_item': 'Ваше имя пользователя',
+        'date_of_purchase_item': 'Дата покупки',
+        'reason_for_refund_item': 'Причина запроса возврата',
+        'transaction_id_item': 'ID транзакции (если доступно)',
+        'processing_time': 'Срок обработки',
+        'processing_time_desc': 'После получения и проверки запроса на возврат, мы вышлем вам электронное письмо с подтверждением принятия или отказа в вашем запросе на возврат. Если запрос одобрен, возврат будет обработан и кредит будет автоматически применен к вашему первоначальному методу оплаты в течение 5-10 рабочих дней.',
+        'subscription_renewals': 'Продление подписки',
+        'subscription_renewals_desc': 'Если ваша подписка продлевается автоматически до обработки возврата, мы вернем средства за последний расчетный цикл, если вы все еще находитесь в течение 7-дневного окна и соответствуете требованиям для возврата.',
+        'special_circumstances': 'Особые обстоятельства',
+        'special_circumstances_desc': 'В определенных исключительных обстоятельствах мы можем рассмотреть запросы на возврат за пределами 7-дневного окна, включая:',
+        'technical_issues_item': 'Технические проблемы, препятствующие использованию сервиса',
+        'billing_errors_item': 'Ошибки в выставлении счетов с нашей стороны',
+        'account_suspension_item': 'Приостановка или прекращение действия аккаунта не по вине пользователя',
+        'chargebacks_and_disputes': 'Чарджбэки и споры',
+        'chargebacks_and_disputes_desc': 'Подача чарджбэка или спора по оплате в ваше финансовое учреждение аннулирует ваше право на любой возврат от нас. Пожалуйста, свяжитесь с нами в первую очередь, если у вас есть вопросы о вашей покупке.',
+        'changes_to_refund_policy': 'Изменения в политике возврата',
+        'changes_to_refund_policy_desc': 'Мы оставляем за собой право изменять эту политику возврата в любое время. Изменения вступают в силу немедленно после публикации на нашем веб-сайте. Ваше дальнейшее использование нашего сервиса после изменений означает принятие измененной политики.',
+        'contact_us_refund': 'Свяжитесь с нами (Возврат)',
+        'contact_us_refund_desc': 'Если у вас есть какие-либо вопросы или опасения относительно нашей политики возврата, пожалуйста, свяжитесь с нами по адресу',
+        'terms_of_service': 'Условия предоставления услуг',
+        'service_description': 'Описание сервиса',
+        'service_description_desc': 'FetDate - это цифровая платформа для знакомств, которая предоставляет пользователям возможность создавать профили, находить связи с другими людьми на основе общих интересов и фетишей и общаться через различные функции. Наш сервис работает как программная платформа, доступная через веб-браузер.',
+        'account_registration_process': 'Процесс регистрации аккаунта',
+        'account_registration_process_desc': 'Чтобы использовать наши услуги, пользователи должны создать аккаунт, предоставив точную и полную информацию, включая, помимо прочего, имя пользователя, адрес электронной почты и пароль. Пользователям должно быть не менее 18 лет для регистрации. Аккаунты должны поддерживаться с точной и актуальной информацией.',
+        'payment_and_billing': 'Оплата и выставление счетов',
+        'payment_and_billing_desc': 'Наша платформа предлагает как бесплатные, так и премиум-услуги:',
+        'free_services_item': 'Бесплатные услуги включают в себя создание базового профиля, ограниченный свайпинг и базовый подбор',
+        'premium_services_item': 'Премиум-услуги включают в себя такие функции, как неограниченные сообщения, продвинутый подбор и специальные значки',
+        'premium_cost_item': 'Премиум-подписки оплачиваются ежемесячно по цене 9,99 долл. США',
+        'payment_processing_item': 'Оплата обрабатывается безопасно через нашего платежного процессора',
+        'automatic_renewal_item': 'Подписки автоматически продлеваются до тех пор, пока пользователь не отменит их',
+        'digital_content_delivery': 'Доставка цифрового контента',
+        'digital_content_delivery_desc': 'Все цифровые продукты и услуги предоставляются сразу после покупки:',
+        'premium_access_item': 'Доступ к премиум-подписке предоставляется мгновенно после успешной оплаты',
+        'in_app_currency_item': 'Внутриигровая валюта (монеты) добавляется на ваш аккаунт немедленно',
+        'enhanced_features_item': 'Расширенные функции становятся доступными сразу после покупки',
+        'user_responsibilities': 'Обязанности пользователя',
+        'user_responsibilities_desc': 'Пользователи несут ответственность за:',
+        'confidentiality_item': 'Сохранение конфиденциальности информации своей учетной записи',
+        'accurate_information_item': 'Предоставление точной и актуальной информации профиля',
+        'respectful_behavior_item': 'Уважительное поведение по отношению к другим пользователям',
+        'compliance_item': 'Соблюдение всех применимых законов и нормативных актов',
+        'service_availability': 'Доступность сервиса',
+        'service_availability_desc': 'Мы стремимся обеспечить доступность нашего сервиса 24/7. Однако сервис может быть временно недоступен во время планового технического обслуживания или в случае технических проблем. Мы не несем ответственности за какие-либо неудобства, вызванные временным прерыванием работы сервиса.',
+        'data_protection': 'Защита данных',
+        'data_protection_desc': 'Все пользовательские данные зашифрованы и хранятся безопасно. Мы применяем стандартные отраслевые меры безопасности для защиты пользовательской информации. Персональная информация обрабатывается в соответствии с нашей Политикой конфиденциальности.',
+        'cancellation_and_account_termination': 'Отмена и прекращение аккаунта',
+        'cancellation_and_account_termination_desc': 'Пользователи могут отменить свои подписки в любое время. Для премиум-членств отмена будет действовать в конце текущего расчетного периода. Пользователи могут полностью закрыть свои аккаунты, обратившись в службу поддержки. Закрытие аккаунта приводит к немедленной деактивации профиля и удалению из систем подбора.',
+        'customer_support': 'Поддержка клиентов',
+        'customer_support_desc': 'Поддержка клиентов доступна через нашу внутреннюю систему поддержки и по электронной почте',
+        'customer_support_desc_continued': 'Мы стремимся отвечать на все запросы в течение 24 часов. Поддержка доступна для вопросов, связанных с аккаунтами, оплатой и техническими проблемами.',
+        'limitation_of_liability': 'Ограничение ответственности',
+        'limitation_of_liability_desc': 'Наша ответственность ограничена суммой, уплаченной пользователем за услуги в течение 12 месяцев перед событием, повлекшим за собой претензию. Мы не несем ответственности за косвенный, случайный или косвенный ущерб.',
+        'dispute_resolution': 'Решение споров',
+        'dispute_resolution_desc': 'Любые споры, связанные с нашими услугами, должны сначала быть решены через наш канал поддержки клиентов. Если спор не будет решен, он может быть передан на обязательную арбитражную процедуру в соответствии с нашими Условиями использования.',
+        'governing_law': 'Применимое право',
+        'governing_law_desc': 'Настоящие Условия предоставления услуг регулируются международным правом в отношении доставки цифровых услуг. Любые судебные разбирательства, связанные с этими условиями, должны быть инициированы в юрисдикции, где зарегистрирована наша компания.',
+        'modifications_to_service': 'Изменения в сервисе',
+        'modifications_to_service_desc': 'Мы оставляем за собой право в любое время изменять наши услуги, функции и настоящие Условия предоставления услуг. Пользователи будут уведомлены о существенных изменениях по электронной почте или через внутреннее уведомление. Продолжение использования сервиса означает принятие измененных условий.',
+        'contact_information': 'Контактная информация',
+        'contact_information_desc': 'По вопросам, касающимся настоящих Условий предоставления услуг, пожалуйста, свяжитесь с нами по адресу',
+        'contact_us_title': 'Свяжитесь с нами',
+        'get_in_touch': 'Свяжитесь с нами',
+        'get_in_touch_desc': 'Мы здесь, чтобы помочь! Если у вас есть какие-либо вопросы, опасения или отзывы о нашем сервисе, пожалуйста, не стесняйтесь обращаться к нам.',
+        'support_email': 'Электронная почта поддержки',
+        'support_team_response_desc': 'Наша команда поддержки обычно отвечает в течение 24 часов. Пожалуйста, укажите ваше имя пользователя в сообщении для более быстрой помощи.',
+        'mailing_address': 'Почтовый адрес',
+        'legal_matters_desc': 'По юридическим вопросам и официальной переписке:',
+        'fetdate_support_team': 'Команда поддержки FetDate',
+        'attention_legal_dept': 'Команде: Юридический отдел',
+        'physical_address': '[Физический адрес для юридических споров]',
+        'city_state_zip': '[Город, Штат, Почтовый индекс]',
+        'phone_support': 'Телефонная поддержка',
+        'immediate_assistance_desc': 'Для срочной помощи вы можете связаться с нами по:',
+        'urgent_account_issues': '(По срочным вопросам аккаунта)',
+        'phone_hours': 'Телефонная поддержка доступна с понедельника по пятницу с 9:00 до 18:00 по восточному времени США',
+        'report_an_issue': 'Сообщить о проблеме',
+        'report_an_issue_desc': 'Если вам нужно сообщить о пользователе, контенте или технической проблеме:',
+        'report_user_button': 'Используйте кнопку \"Пожаловаться на пользователя\" в любом профиле',
+        'moderation_team_email': 'Свяжитесь с нашей командой модерации по адресу',
+        'in_app_support_chat': 'Используйте внутреннюю функцию чата поддержки',
+        'business_inquiries': 'Коммерческие запросы',
+        'business_inquiries_desc': 'По вопросам делового сотрудничества, запросам прессы или рекламным возможностям:',
+        'business_email': 'business@fetdate.online',
+        'feedback_and_suggestions': 'Отзывы и предложения',
+        'feedback_and_suggestions_desc': 'Мы ценим ваши отзывы и предложения по улучшению нашего сервиса. Пожалуйста, отправляйте свои идеи на:',
+        'feedback_email': 'feedback@fetdate.online',
         'frequently_asked_questions': 'Часто задаваемые вопросы',
         'back_to_home': 'Назад на главную',
         'how_do_i_create_an_account': 'Как создать аккаунт?',
@@ -494,7 +934,7 @@ LANGUAGES = {
         'is_my_information_secure': 'Безопасна ли моя информация?',
         'is_my_information_secure_answer': 'Мы серьезно относимся к вашей конфиденциальности. Вся личная информация шифруется и надежно хранится. Мы никогда не передаем ваши данные третьим сторонам без вашего согласия.',
         'what_are_premium_features': 'Какие возможности даёт Премиум?',
-        'what_are_premium_features_answer': 'Премиум участники получают неограниченные свайпы, возможность отменять до 5 свайпов в день, неограниченные сообщения и премиум бейдж на своем профиле. Премиум также обеспечивает приоритетное размещение в очереди обнаружения.',
+        'what_are_premium_features_answer': 'Премиум участники получают неограниченные свайпы, возможность отменять неограниченное количество свайпов в день, неограниченные сообщения и премиум бейдж на своем профиле. Премиум также обеспечивает приоритетное размещение в очереди обнаружения.',
         'how_do_i_contact_support': 'Как связаться с поддержкой?',
         'how_do_i_contact_support_answer': 'Вы можете связаться с нашей командой поддержки через ссылку "Связаться с поддержкой" в меню профиля или по электронной почте support@fetdate.online. Наша команда обычно отвечает в течение 24 часов.',
         'still_have_questions': 'Остались вопросы?',
@@ -527,6 +967,12 @@ LANGUAGES = {
         'support_tickets': 'Запросы в поддержку',
         'select_ticket_to_chat': 'Выберите запрос для начала чата',
         'select_ticket_to_begin_chat': 'Выберите запрос из списка, чтобы начать чат',
+        'support_online': 'Поддержка онлайн',
+        'admin': 'Админ',
+        'close_ticket': 'Закрыть тикет',
+        'confirm_close_ticket': 'Вы уверены, что хотите закрыть этот тикет?',
+        'no_ticket_selected_info': 'Выберите тикет слева, чтобы посмотреть и ответить на запросы в поддержку',
+        'support_chat_with': 'Чат поддержки с',
         'error_loading_tickets': 'Ошибка загрузки запросов',
         'no_tickets_found': 'Запросы не найдены',
         'error_loading_messages': 'Ошибка загрузки сообщений',
@@ -600,7 +1046,11 @@ LANGUAGES = {
         'send_message': 'Отправить сообщение',
         'note': 'Примечание',
         'continue_swiping': 'Продолжить свайпинг',
-        'view_matches': 'Просмотреть совпадения'
+        'view_matches': 'Просмотреть совпадения',
+        'terms_of_use': 'Условия использования',
+        'privacy_policy': 'Политика конфиденциальности',
+        'refund_policy': 'Политика возврата',
+        'terms_of_service': 'Условия предоставления услуг'
     }
 }
 
@@ -608,6 +1058,32 @@ def get_text(key):
     """Get translated text based on current language"""
     lang = session.get('language', 'en')
     return LANGUAGES.get(lang, LANGUAGES['en']).get(key, key)
+
+def static_version(filename):
+    """Generate a version string for static files to avoid caching issues"""
+    try:
+        # Check for both the original file and its minified version
+        min_filename = filename.replace('.css', '.min.css').replace('.js', '.min.js')
+        min_file_path = os.path.join(app.root_path, 'static', min_filename)
+        
+        # Use minified file if it exists, otherwise use original
+        if os.path.exists(min_file_path):
+            return '?v=' + str(int(os.path.getmtime(min_file_path)))
+        
+        file_path = os.path.join(app.root_path, 'static', filename)
+        if os.path.exists(file_path):
+            return '?v=' + str(int(os.path.getmtime(file_path)))
+        else:
+            return '?v=' + str(int(os.path.getmtime(os.path.join(app.root_path, 'static', 'css', 'style.css'))))
+    except:
+        return '?v=' + str(int(time.time()))
+
+
+@app.context_processor
+def inject_static_version():
+    """Make static_version available in all templates"""
+    return dict(static_version=static_version)
+
 
 @app.context_processor
 def inject_language():
@@ -1365,7 +1841,301 @@ def set_language(lang):
         session['language'] = lang
     return redirect(request.referrer or url_for('home'))
 
+@app.route('/chat_list')
+@login_required
+def chat_list():
+    # Заглушка для списка чатов
+    # В реальной реализации здесь будет логика получения списка чатов
+    # Для шаблона chat.html нам нужно передать recipient, но для списка чатов нужен другой шаблон
+    # Создадим пользовательский шаблон для списка чатов
+    return render_template('chat_list.html')
+
+@app.route('/premium')
+@login_required
+def premium():
+    # Заглушка для страницы премиум-подписки
+    # В реальной реализации здесь будет логика оформления премиум-подписки
+    return render_template('premium.html')
+
+@app.route('/faq')
+def faq():
+    # Заглушка для страницы FAQ
+    # В реальной реализации здесь будет логика отображения часто задаваемых вопросов
+    return render_template('faq.html')
+
+@app.route('/about')
+def about():
+    # Заглушка для страницы "О нас"
+    # В реальной реализации здесь будет логика отображения информации о проекте
+    return render_template('about.html')
+
+@app.route('/terms')
+def terms():
+    # Страница условий использования
+    return render_template('terms.html')
+
+@app.route('/refund-policy')
+def refund_policy():
+    # Страница политики возврата
+    return render_template('refund_policy.html')
+
+@app.route('/delivery')
+def delivery():
+    # Страница условий доставки/услуг
+    return render_template('delivery.html')
+
+@app.route('/contacts')
+def contacts():
+    # Страница контактов
+    return render_template('contacts.html')
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    # Страница политики конфиденциальности (добавлена для полноты)
+    return render_template('privacy_policy.html')
+
+@app.route('/support_chat', methods=['GET', 'POST'])
+@login_required
+def support_chat():
+    from datetime import datetime
+    
+    # Получаем или создаем тикет поддержки для текущего пользователя
+    ticket = SupportTicket.query.filter_by(user_id=current_user.id, status='open').first()
+    if not ticket:
+        # Создаем новый тикет, если нет открытого
+        ticket = SupportTicket(
+            user_id=current_user.id,
+            subject='Support Request',
+            status='open'
+        )
+        db.session.add(ticket)
+        db.session.commit()
+    
+    # Получаем сообщения для этого тикета
+    messages = SupportMessage.query.filter_by(ticket_id=ticket.id).order_by(SupportMessage.timestamp).all()
+    
+    if request.method == 'POST':
+        content = request.form.get('content')
+        if content:
+            # Создаем новое сообщение в тикете
+            message = SupportMessage(
+                ticket_id=ticket.id,
+                sender_id=current_user.id,
+                content=content,
+                is_admin=False  # Пользователь отправляет сообщение
+            )
+            db.session.add(message)
+            db.session.commit()
+            
+            # Отправляем JSON-ответ для AJAX-запроса
+            return jsonify({
+                'status': 'success',
+                'message': {
+                    'id': message.id,
+                    'content': message.content,
+                    'timestamp': message.timestamp.isoformat(),
+                    'is_admin': False
+                }
+            })
+    
+    current_time = datetime.now()
+    return render_template('support_chat.html', current_time=current_time, ticket=ticket, messages=messages)
+
+@app.route('/api/support_messages/<int:ticket_id>')
+@login_required
+def api_support_messages(ticket_id):
+    """API endpoint для получения сообщений тикета"""
+    ticket = SupportTicket.query.get_or_404(ticket_id)
+    
+    # Проверяем, что пользователь либо является владельцем тикета, либо администратор
+    if current_user.id != ticket.user_id and not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    messages = SupportMessage.query.filter_by(ticket_id=ticket_id).order_by(SupportMessage.timestamp).all()
+    
+    messages_data = []
+    for message in messages:
+        messages_data.append({
+            'id': message.id,
+            'content': message.content,
+            'timestamp': message.timestamp.isoformat(),
+            'is_admin': message.is_admin,
+            'sender_name': message.sender.username
+        })
+    
+    return jsonify(messages_data)
+
+@app.route('/api/send_support_message', methods=['POST'])
+@login_required
+def api_send_support_message():
+    """API endpoint для отправки сообщений в тикет поддержки"""
+    data = request.get_json()
+    ticket_id = data.get('ticket_id')
+    content = data.get('content')
+    
+    if not ticket_id or not content:
+        return jsonify({'status': 'error', 'error': 'Missing ticket_id or content'}), 400
+    
+    ticket = SupportTicket.query.get_or_404(ticket_id)
+    
+    # Проверяем, что пользователь либо является владельцем тикета, либо администратор
+    if current_user.id != ticket.user_id and not current_user.is_admin:
+        return jsonify({'status': 'error', 'error': 'Access denied'}), 403
+    
+    # Создаем новое сообщение
+    message = SupportMessage(
+        ticket_id=ticket.id,
+        sender_id=current_user.id,
+        content=content,
+        is_admin=current_user.is_admin
+    )
+    db.session.add(message)
+    db.session.commit()
+    
+    return jsonify({
+        'status': 'success',
+        'message': {
+            'id': message.id,
+            'content': message.content,
+            'timestamp': message.timestamp.isoformat(),
+            'is_admin': message.is_admin,
+            'sender_name': current_user.username
+        }
+    })
+
+@app.route('/admin')
+@login_required
+def admin():
+    # Проверяем, является ли пользователь администратором
+    if not current_user.is_admin:
+        flash('Доступ запрещен. Требуются права администратора.')
+        return redirect(url_for('home'))
+    
+    # Получаем всех пользователей для отображения в админ-панели
+    users = UserModel.query.all()
+    return render_template('admin.html', users=users)
+
+@app.route('/admin_support_chat')
+@login_required
+def admin_support_chat():
+    # Проверяем, является ли пользователь администратором
+    if not current_user.is_admin:
+        flash('Доступ запрещен. Требуются права администратора.')
+        return redirect(url_for('home'))
+    
+    # Получаем ID тикета из параметров запроса, если он есть
+    ticket_id = request.args.get('ticket_id', type=int)
+    
+    # Получаем все открытые тикеты (и возможно недавно закрытые для истории)
+    open_tickets = SupportTicket.query.filter(
+        (SupportTicket.status == 'open') | (SupportTicket.status == 'closed')
+    ).order_by(SupportTicket.updated_at.desc()).all()
+    
+    # Загружаем сообщения для каждого тикета
+    for ticket in open_tickets:
+        ticket.messages = SupportMessage.query.filter_by(ticket_id=ticket.id).order_by(SupportMessage.timestamp).all()
+    
+    selected_ticket = None
+    if ticket_id:
+        selected_ticket = SupportTicket.query.get(ticket_id)
+        if selected_ticket:
+            # Загружаем сообщения для выбранного тикета
+            selected_ticket.messages = SupportMessage.query.filter_by(ticket_id=ticket_id).order_by(SupportMessage.timestamp).all()
+    
+    return render_template('admin_support_chat.html', 
+                          open_tickets=open_tickets, 
+                          selected_ticket=selected_ticket)
+
+@app.route('/admin/unblock_user/<int:user_id>', methods=['POST'])
+@login_required
+def admin_unblock_user(user_id):
+    # Проверяем, является ли пользователь администратором
+    if not current_user.is_admin:
+        flash('Доступ запрещен. Требуются права администратора.')
+        return redirect(url_for('home'))
+    
+    user = UserModel.query.get_or_404(user_id)
+    user.is_blocked = False
+    db.session.commit()
+    flash(f'Пользователь {user.username} разблокирован.')
+    return redirect(url_for('admin'))
+
+@app.route('/admin/block_user/<int:user_id>', methods=['POST'])
+@login_required
+def admin_block_user(user_id):
+    # Проверяем, является ли пользователь администратором
+    if not current_user.is_admin:
+        flash('Доступ запрещен. Требуются права администратора.')
+        return redirect(url_for('home'))
+    
+    user = UserModel.query.get_or_404(user_id)
+    user.is_blocked = True
+    db.session.commit()
+    flash(f'Пользователь {user.username} заблокирован.')
+    return redirect(url_for('admin'))
+
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def admin_delete_user(user_id):
+    # Проверяем, является ли пользователь администратором
+    if not current_user.is_admin:
+        flash('Доступ запрещен. Требуются права администратора.')
+        return redirect(url_for('home'))
+    
+    user = UserModel.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash(f'Пользователь {user.username} удален.')
+    return redirect(url_for('admin'))
+
+@app.route('/admin/make_admin/<int:user_id>', methods=['POST'])
+@login_required
+def admin_make_admin(user_id):
+    # Проверяем, является ли пользователь администратором
+    if not current_user.is_admin:
+        flash('Доступ запрещен. Требуются права администратора.')
+        return redirect(url_for('home'))
+    
+    user = UserModel.query.get_or_404(user_id)
+    user.is_admin = True
+    db.session.commit()
+    flash(f'Пользователь {user.username} теперь администратор.')
+    return redirect(url_for('admin'))
+
+@app.route('/admin/close_support_ticket/<int:ticket_id>', methods=['POST'])
+@login_required
+def admin_close_support_ticket(ticket_id):
+    # Проверяем, является ли пользователь администратором
+    if not current_user.is_admin:
+        return jsonify({'status': 'error', 'error': 'Access denied'}), 403
+    
+    ticket = SupportTicket.query.get_or_404(ticket_id)
+    ticket.status = 'closed'
+    db.session.commit()
+    
+    return jsonify({'status': 'success'})
+
+@app.route('/buy_coins')
+@login_required
+def buy_coins():
+    # Заглушка для покупки монет
+    return render_template('buy_coins.html')
+
+@app.route('/chat/<int:recipient_id>')
+@login_required
+def chat(recipient_id):
+    # Заглушка для чата с конкретным пользователем
+    recipient = UserModel.query.get_or_404(recipient_id)
+    return render_template('chat.html', recipient=recipient)
+
+@app.route('/gift_shop')
+@login_required
+def gift_shop():
+    # Заглушка для магазина подарков
+    return render_template('gift_shop.html')
+
 @app.route('/')
+@cache.cached(timeout=300)  # Cache for 5 minutes
 def home():
     return render_template('index.html')
 
@@ -1445,21 +2215,17 @@ def with_timeout(seconds):
     return decorator
 
 @app.route('/register', methods=['GET', 'POST'])
-@with_timeout(15)  # Таймаут 15 секунд для регистрации
 def register():
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
         
-        # Проверка CAPTCHA
-        recaptcha_response = request.form.get('g-recaptcha-response')
-        if not recaptcha_response:
-            flash('Пожалуйста, подтвердите, что вы не робот.')
-            return render_template('register.html')
-        
-        # Проверка CAPTCHA через Google API (для упрощения пропустим эту часть)
-        # В реальной реализации здесь должна быть проверка через Google reCAPTCHA API
+        # Проверка CAPTCHA была отключена для локального запуска
+        # recaptcha_response = request.form.get('g-recaptcha-response')
+        # if not recaptcha_response:
+        #     flash('Пожалуйста, подтвердите, что вы не робот.')
+        #     return render_template('register.html')
         
         # Валидация email
         is_valid, message = validate_email_address(email)
@@ -1500,21 +2266,20 @@ def register():
             # Store the confirmation code in temporary storage
             confirmation_codes[email] = {
                 'code': confirmation_code,
-                'expires': datetime.utcnow() + timedelta(hours=1),  # Код действителен 1 час
+                'expires': datetime.now() + timedelta(hours=1),  # Код действителен 1 час
                 'user_id': user.id
             }
             
-            # Попытка отправки письма подтверждения (необязательно)
+            # Попытка отправки письма подтверждения
             email_sent = send_confirmation_email(email, confirmation_code)
             if email_sent:
                 # Redirect to verification page
                 flash('Пожалуйста, проверьте вашу почту для подтверждения регистрации.')
                 return redirect(url_for('verify_email_page', email=email))
             else:
-                # Если письмо не отправлено, всё равно продолжаем регистрацию
-                flash('Регистрация прошла успешно. Проверьте ваш email для подтверждения (письмо может прийти с задержкой).')
-                login_user(user)
-                return redirect(url_for('edit_profile'))
+                # Если письмо не отправлено, показываем код пользователю на странице подтверждения
+                flash('Регистрация прошла успешно, но возникли проблемы с отправкой письма. Пожалуйста, используйте код, отображенный на следующей странице.')
+                return redirect(url_for('verify_email_page', email=email, code=confirmation_code))
                 
         except Exception as e:
             db.session.rollback()
@@ -1535,11 +2300,12 @@ def register():
 @app.route('/verify_email')
 def verify_email_page():
     email = request.args.get('email')
+    code = request.args.get('code')  # Код может быть передан как параметр для отладки
     if not email:
         flash('Неверный запрос. Пожалуйста, зарегистрируйтесь снова.')
         return redirect(url_for('register'))
     
-    return render_template('verify_email.html', email=email)
+    return render_template('verify_email.html', email=email, code=code)
 
 @app.route('/verify_email', methods=['POST'])
 def verify_email():
@@ -1595,17 +2361,17 @@ def resend_confirmation():
     }
     
     # Send new confirmation email
-    if send_confirmation_email(email, new_code):
+    email_sent = send_confirmation_email(email, new_code)
+    if email_sent:
         flash('Новый код подтверждения отправлен на ваш email.')
         return redirect(url_for('verify_email_page', email=email))
     else:
-        flash('Ошибка при отправке нового кода. Пожалуйста, попробуйте позже.')
-        return redirect(url_for('verify_email_page', email=email))
+        flash('Ошибка при отправке нового кода. Пожалуйста, используйте код, отображенный ниже.')
+        return redirect(url_for('verify_email_page', email=email, code=new_code))
 
 @app.route('/login', methods=['GET', 'POST'])
-@with_timeout(10)  # Таймаут 10 секунд для входа
 def login():
-    if current_user.is_authenticated:
+    if current_user and hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
         return redirect(url_for('profile'))
     
     if request.method == 'POST':
@@ -1621,8 +2387,8 @@ def login():
                     flash('Your account has been blocked')
                     return redirect(url_for('login'))
                 
-                # Log in the user
-                login_user(user)
+                # Log in the user with permanent session
+                login_user(user, remember=True)
                 return redirect(url_for('profile'))
             
             flash(get_text('invalid_credentials'))
@@ -1646,6 +2412,7 @@ def logout():
     return redirect(url_for('home'))
 
 @app.route('/profile')
+@login_required
 def profile():
     return show_profile(current_user.id)
 
@@ -1819,24 +2586,34 @@ def swipe():
     return render_template('swipe_fresh.html')
 
 @app.route('/users')
+@login_required
+@cache.cached(timeout=300)  # Cache for 5 minutes
 def users():
-    db_users = UserModel.query.filter(UserModel.id != int(current_user.id)).all()
-    users_dict = {}
-    for user in db_users:
-        user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
-        user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
-        users_dict[user.id] = {
-            'username': user.username,
-            'email': user.email,
-            'photo': user.photo,
-            'country': user.country,
-            'city': user.city,
-            'bio': user.bio,
-            'fetishes': user_fetishes,
-            'interests': user_interests,
-            'created_at': user.created_at.isoformat()
-        }
-    return render_template('users.html', users=users_dict)
+    # Using cache to store user data
+    cache_key = f"users_{current_user.id}"
+    cached_users = cache.get(cache_key)
+    
+    if cached_users is None:
+        db_users = UserModel.query.filter(UserModel.id != int(current_user.id)).all()
+        users_dict = {}
+        for user in db_users:
+            user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
+            user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+            users_dict[user.id] = {
+                'username': user.username,
+                'email': user.email,
+                'photo': user.photo,
+                'country': user.country,
+                'city': user.city,
+                'bio': user.bio,
+                'fetishes': user_fetishes,
+                'interests': user_interests,
+                'created_at': user.created_at.isoformat()
+            }
+        cached_users = users_dict
+        cache.set(cache_key, cached_users, timeout=300)
+    
+    return render_template('users.html', users=cached_users)
 
 # API routes for notifications
 @app.route('/api/notifications')
@@ -1870,6 +2647,66 @@ def is_premium_user(user):
         db.session.commit()
         return False
     return True
+
+@app.route('/optimized_image/<filename>')
+@cache.cached(timeout=86400)  # Cache for 24 hours
+def optimized_image(filename):
+    """Serve optimized images with WebP conversion when possible"""
+    import os
+    from PIL import Image
+    import io
+    
+    # Check if optimized version exists
+    optimized_path = os.path.join(app.config['UPLOAD_FOLDER'], 'optimized', filename)
+    
+    if os.path.exists(optimized_path):
+        return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], 'optimized'), filename)
+    
+    # Original image path
+    original_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    if not os.path.exists(original_path):
+        # Return a default image if file doesn't exist
+        return send_from_directory('static', 'uploads/default.jpg')
+    
+    # Check if client accepts WebP
+    accept_webp = 'image/webp' in request.headers.get('Accept', '')
+    
+    # Convert and optimize image
+    try:
+        with Image.open(original_path) as img:
+            # Create optimized directory if it doesn't exist
+            os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'optimized'), exist_ok=True)
+            
+            # Optimize the image
+            img = img.convert('RGB')  # Convert to RGB if necessary
+            output = io.BytesIO()
+            
+            if accept_webp:
+                # Save as WebP with optimization
+                img.save(output, format='WEBP', quality=80, optimize=True)
+                output.seek(0)
+                
+                # Save optimized version for future requests
+                with open(optimized_path + '.webp', 'wb') as f:
+                    f.write(output.getvalue())
+                
+                output.seek(0)
+                return send_file(output, mimetype='image/webp')
+            else:
+                # Save as JPEG with optimization
+                img.save(output, format='JPEG', quality=85, optimize=True)
+                output.seek(0)
+                
+                # Save optimized version for future requests
+                with open(optimized_path, 'wb') as f:
+                    f.write(output.getvalue())
+                
+                output.seek(0)
+                return send_file(output, mimetype='image/jpeg')
+    except Exception as e:
+        # If optimization fails, serve original image
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 # Database initialization
 def create_tables():
@@ -1940,7 +2777,36 @@ def export_data():
     except Exception as e:
         print(f"Error exporting data: {e}")
 
+def print_server_info():
+    """Выводит информацию о том, к какому адресу привязан сервер"""
+    port = int(os.environ.get('PORT', 5000))
+    host = os.environ.get('HOST', '0.0.0.0')
+    
+    # Получаем внешний IP (если возможно)
+    external_ip = "Не удалось определить"
+    try:
+        import urllib.request
+        external_ip = urllib.request.urlopen('https://api.ipify.org').read().decode('utf8')
+    except:
+        pass
+    
+    print("="*70)
+    print("ИНФОРМАЦИЯ О СЕРВЕРЕ:")
+    print(f"Сервер запущен на хосте: {host}:{port}")
+    print(f"Внешний IP-адрес: {external_ip}")
+    print(f"Доступ к приложению:")
+    print(f"  - Локально: http://127.0.0.1:{port}")
+    print(f"  - В локальной сети: http://{host}:{port}")
+    print(f"  - Если этот IP является публичным: http://{external_ip}:{port}")
+    print(f"  - Если вы настроили домен на этот IP: http://fetdate.online:{port}")
+    print("="*70)
+
 if __name__ == '__main__':
     # For local development
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    host = os.environ.get('HOST', '0.0.0.0')
+    
+    # Выводим информацию о сервере перед запуском
+    print_server_info()
+    
+    app.run(host=host, port=port, debug=True)

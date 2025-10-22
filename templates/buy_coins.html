@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Buy Coins{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Buy Coins</h1>
+    
+    <div class="coins-packages">
+        <div class="package">
+            <h3>100 coins</h3>
+            <p>$0.99</p>
+            <button class="btn">Buy Now</button>
+        </div>
+        
+        <div class="package">
+            <h3>500 coins</h3>
+            <p>$4.99</p>
+            <button class="btn">Buy Now</button>
+        </div>
+        
+        <div class="package">
+            <h3>1000 coins</h3>
+            <p>$9.99</p>
+            <button class="btn">Buy Now</button>
+        </div>
+        
+        <div class="package">
+            <h3>2500 coins</h3>
+            <p>$24.99</p>
+            <button class="btn">Buy Now</button>
+        </div>
+    </div>
+    
+    <div class="current-coins">
+        <h3>Your Current Coins: {{ current_user.coins if current_user.coins else 0 }}</h3>
+    </div>
+</div>
+{% endblock %}

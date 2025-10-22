@@ -59,6 +59,134 @@
   color: white;
 }
 
+/* Mobile swipe instructions */
+.mobile-swipe-instructions {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-swipe-instructions {
+    display: block;
+  }
+  
+  .mobile-swipe-instructions p {
+    font-size: 0.85rem;
+    margin: 0;
+  }
+}
+
+/* Mobile-specific swipe improvements */
+@media (max-width: 768px) {
+  .swipe-area {
+    min-height: 60vh;
+    margin: 15px 0;
+  }
+  
+  .swipe-card-container {
+    max-width: 95vw;
+    height: 60vh;
+    min-height: 350px;
+  }
+  
+  .swipe-card {
+    border-radius: 20px; /* Increased on mobile for better touch experience */
+  }
+  
+  .user-avatar {
+    height: 55%;
+    min-height: 200px;
+    font-size: 3rem;
+  }
+  
+  .swipe-actions {
+    bottom: 20px;
+    max-width: 100%;
+    left: 0;
+    right: 0;
+    transform: none;
+    padding: 0 10px;
+  }
+  
+  .actions-container {
+    gap: 10px;
+    padding: 15px;
+  }
+  
+  .btn-large {
+    width: 65px;
+    height: 65px;
+    font-size: 1.4em;
+  }
+  
+  .user-info {
+    padding: 15px;
+  }
+  
+  .user-info h2 {
+    font-size: 1.3rem;
+  }
+  
+  .user-info p {
+    font-size: 0.9rem;
+  }
+  
+  .tags-container {
+    gap: 6px;
+    margin-top: 10px;
+  }
+  
+  .badge {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .swipe-card-container {
+    height: 55vh;
+    min-height: 300px;
+  }
+  
+  .user-avatar {
+    height: 50%;
+    min-height: 180px;
+    font-size: 2.5rem;
+  }
+  
+  .swipe-actions {
+    bottom: 15px;
+    padding: 0 5px;
+  }
+  
+  .actions-container {
+    gap: 8px;
+    padding: 10px;
+  }
+  
+  .btn-large {
+    width: 60px;
+    height: 60px;
+    font-size: 1.3em;
+  }
+  
+  .user-info {
+    padding: 12px;
+  }
+  
+  .user-info h2 {
+    font-size: 1.2rem;
+  }
+  
+  .user-info p {
+    font-size: 0.85rem;
+  }
+  
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+  }
+}
+
 .user-info {
   padding: 20px;
   flex-grow: 1;

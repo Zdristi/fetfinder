@@ -15,23 +15,62 @@ A modern dating website built with Python and Flask, featuring a Tinder-like swi
 - Multi-language support (English and Russian)
 - Dark/light theme toggle
 - Photo upload functionality
+- Email confirmation for registration
 - Moderation system with admin panel
 - User blocking and deletion capabilities
 - Admin user management
 
-## Setup
+## Local Setup
 
 1. Install the required dependencies:
    ```
    pip install -r requirements.txt
    ```
 
-2. Run the application:
+2. Create a `.env` file in the root directory with your email credentials:
+   ```
+   DB_PASSWORD=fetdate_password
+   SECRET_KEY=your_default_secret_key_for_local_development_please_change_in_production_5a7b9c3d1e2f4a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3
+   MAIL_SERVER=smtp.gmail.com
+   MAIL_PORT=587
+   MAIL_USE_TLS=True
+   MAIL_USE_SSL=False
+   MAIL_USERNAME=sup.fetdate@gmail.com
+   MAIL_PASSWORD=cvjorlnpwtvygrcx
+   MAIL_DEFAULT_SENDER=sup.fetdate@gmail.com
+   ```
+
+3. Run the application:
    ```
    python app.py
    ```
 
-3. Open your browser and go to http://127.0.0.1:5000
+4. Open your browser and go to http://127.0.0.1:5000
+
+## Docker Setup
+
+1. Make sure you have Docker and Docker Compose installed
+2. Create a `.env` file with your secrets and email settings (see example in DEPLOY_INSTRUCTIONS.md)
+3. Run the application with Docker Compose:
+   ```
+   docker-compose up -d
+   ```
+
+## Email Configuration
+
+The application uses email for user registration confirmation. To configure email:
+
+1. For Gmail:
+   - Enable 2-factor authentication
+   - Generate an "App Password" in your Google Account settings
+   - Use this app password instead of your regular password
+
+2. Set the following environment variables:
+   - `MAIL_USERNAME`: Your email address
+   - `MAIL_PASSWORD`: Your app password (not regular password!)
+   - `MAIL_SERVER`: SMTP server (default: smtp.gmail.com)
+   - `MAIL_PORT`: Port (default: 587)
+   - `MAIL_USE_TLS`: Enable TLS (default: true)
 
 ## How to Use
 
@@ -127,6 +166,10 @@ To set up the database on Render:
      - Value: Copy the "External Database URL" from your PostgreSQL database
 
 3. The database tables will be created automatically on first run.
+
+## Docker Deployment
+
+Detailed instructions for deploying the application using Docker on a Ubuntu virtual machine are available in [DEPLOY_INSTRUCTIONS.md](DEPLOY_INSTRUCTIONS.md).
 
 ## Stopping the Server
 

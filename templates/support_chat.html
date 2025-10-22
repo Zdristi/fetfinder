@@ -1,155 +1,392 @@
 {% extends "base.html" %}
 
-{% block title %}{{ get_text('support_chat') or 'Support Chat' }} - {{ SITE_NAME }}{% endblock %}
+{% block title %}{{ get_text('support') }}{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">
-            <i class="fas fa-headset"></i> {{ get_text('support_chat') or 'Support Chat' }}
-        </h2>
-    </div>
-    
-    <div style="margin-bottom: 20px;">
-        <a href="{{ url_for('profile') }}" class="btn btn-outline">
-            <i class="fas fa-arrow-left"></i> {{ get_text('back_to_profile') or 'Back to Profile' }}
-        </a>
-    </div>
-    
-    <div id="chatContainer" style="display: flex; flex-direction: column; height: 600px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
-        <div id="chatMessages" style="flex: 1; padding: 20px; overflow-y: auto; background: var(--card-bg);">
-            <div style="text-align: center; color: var(--gray); padding: 20px;">
-                <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
-                <p>{{ get_text('welcome_to_support_chat') or 'Welcome to Support Chat!' }}</p>
-                <p style="font-size: 0.9rem;">{{ get_text('support_will_respond_soon') or 'Our support team will respond to your messages as soon as possible.' }}</p>
+<div class="container">
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="chat-header-content">
+                <div class="recipient-info">
+                    <div class="recipient-avatar" style="background: linear-gradient(135deg, var(--primary), var(--secondary));">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <div>
+                        <h2>{{ get_text('support') }}</h2>
+                        <p class="recipient-location">
+                            <i class="fas fa-circle" style="color: #4CAF50; font-size: 0.6em; margin-right: 5px;"></i>
+                            {% if current_user.is_admin %}{{ get_text('admin_support_chat') }}{% else %}{{ get_text('support_online') }}{% endif %}
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <div id="chatInputArea" style="padding: 15px; border-top: 1px solid var(--border-color); background: var(--body-bg);">
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="messageInput" placeholder="{{ get_text('type_your_message') or 'Type your message...' }}" 
-                       style="flex: 1; padding: 12px; border: 1px solid var(--border-color); border-radius: 25px; background: var(--card-bg); color: var(--text-color);" />
-                <button id="sendMessageBtn" class="btn" style="padding: 12px 20px; border-radius: 25px;">
+        <div class="chat-messages" id="support-messages">
+            <!-- Messages will be loaded dynamically -->
+            {% if messages %}
+                {% for message in messages %}
+                <div class="message {% if message.is_admin %}received{% else %}sent{% endif %}">
+                    <div class="message-content">
+                        <p>{{ message.content }}</p>
+                        <div class="message-time">{{ message.timestamp.strftime('%H:%M') }} - {{ message.sender_name }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="welcome-message">
+                    <p>{{ get_text('welcome_to_support_chat') }}</p>
+                    <p>{{ get_text('support_will_respond_soon') }}</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="chat-input-container">
+            <div class="chat-input-form">
+                <textarea id="message-input" placeholder="{{ get_text('type_your_message') }}" autocomplete="off"></textarea>
+                <button id="send-button" class="btn send-btn">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
         </div>
     </div>
     
-    <div style="margin-top: 20px; padding: 20px; background: var(--card-bg); border-radius: 10px; text-align: center;">
-        <h3 style="margin-top: 0;">{{ get_text('need_immediate_help') or 'Need immediate help?' }}</h3>
-        <p>{{ get_text('contact_us_by_email') or 'You can also contact us by email:' }}</p>
-        <p><strong>support@fetdate.online</strong></p>
-        <p style="font-size: 0.9rem; color: var(--gray);">{{ get_text('typical_response_time') or 'Typical response time: 24 hours' }}</p>
+    <div class="card support-info-card" style="margin-top: 20px;">
+        <h3>{{ get_text('need_immediate_help') }}</h3>
+        <p>{{ get_text('contact_us_by_email') }} <a href="mailto:sup.fetdate@gmail.com">sup.fetdate@gmail.com</a></p>
+        <p>{{ get_text('typical_response_time') }}</p>
+    </div>
+    
+    <!-- FAQ Section -->
+    <div class="card support-info-card" style="margin-top: 20px;">
+        <h3>{{ get_text('frequently_asked_questions') }}</h3>
+        <div class="faq-item">
+            <h4>{{ get_text('how_do_i_create_an_account') }}</h4>
+            <p>{{ get_text('how_do_i_create_an_account_answer') }}</p>
+        </div>
+        <div class="faq-item">
+            <h4>{{ get_text('how_do_i_find_matches') }}</h4>
+            <p>{{ get_text('how_do_i_find_matches_answer') }}</p>
+        </div>
+        <div class="faq-item">
+            <h4>{{ get_text('is_my_information_secure') }}</h4>
+            <p>{{ get_text('is_my_information_secure_answer') }}</p>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="{{ url_for('faq') }}" class="btn btn-outline">{{ get_text('frequently_asked_questions') }}</a>
+        </div>
     </div>
 </div>
 
-<script>
-// Chat functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const chatMessages = document.getElementById('chatMessages');
-    const messageInput = document.getElementById('messageInput');
-    const sendMessageBtn = document.getElementById('sendMessageBtn');
+<style>
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 250px);
+    background: var(--card-bg);
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.chat-header {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    padding: 15px 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.chat-header-content {
+    display: flex;
+    align-items: center;
+}
+
+.recipient-info {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.recipient-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-right: 15px;
+}
+
+.recipient-info h2 {
+    margin: 0;
+    color: white;
+}
+
+.recipient-location {
+    margin: 3px 0 0 0;
+    color: rgba(255,255,255,0.9);
+    font-size: 0.9rem;
+}
+
+.chat-messages {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-color);
+}
+
+.welcome-message {
+    text-align: center;
+    color: var(--gray);
+    margin: auto;
+    padding: 20px;
+}
+
+.message {
+    max-width: 70%;
+    margin-bottom: 15px;
+    display: flex;
+}
+
+.message.sent {
+    align-self: flex-end;
+}
+
+.message.received {
+    align-self: flex-start;
+}
+
+.message-content {
+    padding: 12px 16px;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word;
+}
+
+.message.sent .message-content {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border-bottom-right-radius: 5px;
+}
+
+.message.received .message-content {
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-bottom-left-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border: 1px solid var(--border-color);
+}
+
+.message-time {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    margin-top: 5px;
+    text-align: right;
+    color: var(--gray);
+}
+
+.message.sent .message-time {
+    color: rgba(255,255,255,0.8);
+}
+
+.message.received .message-time {
+    color: var(--gray);
+}
+
+.chat-input-container {
+    padding: 15px;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+.chat-input-form {
+    display: flex;
+    gap: 10px;
+}
+
+#message-input {
+    flex-grow: 1;
+    padding: 12px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 30px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    outline: none;
+    resize: none;
+    height: 50px;
+    max-height: 150px;
+}
+
+#message-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(253, 41, 123, 0.1);
+}
+
+.send-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border: none;
+    color: white;
+}
+
+.support-info-card {
+    padding: 20px;
+}
+
+.faq-item {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.faq-item:last-child {
+    border-bottom: none;
+}
+
+.faq-item h4 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: var(--primary);
+}
+
+.faq-item p {
+    margin: 0;
+    color: var(--text-color);
+}
+
+@media (max-width: 768px) {
+    .chat-container {
+        height: calc(100vh - 200px);
+        border-radius: 0;
+    }
     
-    // Function to add a message to the chat
-    function addMessage(content, isUser = false, timestamp = new Date()) {
+    .message {
+        max-width: 85%;
+    }
+    
+    .chat-header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .recipient-info {
+        width: 100%;
+    }
+    
+    #message-input {
+        height: 40px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const chatMessages = document.getElementById('support-messages');
+    
+    // Function to add message to chat
+    function addMessageToChat(content, isSent, senderName, timestamp) {
         const messageDiv = document.createElement('div');
-        messageDiv.style.marginBottom = '15px';
-        messageDiv.style.display = 'flex';
-        messageDiv.style.flexDirection = isUser ? 'row-reverse' : 'row';
+        messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
         
-        const messageContent = document.createElement('div');
-        messageContent.style.maxWidth = '70%';
-        messageContent.style.padding = '12px 15px';
-        messageContent.style.borderRadius = '18px';
-        messageContent.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+        const timeString = timestamp ? new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 
+            new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         
-        if (isUser) {
-            messageContent.style.background = 'var(--primary)';
-            messageContent.style.color = 'white';
-            messageContent.style.borderBottomRightRadius = '5px';
-        } else {
-            messageContent.style.background = 'var(--card-bg)';
-            messageContent.style.border = '1px solid var(--border-color)';
-            messageContent.style.borderBottomLeftRadius = '5px';
-        }
+        messageDiv.innerHTML = `
+            <div class="message-content">
+                <p>${content}</p>
+                <div class="message-time">${timeString} - ${senderName}</div>
+            </div>
+        `;
         
-        messageContent.textContent = content;
-        
-        const timeDiv = document.createElement('div');
-        timeDiv.style.fontSize = '0.7rem';
-        timeDiv.style.color = 'var(--gray)';
-        timeDiv.style.marginTop = '5px';
-        timeDiv.style.textAlign = isUser ? 'right' : 'left';
-        timeDiv.textContent = timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        
-        const messageWrapper = document.createElement('div');
-        messageWrapper.style.width = '100%';
-        messageWrapper.appendChild(messageContent);
-        messageWrapper.appendChild(timeDiv);
-        
-        messageDiv.appendChild(messageWrapper);
         chatMessages.appendChild(messageDiv);
         
         // Scroll to bottom
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
     
-    // Function to send a message
-    function sendMessage() {
+    // Handle send button click
+    sendButton.addEventListener('click', function() {
         const content = messageInput.value.trim();
-        if (content) {
-            // Add user message immediately for better UX
-            addMessage(content, true);
-            
-            // Clear input
-            messageInput.value = '';
-            
-            // Send message to server
-            fetch('/api/support/send_message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    content: content
-                })
+        if (!content) return;
+        
+        // Send message via AJAX
+        fetch('/api/send_support_message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ticket_id: {{ ticket.id }},
+                content: content
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    // Message sent successfully
-                    console.log('Message sent successfully');
-                } else {
-                    // Error sending message
-                    addMessage('{{ get_text("error_sending_message") or "Error sending message. Please try again." }}: ' + (data.message || ''), false);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                addMessage('{{ get_text("error_sending_message") or "Error sending message. Please try again." }}: ' + error.message, false);
-            });
-        }
-    }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Clear input
+                messageInput.value = '';
+                messageInput.focus();
+            } else {
+                alert('Error sending message: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error sending message');
+        });
+    });
     
-    // Event listeners
-    sendMessageBtn.addEventListener('click', sendMessage);
-    
-    messageInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            sendMessage();
+    // Handle Enter key (without Shift for new line)
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendButton.click();
         }
     });
     
-    // Welcome message
-    setTimeout(() => {
-        addMessage("{{ get_text('support_welcome_message') or 'Hello! Welcome to FetDate support. How can we help you today?' }}", false);
-    }, 1000);
+    // Poll for new messages every 5 seconds
+    setInterval(checkForNewMessages, 5000);
+    
+    function checkForNewMessages() {
+        fetch(`/api/support_messages/{{ ticket.id }}`)
+        .then(response => response.json())
+        .then(messages => {
+            // Clear current messages except welcome message
+            const currentMessages = document.querySelectorAll('.message');
+            currentMessages.forEach(msg => msg.remove());
+            
+            // Add updated messages
+            messages.forEach(message => {
+                const isSent = message.is_admin ? false : true; // If admin, then user received the message
+                const senderName = message.sender_name;
+                addMessageToChat(message.content, !message.is_admin, senderName, message.timestamp);
+            });
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        })
+        .catch(error => {
+            console.error('Error fetching messages:', error);
+        });
+    }
+    
+    // Scroll to bottom initially
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 });
 </script>
 {% endblock %}

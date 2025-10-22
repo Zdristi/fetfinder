@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ get_text('contacts') or 'Contacts' }} - FetDate{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <h1 style="text-align: center; margin-bottom: 30px; color: var(--text-color);">{{ get_text('contact_us_title') or 'Contact Us' }}</h1>
+        
+        <div class="contact-section">
+            <h2>{{ get_text('get_in_touch') or 'Get in Touch' }}</h2>
+            <p>{{ get_text('get_in_touch_desc') or 'We\'re here to help! If you have any questions, concerns, or feedback about our service, please don\'t hesitate to reach out to us.' }}</p>
+        </div>
+        
+        <div class="contact-section">
+            <h3>{{ get_text('support_email') or 'Support Email' }}</h3>
+            <p><strong>fetdatehelp@gmail.com</strong></p>
+            <p>{{ get_text('support_team_response_desc') or 'Our support team typically responds within 24 hours. Please include your username in your message for faster assistance.' }}</p>
+        </div>
+        
+        <div class="contact-section">
+            <h3>{{ get_text('mailing_address') or 'Mailing Address' }}</h3>
+            <p>{{ get_text('legal_matters_desc') or 'For legal matters and formal correspondence:' }}</p>
+            <p>{{ get_text('fetdate_support_team') or 'FetDate Support Team' }}<br>
+            {{ get_text('attention_legal_dept') or 'Attn: Legal Department' }}<br>
+            {{ get_text('physical_address') or '[Physical Address for Legal Disputes]' }}<br>
+            {{ get_text('city_state_zip') or '[City, State, ZIP Code]' }}</p>
+        </div>
+        
+        <div class="contact-section">
+            <h3>{{ get_text('phone_support') or 'Phone Support' }}</h3>
+            <p>{{ get_text('immediate_assistance_desc') or 'For immediate assistance, you can reach us at:' }}<br>
+            <strong>+1 (555) 123-4567</strong> {{ get_text('urgent_account_issues') or '(For urgent account issues)' }}</p>
+            <p>{{ get_text('phone_hours') or 'Phone support is available Monday-Friday, 9:00 AM - 6:00 PM EST' }}</p>
+        </div>
+        
+        <div class="contact-section">
+            <h3>{{ get_text('report_an_issue') or 'Report an Issue' }}</h3>
+            <p>{{ get_text('report_an_issue_desc') or 'If you need to report a user, content, or technical issue:' }}</p>
+            <ul>
+                <li>{{ get_text('report_user_button') or 'Use the "Report User" button on any profile' }}</li>
+                <li>{{ get_text('moderation_team_email') or 'Contact our moderation team at' }} <strong>fetdatehelp@gmail.com</strong></li>
+                <li>{{ get_text('in_app_support_chat') or 'Use the in-app support chat feature' }}</li>
+            </ul>
+        </div>
+        
+        <div class="contact-section">
+            <h3>{{ get_text('business_inquiries') or 'Business Inquiries' }}</h3>
+            <p>{{ get_text('business_inquiries_desc') or 'For business partnerships, press inquiries, or advertising opportunities:' }}<br>
+            <strong>{{ get_text('business_email') or 'business@fetdate.online' }}</strong></p>
+        </div>
+        
+        <div class="contact-section">
+            <h3>{{ get_text('feedback_and_suggestions') or 'Feedback and Suggestions' }}</h3>
+            <p>{{ get_text('feedback_and_suggestions_desc') or 'We value your feedback and suggestions for improving our service. Please send your ideas to:' }}<br>
+            <strong>{{ get_text('feedback_email') or 'feedback@fetdate.online' }}</strong></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.contact-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.contact-section:last-child {
+    border-bottom: none;
+}
+
+.contact-section h2 {
+    color: var(--primary);
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.contact-section h3 {
+    color: var(--secondary);
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.contact-section p {
+    color: var(--text-color);
+    line-height: 1.6;
+    margin: 0 0 15px 0;
+}
+
+.contact-section ul {
+    color: var(--text-color);
+    margin: 10px 0 15px 20px;
+    line-height: 1.6;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 30px;
+    margin: 20px 0;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+</style>
+{% endblock %}

@@ -11,6 +11,13 @@
     <div class="card-body">
         <p style="text-align: center; margin-bottom: 20px;">Мы отправили код подтверждения на ваш email: <strong>{{ email }}</strong></p>
         
+        {% if code %}
+            <div class="alert alert-info" style="background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+                <p style="margin: 0;"><strong>Ваш код подтверждения:</strong> <span style="font-family: monospace; font-weight: bold; font-size: 1.2em;">{{ code }}</span></p>
+                <small style="display: block; margin-top: 5px;">Используйте этот код для подтверждения вашей регистрации.</small>
+            </div>
+        {% endif %}
+        
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 <div class="alert alert-error">

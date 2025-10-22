@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}{{ get_text('terms_of_use') or 'Terms of Use' }} - FetDate{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <h1 style="text-align: center; margin-bottom: 30px; color: var(--text-color);">{{ get_text('terms_of_use') or 'Terms of Use' }}</h1>
+        
+        <div class="terms-section">
+            <h2>1. {{ get_text('agreement_to_terms') or 'Соглашение с условиями' }}</h2>
+            <p>{{ get_text('agreement_to_terms_desc') or 'Доступаясь к использованию FetDate (\"Сервис\"), вы соглашаетесь с соблюдением этих Условий использования (\"Условия\"). Если вы не согласны с какой-либо частью условий, вы не можете использовать Сервис.' }}</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>2. {{ get_text('description_of_service') or 'Описание сервиса' }}</h2>
+            <p>{{ get_text('description_of_service_desc') or 'FetDate - это платформа для знакомств, которая позволяет пользователям находить связи с другими людьми на основе общих интересов и фетишей. Сервис предоставляет такие функции, как создание профиля, поиск совпадений, свайпинг и обмен сообщениями для облегчения установления контактов.' }}</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>3. {{ get_text('user_accounts') or 'Пользовательские аккаунты' }}</h2>
+            <p>{{ get_text('user_accounts_desc1') or 'При создании учетной записи у нас вы должны предоставить точную и полную информацию. Вы несете ответственность за обеспечение безопасности вашей учетной записи и полностью несете ответственность за все действия, происходящие под вашей учетной записью.' }}</p>
+            <p>{{ get_text('user_accounts_desc2') or 'Вы должны немедленно сообщить нам, если узнаете о любом несанкционированном использовании вашей учетной записи или любом другом нарушении безопасности.' }}</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>4. {{ get_text('subscription_and_payment') or 'Подписка и оплата' }}</h2>
+            <p>{{ get_text('subscription_and_payment_desc1') or 'Наш сервис предлагает премиум-подписки. Премиум-подписки автоматически продляются до тех пор, пока не будут отменены. Вы можете отменить подписку в любое время, обратившись к нам.' }}</p>
+            <p>{{ get_text('subscription_and_payment_desc2') or 'Все сборы включают применимые налоги, если это требуется законом. Мы можем изменить стоимость подписки в любое время с разумным уведомлением вам.' }}</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>5. {{ get_text('purchases') or 'Покупки' }}</h2>
+            <p>{{ get_text('purchases_desc1') or 'Если вы совершаете покупки через Сервис, вы соглашаетесь предоставить актуальную, полную и точную информацию о покупке и учетной записи. Вы также соглашаетесь оплатить все сборы, указанные при совершении покупки.' }}</p>
+            <p>{{ get_text('purchases_desc2') or 'Мы оставляем за собой право отказать в любом заказе, который вы размещаете через Сервис.' }}</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>6. {{ get_text('accuracy_of_information') or 'Точность информации' }}</h2>
+            <p>{{ get_text('accuracy_of_information_desc') or 'Хотя мы стремимся предоставлять точную информацию о нашем Сервисе, мы не даем никаких гарантий относительно полноты, точности, надежности или пригодности какой-либо информации, продукции или услуг, содержащихся в нашем Сервисе.' }}</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>7. {{ get_text('intellectual_property') or 'Интеллектуальная собственность' }}</h2>
+            <p>{{ get_text('intellectual_property_desc') or 'Сервис и его оригинальный контент, функции и функциональность принадлежат FetDate и защищены международными законами об авторском праве, товарных знаках и другой интеллектуальной собственности.' }}</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>8. {{ get_text('termination') or 'Прекращение' }}</h2>
+            <p>{{ get_text('termination_desc1') or 'Мы можем прекратить или приостановить вашу учетную запись немедленно, без предварительного уведомления, по любой причине, включая, помимо прочего, нарушение Условий.' }}</p>
+            <p>{{ get_text('termination_desc2') or 'После прекращения действия ваши права на использование Сервиса прекращаются немедленно.' }}</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>9. {{ get_text('limitation_of_liability') or 'Ограничение ответственности' }}</h2>
+            <p>{{ get_text('limitation_of_liability_desc') or 'В любом случае FetDate, а также его директора, сотрудники, партнеры, агенты, поставщики или филиалы не несут ответственности за какие-либо косвенные, случайные, специальные, косвенные или штрафные убытки, включая, помимо прочего, упущенную прибыль, данные, использование, деловую репутацию или другие нематериальные потери.' }}</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>10. {{ get_text('governing_law') or 'Применимое право' }}</h2>
+            <p>{{ get_text('governing_law_desc') or 'Настоящие Условия регулируются и толкуются в соответствии с законами, без учета положений о конфликте законов.' }}</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>11. {{ get_text('changes_to_terms') or 'Изменения в условиях' }}</h2>
+            <p>{{ get_text('changes_to_terms_desc') or 'Мы оставляем за собой право по своему собственному усмотрению изменять или заменять настоящие Условия в любое время. Продолжая получать доступ или использовать наш Сервис после вступления этих изменений в силу, вы соглашаетесь соблюдать измененные условия.' }}</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>12. {{ get_text('contact_us') or 'Свяжитесь с нами' }}</h2>
+            <p>{{ get_text('contact_us_desc') or 'Если у вас есть какие-либо вопросы о настоящих Условиях, пожалуйста, свяжитесь с нами по адресу' }} <strong>fetdatehelp@gmail.com</strong></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.terms-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.terms-section:last-child {
+    border-bottom: none;
+}
+
+.terms-section h2 {
+    color: var(--primary);
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.terms-section p {
+    color: var(--text-color);
+    line-height: 1.6;
+    margin: 0 0 15px 0;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 30px;
+    margin: 20px 0;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+</style>
+{% endblock %}

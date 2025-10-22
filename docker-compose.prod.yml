@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    container_name: fetdate_db
+    environment:
+      POSTGRES_DB: fetdate_db
+      POSTGRES_USER: fetdate_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fetdate_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Если есть скрипты инициализации
+    networks:
+      - fetdate_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fetdate_user -d fetdate_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  app:
+    build: .
+    container_name: fetdate_app
+    environment:
+      - DATABASE_URL=postgresql://fetdate_user:${DB_PASSWORD:-fetdate_password}@db:5432/fetdate_db
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-your_default_secret_key_for_local_development_please_change_in_production}
+      - MAIL_SERVER=${MAIL_SERVER:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
+      - MAIL_USE_SSL=${MAIL_USE_SSL:-false}
+      - MAIL_USERNAME=${MAIL_USERNAME:-sup.fetdate@gmail.com}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER:-sup.fetdate@gmail.com}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./static/uploads:/app/static/uploads
+    networks:
+      - fetdate_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    container_name: fetdate_nginx
+    ports:
+      - "80:80"  # Порты будут прокинуты вручную, как указано в требованиях
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./static:/var/www/static:ro
+    depends_on:
+      - app
+    networks:
+      - fetdate_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  fetdate_network:
+    driver: bridge

@@ -3,7 +3,7 @@
 {% block title %}{{ get_text('discover_matches') }} - {{ SITE_NAME }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/swipe.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/swipe.min.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -34,6 +34,11 @@
                 </div>
             </div>
         </div>
+    </div>
+    
+    <!-- Mobile swipe instructions -->
+    <div class="mobile-swipe-instructions" style="text-align: center; margin-top: 10px; color: var(--gray); display: none;">
+        <p><i class="fas fa-hand-pointer"></i> Swipe left/right or tap buttons below</p>
     </div>
     
     <div id="noUsersMessage" class="empty-state" style="display: none;">
@@ -93,5 +98,5 @@
     'view_matches': '{{ get_text("view_matches") }}'
   };
 </script>
-<script src="{{ url_for('static', filename='js/swipe-fresh-fixed.js') }}"></script>
+<script src="{{ url_for('static', filename='js/swipe-fresh-fixed.min.js') }}"></script>
 {% endblock %}

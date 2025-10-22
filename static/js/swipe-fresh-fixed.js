@@ -25,6 +25,21 @@ class SwipeSystem {
     } else {
       this.initializeSwipeSystem();
     }
+    
+    // Show mobile instructions if on mobile device
+    this.showMobileInstructions();
+  }
+  
+  showMobileInstructions() {
+    // Check if we're on a mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      const instructions = document.querySelector('.mobile-swipe-instructions');
+      if (instructions) {
+        instructions.style.display = 'block';
+      }
+    }
   }
   
   initializeSwipeSystem() {

@@ -1,300 +1,57 @@
 {% extends "base.html" %}
 
-{% block title %}{{ get_text('gift_shop') }} - {{ SITE_NAME }}{% endblock %}
+{% block title %}Gift Shop{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">
-            <i class="fas fa-gift"></i> {{ get_text('gift_shop') }}
-        </h2>
+<div class="container">
+    <h1>Gift Shop</h1>
+    
+    <div class="current-coins">
+        <h3>Your Coins: {{ current_user.coins if current_user.coins else 0 }}</h3>
     </div>
     
-    <!-- User Coins Display -->
-    <div style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 20px; border-radius: 15px; margin-bottom: 30px; text-align: center;">
-        <h3 style="margin: 0 0 10px 0;">
-            <i class="fas fa-coins"></i> {{ get_text('your_coins') }}: {{ current_user.coins }}
-        </h3>
-        <a href="{{ url_for('buy_coins') }}" class="btn" style="background: white; color: var(--primary); padding: 10px 20px; border-radius: 30px; text-decoration: none; font-weight: bold;">
-            <i class="fas fa-shopping-cart"></i> {{ get_text('buy_coins') }}
-        </a>
-    </div>
-    
-    <!-- Gift Categories -->
-    <div style="margin-bottom: 30px;">
-        <h3 style="color: var(--dark); margin-bottom: 15px;">
-            <i class="fas fa-tags"></i> {{ get_text('gift_categories') }}
-        </h3>
-        
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
-            <button class="btn btn-outline category-filter" data-category="" style="padding: 8px 15px; font-size: 0.9rem;">
-                {{ get_text('all_categories') }}
-            </button>
-            <button class="btn btn-outline category-filter" data-category="flowers" style="padding: 8px 15px; font-size: 0.9rem;">
-                {{ get_text('flowers') or 'Flowers' }}
-            </button>
-            <button class="btn btn-outline category-filter" data-category="jewelry" style="padding: 8px 15px; font-size: 0.9rem;">
-                {{ get_text('jewelry') or 'Jewelry' }}
-            </button>
-            <button class="btn btn-outline category-filter" data-category="toys" style="padding: 8px 15px; font-size: 0.9rem;">
-                {{ get_text('toys') or 'Toys' }}
-            </button>
-            <button class="btn btn-outline category-filter" data-category="experience" style="padding: 8px 15px; font-size: 0.9rem;">
-                {{ get_text('experience') or 'Experience' }}
-            </button>
+    <div class="gifts-grid">
+        <div class="gift-item">
+            <div class="gift-icon">🌹</div>
+            <h3>Rose</h3>
+            <p>10 coins</p>
+            <button class="btn btn-outline">Send</button>
         </div>
-    </div>
-    
-    <!-- Available Gifts -->
-    <div style="margin-bottom: 30px;">
-        <h3 style="color: var(--dark); margin-bottom: 15px;">
-            <i class="fas fa-gifts"></i> {{ get_text('available_gifts') }}
-        </h3>
         
-        <div id="gifts-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px;">
-            <!-- Gifts will be loaded here via JavaScript -->
-            <div style="text-align: center; padding: 40px; color: var(--gray); grid-column: 1 / -1;">
-                <i class="fas fa-spinner fa-spin fa-2x"></i>
-                <p style="margin-top: 15px;">{{ get_text('loading') or 'Loading gifts...' }}</p>
-            </div>
+        <div class="gift-item">
+            <div class="gift-icon">🍫</div>
+            <h3>Chocolate</h3>
+            <p>25 coins</p>
+            <button class="btn btn-outline">Send</button>
+        </div>
+        
+        <div class="gift-item">
+            <div class="gift-icon">🧸</div>
+            <h3>Teddy Bear</h3>
+            <p>50 coins</p>
+            <button class="btn btn-outline">Send</button>
+        </div>
+        
+        <div class="gift-item">
+            <div class="gift-icon">🍾</div>
+            <h3>Champagne</h3>
+            <p>100 coins</p>
+            <button class="btn btn-outline">Send</button>
+        </div>
+        
+        <div class="gift-item">
+            <div class="gift-icon">💎</div>
+            <h3>Diamond</h3>
+            <p>250 coins</p>
+            <button class="btn btn-outline">Send</button>
+        </div>
+        
+        <div class="gift-item">
+            <div class="gift-icon">❤️</div>
+            <h3>Heart</h3>
+            <p>500 coins</p>
+            <button class="btn btn-outline">Send</button>
         </div>
     </div>
 </div>
-
-<!-- Gift Sending Modal -->
-<div id="gift-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
-    <div class="card" style="max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 class="card-title" style="margin: 0;">
-                <i class="fas fa-paper-plane"></i> {{ get_text('send_gift') }}
-            </h3>
-            <button type="button" class="btn btn-sm" onclick="closeGiftModal()" style="padding: 5px 10px;">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        
-        <div style="padding: 20px;">
-            <div id="gift-preview" style="text-align: center; margin-bottom: 20px;">
-                <!-- Gift preview will be loaded here -->
-            </div>
-            
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label class="form-label">{{ get_text('gift_message') }}:</label>
-                <textarea id="gift-message" class="form-control" rows="3" placeholder="{{ get_text('gift_message') }}..."></textarea>
-            </div>
-            
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label class="form-checkbox">
-                    <input type="checkbox" id="send-anonymously">
-                    <span class="checkmark"></span>
-                    {{ get_text('send_anonymously') }}
-                </label>
-            </div>
-            
-            <div style="display: flex; gap: 10px;">
-                <button type="button" class="btn btn-outline" onclick="closeGiftModal()" style="flex: 1;">
-                    {{ get_text('cancel') or 'Cancel' }}
-                </button>
-                <button type="button" class="btn" id="send-gift-btn" onclick="sendGift()" style="flex: 2;">
-                    <i class="fas fa-paper-plane"></i> {{ get_text('send_gift') }}
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    let selectedGiftId = null;
-    let selectedRecipientId = null;
-    
-    // Load gifts on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        loadGifts();
-    });
-    
-    // Load gifts from API
-    function loadGifts(category = '') {
-        const container = document.getElementById('gifts-container');
-        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gray); grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top: 15px;">{{ get_text("loading") or "Loading gifts..." }}</p></div>';
-        
-        // Build query string
-        let url = '/api/gifts';
-        if(category) {
-            url += `?category=${encodeURIComponent(category)}`;
-        }
-        
-        fetch(url)
-            .then(response => response.json())
-            .then(gifts => {
-                if(gifts.length > 0) {
-                    container.innerHTML = '';
-                    
-                    gifts.forEach(gift => {
-                        const giftCard = document.createElement('div');
-                        giftCard.className = 'gift-card';
-                        giftCard.style = 'background: var(--card-bg); border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s;';
-                        
-                        giftCard.innerHTML = `
-                            <div style="height: 200px; overflow: hidden;">
-                                ${gift.image_url ? 
-                                    `<img src="${gift.image_url}" alt="${gift.name}" style="width: 100%; height: 100%; object-fit: cover;">` :
-                                    `<div style="width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">
-                                        <i class="fas fa-gift"></i>
-                                    </div>`
-                                }
-                            </div>
-                            
-                            <div style="padding: 20px;">
-                                <h4 style="margin: 0 0 10px 0; color: var(--dark);">${gift.name}</h4>
-                                <p style="margin: 0 0 15px 0; color: var(--gray); font-size: 0.9rem;">${gift.description}</p>
-                                
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                    <div style="display: flex; align-items: center; color: var(--primary);">
-                                        <i class="fas fa-coins"></i>
-                                        <span style="margin-left: 5px; font-weight: bold;">${gift.price_coins}</span>
-                                    </div>
-                                    
-                                    ${gift.category ? 
-                                        `<span class="badge" style="background: var(--accent); color: white; font-size: 0.8rem;">${gift.category}</span>` :
-                                        ''
-                                    }
-                                </div>
-                                
-                                <button class="btn" onclick="openGiftModal(${gift.id})" style="width: 100%; padding: 10px;">
-                                    <i class="fas fa-paper-plane"></i> {{ get_text('send_gift') }}
-                                </button>
-                            </div>
-                        `;
-                        
-                        container.appendChild(giftCard);
-                    });
-                } else {
-                    container.innerHTML = `
-                        <div style="text-align: center; padding: 40px; color: var(--gray); grid-column: 1 / -1;">
-                            <i class="fas fa-gift fa-3x" style="margin-bottom: 15px;"></i>
-                            <h3>{{ get_text('no_gifts_yet') }}</h3>
-                            <p>{{ get_text('check_back_later') or 'Check back later for new gifts!' }}</p>
-                        </div>
-                    `;
-                }
-            })
-            .catch(error => {
-                console.error('Error loading gifts:', error);
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: var(--danger); grid-column: 1 / -1;">
-                        <i class="fas fa-exclamation-triangle fa-3x" style="margin-bottom: 15px;"></i>
-                        <h3>{{ get_text('error_loading_gifts') or 'Error loading gifts' }}</h3>
-                        <p>${error.message || '{{ get_text("try_again_later") or "Please try again later" }}'}</p>
-                    </div>
-                `;
-            });
-    }
-    
-    // Filter gifts by category
-    document.querySelectorAll('.category-filter').forEach(button => {
-        button.addEventListener('click', function() {
-            const category = this.getAttribute('data-category');
-            
-            // Remove active class from all buttons
-            document.querySelectorAll('.category-filter').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Add active class to clicked button
-            this.classList.add('active');
-            
-            // Load gifts for selected category
-            loadGifts(category);
-        });
-    });
-    
-    // Open gift modal
-    function openGiftModal(giftId, recipientId = null) {
-        selectedGiftId = giftId;
-        selectedRecipientId = recipientId;
-        
-        // Load gift details for preview
-        fetch(`/api/gifts`)
-            .then(response => response.json())
-            .then(gifts => {
-                const gift = gifts.find(g => g.id == giftId);
-                if(gift) {
-                    const preview = document.getElementById('gift-preview');
-                    preview.innerHTML = `
-                        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-                            ${gift.image_url ? 
-                                `<img src="${gift.image_url}" alt="${gift.name}" style="max-width: 100px; max-height: 100px; border-radius: 10px;">` :
-                                `<div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; border-radius: 10px;">
-                                    <i class="fas fa-gift"></i>
-                                </div>`
-                            }
-                            <div style="margin-left: 20px; text-align: left;">
-                                <h4 style="margin: 0 0 10px 0;">${gift.name}</h4>
-                                <div style="display: flex; align-items: center; color: var(--primary);">
-                                    <i class="fas fa-coins"></i>
-                                    <span style="margin-left: 5px; font-weight: bold;">${gift.price_coins}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-        
-        // Show modal
-        document.getElementById('gift-modal').style.display = 'flex';
-    }
-    
-    // Close gift modal
-    function closeGiftModal() {
-        document.getElementById('gift-modal').style.display = 'none';
-        document.getElementById('gift-message').value = '';
-        document.getElementById('send-anonymously').checked = false;
-        selectedGiftId = null;
-        selectedRecipientId = null;
-    }
-    
-    // Send gift
-    function sendGift() {
-        if(!selectedGiftId) {
-            alert('{{ get_text("select_gift_first") or "Please select a gift first" }}');
-            return;
-        }
-        
-        if(!selectedRecipientId) {
-            alert('{{ get_text("select_recipient_first") or "Please select a recipient first" }}');
-            return;
-        }
-        
-        const message = document.getElementById('gift-message').value;
-        const isAnonymous = document.getElementById('send-anonymously').checked;
-        
-        fetch('/api/send_gift', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                recipient_id: selectedRecipientId,
-                gift_id: selectedGiftId,
-                message: message,
-                is_anonymous: isAnonymous
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if(data.status === 'success') {
-                alert('{{ get_text("gift_sent_successfully") }}');
-                closeGiftModal();
-                // Reload gifts to update coin balance
-                loadGifts();
-            } else {
-                alert(data.error || '{{ get_text("error_sending_gift") }}');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('{{ get_text("error_sending_gift") }}');
-        });
-    }
-</script>
 {% endblock %}

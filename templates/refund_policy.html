@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}{{ get_text('refund_policy') or 'Refund Policy' }} - FetDate{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <h1 style="text-align: center; margin-bottom: 30px; color: var(--text-color);">{{ get_text('refund_policy') or 'Refund Policy' }}</h1>
+        
+        <div class="refund-section">
+            <h2>{{ get_text('premium_subscription_refunds') or 'Premium Subscription Refunds' }}</h2>
+            <p>{{ get_text('premium_subscription_refunds_desc') or 'We offer a 7-day refund policy for our premium subscriptions. If you are not satisfied with our premium service, you may request a refund within 7 days of your initial purchase.' }}</p>
+        </div>
+
+        <div class="refund-section">
+            <h2>{{ get_text('eligibility_for_refund') or 'Eligibility for Refund' }}</h2>
+            <p>{{ get_text('eligibility_for_refund_desc') or 'To be eligible for a refund, your premium subscription must:' }}</p>
+            <ul>
+                <li>{{ get_text('purchased_within_7_days_item') or 'Have been purchased within the last 7 days' }}</li>
+                <li>{{ get_text('not_extensively_used_item') or 'Not have been used extensively (limited messaging, limited use of premium features)' }}</li>
+                <li>{{ get_text('before_renewal_date_item') or 'Be requested before any renewal date' }}</li>
+            </ul>
+        </div>
+
+        <div class="refund-section">
+            <h2>{{ get_text('non_refundable_items') or 'Non-Refundable Items' }}</h2>
+            <p>{{ get_text('non_refundable_items_desc') or 'The following items are non-refundable:' }}</p>
+            <ul>
+                <li>{{ get_text('individual_coins_item') or 'Individual coins purchased for gifts or features' }}</li>
+                <li>{{ get_text('gifts_sent_item') or 'Gifts sent to other users' }}</li>
+                <li>{{ get_text('subscriptions_7_days_item') or 'Subscriptions that have been active for more than 7 days' }}</li>
+                <li>{{ get_text('heavily_used_subscriptions_item') or 'Subscriptions that have been heavily used' }}</li>
+            </ul>
+        </div>
+
+        <div class="refund-section">
+            <h2>{{ get_text('how_to_request_refund') or 'How to Request a Refund' }}</h2>
+            <p>{{ get_text('how_to_request_refund_desc') or 'To request a refund, please contact us at with the following information:' }}</p>
+            <ul>
+                <li>{{ get_text('username_item') or 'Your username' }}</li>
+                <li>{{ get_text('date_of_purchase_item') or 'Date of purchase' }}</li>
+                <li>{{ get_text('reason_for_refund_item') or 'Reason for requesting a refund' }}</li>
+                <li>{{ get_text('transaction_id_item') or 'Transaction ID (if available)' }}</li>
+            </ul>
+            <p>{{ get_text('contact_us_refund') or 'Email:' }} <strong>fetdatehelp@gmail.com</strong></p>
+        </div>
+
+        <div class="refund-section">
+            <h2>{{ get_text('processing_time') or 'Processing Time' }}</h2>
+            <p>{{ get_text('processing_time_desc') or 'Once your refund request is received and reviewed, we will send you an email confirming acceptance or rejection of your refund request. If accepted, your refund will be processed and a credit will automatically be applied to your original payment method within 5-10 business days.' }}</p>
+        </div>
+
+        <div class="refund-section">
+            <h2>{{ get_text('subscription_renewals') or 'Subscription Renewals' }}</h2>
+            <p>{{ get_text('subscription_renewals_desc') or 'If your subscription renews automatically before a refund is processed, we will refund the most recent billing cycle if you are still within the 7-day window and meet the eligibility requirements.' }}</p>
+        </div>
+
+        <div class="refund-section">
+            <h2>{{ get_text('special_circumstances') or 'Special Circumstances' }}</h2>
+            <p>{{ get_text('special_circumstances_desc') or 'In certain exceptional circumstances, we may consider refund requests beyond the 7-day window, including:' }}</p>
+            <ul>
+                <li>{{ get_text('technical_issues_item') or 'Technical issues preventing service use' }}</li>
+                <li>{{ get_text('billing_errors_item') or 'Billing errors on our part' }}</li>
+                <li>{{ get_text('account_suspension_item') or 'Account suspension or termination not due to user misconduct' }}</li>
+            </ul>
+        </div>
+
+        <div class="refund-section">
+            <h2>{{ get_text('chargebacks_and_disputes') or 'Chargebacks and Disputes' }}</h2>
+            <p>{{ get_text('chargebacks_and_disputes_desc') or 'Filing a chargeback or payment dispute with your financial institution voids your right to any refund from us. Please contact us first if you have concerns about your purchase.' }}</p>
+        </div>
+
+        <div class="refund-section">
+            <h2>{{ get_text('changes_to_refund_policy') or 'Changes to Refund Policy' }}</h2>
+            <p>{{ get_text('changes_to_refund_policy_desc') or 'We reserve the right to modify this refund policy at any time. Changes will be effective immediately upon posting to our website. Your continued use of our service after changes constitutes acceptance of the modified policy.' }}</p>
+        </div>
+
+        <div class="refund-section">
+            <h2>{{ get_text('contact_us_refund') or 'Contact Us (Refund)' }}</h2>
+            <p>{{ get_text('contact_us_refund_desc') or 'If you have any questions or concerns about our refund policy, please contact us at' }}</p>
+            <p>{{ get_text('contact_us_refund') or 'Email:' }} <strong>fetdatehelp@gmail.com</strong></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.refund-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.refund-section:last-child {
+    border-bottom: none;
+}
+
+.refund-section h2 {
+    color: var(--primary);
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.refund-section p {
+    color: var(--text-color);
+    line-height: 1.6;
+    margin: 0 0 15px 0;
+}
+
+.refund-section ul {
+    color: var(--text-color);
+    margin: 10px 0 15px 20px;
+    line-height: 1.6;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 30px;
+    margin: 20px 0;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+</style>
+{% endblock %}

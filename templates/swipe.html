@@ -568,12 +568,9 @@
             $('#dislikeHint').show().fadeOut(200);
         }
         
-        // Record swipe in history for potential undo (only for premium users, max 5 per day)
+        // Record swipe in history for potential undo (only for premium users, unlimited per day)
         if (isPremiumUser) {
-            // Limit undo history to 5 swipes per day
-            if (swipeHistory.length >= 5) {
-                swipeHistory.shift(); // Remove oldest swipe
-            }
+            // Unlimited undo history for premium users
             swipeHistory.push({
                 userId: currentUserId,
                 action: action,
