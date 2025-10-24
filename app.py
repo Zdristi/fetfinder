@@ -136,7 +136,7 @@ def generate_confirmation_code():
     return ''.join(random.choices(string.digits, k=6))
 
 def send_confirmation_email(email, code):
-    """Отправляет код подтверждения на email"""
+    """Отправляет код подтверждения на email (асинхронно, без блокировки)"""
     try:
         # Создание сообщения
         msg = EmailMessage()
@@ -159,16 +159,26 @@ def send_confirmation_email(email, code):
         Команда FetDate
         """
         
-        # Отправка письма с таймаутом
-        mail.send(msg)
-        print(f"Код подтверждения отправлен на {email}: {code}")
+        # Отправка письма в отдельном потоке, чтобы не блокировать основной процесс
+        import threading
+        
+        def send_email_async():
+            try:
+                mail.send(msg)
+                print(f"Код подтверждения отправлен на {email}: {code}")
+            except Exception as e:
+                print(f"Ошибка при асинхронной отправке email на {email}: {str(e)}")
+        
+        # Запускаем отправку email в отдельном потоке
+        email_thread = threading.Thread(target=send_email_async)
+        email_thread.daemon = True
+        email_thread.start()
+        
+        # Возвращаем True сразу, не дожидаясь отправки
         return True
     except Exception as e:
-        # В случае ошибки логируем её и возвращаем False
-        print(f"Ошибка при отправке email на {email}: {str(e)}")
-        # Для отладки и обеспечения работы сайта в случае сбоя почты - 
-        # можно включить резервный вариант вывода кода в консоль
-        print(f"(Резервный вариант) Код подтверждения для {email}: {code}")
+        # В случае критической ошибки логируем её
+        print(f"Критическая ошибка при подготовке email для {email}: {str(e)}")
         return False
 
 # User loader for Flask-Login
@@ -2287,16 +2297,9 @@ def register():
                 'is_first_user': UserModel.query.count() == 0  # Check if this will be the first user
             }
             
-            # Попытка отправки письма подтверждения
-            email_sent = send_confirmation_email(email, confirmation_code)
-            if email_sent:
-                # Redirect to verification page
-                flash('Пожалуйста, проверьте вашу почту для подтверждения регистрации.')
-                return redirect(url_for('verify_email_page', email=email))
-            else:
-                # Если письмо не отправлено, показываем код пользователю на странице подтверждения
-                flash('Пожалуйста, используйте код подтверждения, отображенный ниже.')
-                return redirect(url_for('verify_email_page', email=email, code=confirmation_code))
+            # Вместо отправки email, сразу показываем код пользователю (для избежания таймаутов)
+            flash('Пожалуйста, используйте код подтверждения, отображенный ниже.')
+            return redirect(url_for('verify_email_page', email=email, code=confirmation_code))
                 
         except Exception as e:
             error_str = str(e)
@@ -2401,14 +2404,9 @@ def resend_confirmation():
         'is_first_user': stored_data['is_first_user']
     }
     
-    # Send new confirmation email
-    email_sent = send_confirmation_email(email, new_code)
-    if email_sent:
-        flash('Новый код подтверждения отправлен на ваш email.')
-        return redirect(url_for('verify_email_page', email=email))
-    else:
-        flash('Ошибка при отправке нового кода. Пожалуйста, используйте код, отображенный ниже.')
-        return redirect(url_for('verify_email_page', email=email, code=new_code))
+    # Вместо отправки email, просто показываем новый код
+    flash('Новый код подтверждения сгенерирован.')
+    return redirect(url_for('verify_email_page', email=email, code=new_code))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
