@@ -49,32 +49,13 @@ app.config['CACHE_TYPE'] = 'simple'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes
 cache = Cache(app)
 
-# Configure SQLAlchemy - changed for local development
+# Configure SQLAlchemy - Default to SQLite
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///fetdate_local.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Import SQLAlchemy engine options from config
 from config import SQLALCHEMY_ENGINE_OPTIONS
-if SQLALCHEMY_ENGINE_OPTIONS:
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = SQLALCHEMY_ENGINE_OPTIONS
-else:
-    # Default engine options if not set in config
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_size': 10,
-        'pool_recycle': 300,
-        'pool_pre_ping': True,
-        'pool_timeout': 30,
-        'max_overflow': 20,
-        'pool_reset_on_return': 'commit',
-        'connect_args': {
-            'connect_timeout': 30,
-            'sslmode': 'require',  # Changed back to 'require' as recommended for Render
-            'keepalives_idle': 300,
-            'keepalives_interval': 30,
-            'keepalives_count': 3,
-            'ssl_min_protocol_version': 'TLSv1.2'
-        }
-    }
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = SQLALCHEMY_ENGINE_OPTIONS
 
 # Initialize database
 db.init_app(app)
@@ -99,11 +80,12 @@ def before_request():
             db.session.execute(db.text('SELECT 1'))
         except Exception as e:
             error_str = str(e)
-            # Check if it's an SSL-related error
-            if 'SSL connection has been closed unexpectedly' in error_str or \
+            # Check if it's an SSL-related error (only for PostgreSQL)
+            if 'postgresql' in str(db.engine.url).lower() and (
+               'SSL connection has been closed unexpectedly' in error_str or \
                'server closed the connection unexpectedly' in error_str or \
                'SSL SYSCALL error' in error_str or \
-               'connection is closed' in error_str:
+               'connection is closed' in error_str):
                 print("Detected SSL connection issue in before_request, disposing connection...")
                 try:
                     db.engine.dispose()
@@ -111,7 +93,7 @@ def before_request():
                     print(f"Error disposing database connection in before_request: {dispose_error}")
             else:
                 try:
-                    # For other errors, dispose connection as well
+                    # For other errors or SQLite, dispose connection as well
                     db.engine.dispose()
                 except Exception as dispose_error:
                     print(f"Error disposing database connection in before_request: {dispose_error}")
@@ -2345,10 +2327,11 @@ def register():
             # Check if it's a duplicate email error
             if 'duplicate key value violates unique constraint' in error_str and 'email' in error_str:
                 flash(get_text('email_exists') or 'A user with this email already exists')
-            elif 'SSL connection has been closed unexpectedly' in error_str or \
+            elif ('postgresql' in str(db.engine.url).lower() and (
+                 'SSL connection has been closed unexpectedly' in error_str or \
                  'server closed the connection unexpectedly' in error_str or \
                  'SSL SYSCALL error' in error_str or \
-                 'connection is closed' in error_str or \
+                 'connection is closed' in error_str)) or \
                  'connection' in error_str.lower() or 'timeout' in error_str.lower() or isinstance(e, TimeoutError):
                 # Обработка ошибок подключения к базе данных и таймаутов
                 flash('Сервис временно недоступен. Пожалуйста, попробуйте зарегистрироваться чуть позже.')
@@ -2462,10 +2445,11 @@ def login():
             return redirect(url_for('login'))
         except Exception as e:
             error_str = str(e)
-            if 'SSL connection has been closed unexpectedly' in error_str or \
+            if ('postgresql' in str(db.engine.url).lower() and (
+               'SSL connection has been closed unexpectedly' in error_str or \
                'server closed the connection unexpectedly' in error_str or \
                'SSL SYSCALL error' in error_str or \
-               'connection is closed' in error_str or \
+               'connection is closed' in error_str)) or \
                'connection' in error_str.lower() or 'timeout' in error_str.lower() or isinstance(e, TimeoutError):
                 # Обработка ошибок подключения к базе данных и таймаутов
                 flash('Сервис временно недоступен. Пожалуйста, попробуйте войти чуть позже.')
@@ -2816,33 +2800,26 @@ def swipe():
 
 @app.route('/users')
 @login_required
-@cache.cached(timeout=300)  # Cache for 5 minutes
 def users():
-    # Using cache to store user data
-    cache_key = f"users_{current_user.id}"
-    cached_users = cache.get(cache_key)
+    # Get all users except current user
+    db_users = UserModel.query.filter(UserModel.id != int(current_user.id)).all()
+    users_dict = {}
+    for user in db_users:
+        user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
+        user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+        users_dict[user.id] = {
+            'username': user.username,
+            'email': user.email,
+            'photo': user.photo,
+            'country': user.country,
+            'city': user.city,
+            'bio': user.bio,
+            'fetishes': user_fetishes,
+            'interests': user_interests,
+            'created_at': user.created_at.isoformat()
+        }
     
-    if cached_users is None:
-        db_users = UserModel.query.filter(UserModel.id != int(current_user.id)).all()
-        users_dict = {}
-        for user in db_users:
-            user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
-            user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
-            users_dict[user.id] = {
-                'username': user.username,
-                'email': user.email,
-                'photo': user.photo,
-                'country': user.country,
-                'city': user.city,
-                'bio': user.bio,
-                'fetishes': user_fetishes,
-                'interests': user_interests,
-                'created_at': user.created_at.isoformat()
-            }
-        cached_users = users_dict
-        cache.set(cache_key, cached_users, timeout=300)
-    
-    return render_template('users.html', users=cached_users)
+    return render_template('users.html', users=users_dict)
 
 # API routes for notifications
 @app.route('/api/notifications')
@@ -2995,11 +2972,12 @@ def ensure_db_connection():
         error_str = str(e)
         print(f"Database connection test failed: {e}")
         
-        # Check if it's an SSL-related error
-        if 'SSL connection has been closed unexpectedly' in error_str or \
+        # Check if it's an SSL-related error (only for PostgreSQL)
+        if 'postgresql' in str(db.engine.url).lower() and (
+           'SSL connection has been closed unexpectedly' in error_str or \
            'server closed the connection unexpectedly' in error_str or \
            'SSL SYSCALL error' in error_str or \
-           'connection is closed' in error_str:
+           'connection is closed' in error_str):
             print("Detected SSL connection issue, attempting reconnection...")
             try:
                 # Attempt to dispose and recreate the connection
@@ -3011,7 +2989,7 @@ def ensure_db_connection():
                 return False
         else:
             try:
-                # For other errors, attempt to dispose and recreate the connection
+                # For other errors or SQLite, attempt to dispose and recreate the connection
                 db.engine.dispose()
                 return True  # Return True to continue application, connection will be re-established on next use
             except Exception as dispose_error:
@@ -3031,20 +3009,22 @@ def create_tables():
                     # Create all tables
                     db.create_all()
                     
-                    # Check and add missing columns to user table
-                    inspector = db.inspect(db.engine)
-                    columns = [column['name'] for column in inspector.get_columns('user')]
-                    
-                    # List of columns to check and add if missing
-                    required_columns = [
-                        'about_me_video', 'relationship_goals', 'lifestyle', 'diet', 
-                        'smoking', 'drinking', 'occupation', 'education', 'children', 
-                        'pets', 'coins', 'match_by_city', 'match_by_country'
-                    ]
-                    
-                    for column in required_columns:
-                        if column not in columns:
-                            print(f"Column {column} is missing. Please run database migration.")
+                    # Skip column inspection for SQLite as it has limitations with ALTER TABLE
+                    if not str(db.engine.url).startswith('sqlite'):
+                        # Check and add missing columns to user table (only for PostgreSQL)
+                        inspector = db.inspect(db.engine)
+                        columns = [column['name'] for column in inspector.get_columns('user')]
+                        
+                        # List of columns to check and add if missing
+                        required_columns = [
+                            'about_me_video', 'relationship_goals', 'lifestyle', 'diet', 
+                            'smoking', 'drinking', 'occupation', 'education', 'children', 
+                            'pets', 'coins', 'match_by_city', 'match_by_country'
+                        ]
+                        
+                        for column in required_columns:
+                            if column not in columns:
+                                print(f"Column {column} is missing. Please run database migration.")
                     
                     print("Database tables created successfully!")
                     return True
@@ -3054,11 +3034,12 @@ def create_tables():
             retry_count += 1
             print(f"Error creating database tables (attempt {retry_count}/{max_retries}): {e}")
             
-            # Check if it's an SSL-related error
-            if 'SSL connection has been closed unexpectedly' in error_str or \
+            # Check if it's an SSL-related error (only relevant for PostgreSQL)
+            if 'postgresql' in str(db.engine.url).lower() and (
+               'SSL connection has been closed unexpectedly' in error_str or \
                'server closed the connection unexpectedly' in error_str or \
                'SSL SYSCALL error' in error_str or \
-               'connection is closed' in error_str:
+               'connection is closed' in error_str):
                 print("Detected SSL connection issue, attempting reconnection...")
                 try:
                     db.engine.dispose()
