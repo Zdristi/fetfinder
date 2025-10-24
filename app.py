@@ -2381,7 +2381,7 @@ def register():
                 'username': username,
                 'email': email,
                 'password': password,  # Will be hashed when creating the user
-                'is_first_user': UserModel.query.count() == 0  # Check if this will be the first user
+                'is_first_user': UserModel.query.first() is None  # Check if this will be the first user
             }
             
             # Вместо отправки email, сразу показываем код пользователю (для избежания таймаутов)
@@ -2451,7 +2451,7 @@ def verify_email():
             user.set_password(stored_data['password'])
             
             # Check if this is the first user (make them admin)
-            if stored_data.get('is_first_user', False) or UserModel.query.count() == 0:
+            if stored_data.get('is_first_user', False) or (UserModel.query.first() is None):
                 user.is_admin = True
             
             db.session.add(user)
