@@ -22,9 +22,9 @@ elif DATABASE_URL.startswith('mysql://'):
 if 'postgresql://' in DATABASE_URL and 'render.com' in DATABASE_URL:
     # For Render PostgreSQL, add SSL parameters with 'require' mode
     if '?' not in DATABASE_URL:
-        DATABASE_URL += "?sslmode=require&sslcert=cert.pem&sslkey=key.pem&sslrootcert=ca.pem"
+        DATABASE_URL += "?sslmode=require"
     else:
-        DATABASE_URL += "&sslmode=require&sslcert=cert.pem&sslkey=key.pem&sslrootcert=ca.pem"
+        DATABASE_URL += "&sslmode=require"
 
 # SQLAlchemy configuration
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
