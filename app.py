@@ -2440,8 +2440,8 @@ def verify_email():
             # Delete the code from temporary storage
             del confirmation_codes[email]
             
-            # Login the user and redirect
-            login_user(user)
+            # Login the user and redirect (with remember=True to persist session)
+            login_user(user, remember=True)
             flash(get_text('registration_success'))
             return redirect(url_for('edit_profile'))
     
@@ -2574,6 +2574,11 @@ def show_profile(user_id):
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
 def edit_profile():
+    # Проверяем, что пользователь аутентифицирован
+    if not current_user or not current_user.is_authenticated:
+        flash('You need to be logged in to edit your profile.')
+        return redirect(url_for('login'))
+    
     if request.method == 'POST':
         # Get form data
         country = request.form.get('country', '').strip()
