@@ -159,7 +159,7 @@ def send_confirmation_email(email, code):
         Команда FetDate
         """
         
-        # Отправка письма
+        # Отправка письма с таймаутом
         mail.send(msg)
         print(f"Код подтверждения отправлен на {email}: {code}")
         return True
@@ -2277,25 +2277,14 @@ def register():
             # Generate confirmation code
             confirmation_code = generate_confirmation_code()
             
-            # Создаем пользователя без новых полей до выполнения миграции базы данных
-            user = UserModel(
-                username=username,
-                email=email
-            )
-            user.set_password(password)
-            
-            # Check if this is the first user (make them admin)
-            if UserModel.query.count() == 0:
-                user.is_admin = True
-            
-            db.session.add(user)
-            db.session.commit()
-            
-            # Store the confirmation code in temporary storage
+            # Store the confirmation code in temporary storage - user will be created after verification
             confirmation_codes[email] = {
                 'code': confirmation_code,
                 'expires': datetime.now() + timedelta(hours=1),  # Код действителен 1 час
-                'user_id': user.id
+                'username': username,
+                'email': email,
+                'password': password,  # Will be hashed when creating the user
+                'is_first_user': UserModel.query.count() == 0  # Check if this will be the first user
             }
             
             # Попытка отправки письма подтверждения
@@ -2306,16 +2295,12 @@ def register():
                 return redirect(url_for('verify_email_page', email=email))
             else:
                 # Если письмо не отправлено, показываем код пользователю на странице подтверждения
-                flash('Регистрация прошла успешно, но возникли проблемы с отправкой письма. Пожалуйста, используйте код, отображенный на следующей странице.')
+                flash('Пожалуйста, используйте код подтверждения, отображенный ниже.')
                 return redirect(url_for('verify_email_page', email=email, code=confirmation_code))
                 
         except Exception as e:
-            db.session.rollback()
             error_str = str(e)
-            # Check if it's a duplicate email error (general check)
-            if 'UNIQUE constraint failed' in error_str and ('email' in error_str or 'username' in error_str):
-                flash(get_text('email_exists') or 'A user with this email already exists')
-            elif 'connection' in error_str.lower() or 'timeout' in error_str.lower() or isinstance(e, TimeoutError):
+            if 'connection' in error_str.lower() or 'timeout' in error_str.lower() or isinstance(e, TimeoutError):
                 # Обработка ошибок подключения к базе данных и таймаутов
                 flash('Сервис временно недоступен. Пожалуйста, попробуйте зарегистрироваться чуть позже.')
                 print(f"Database connection error or timeout during registration: {e}")
@@ -2357,16 +2342,35 @@ def verify_email():
         
         if code == stored_code and expires > datetime.utcnow():
             # Code is valid and not expired
-            # Find user by email
-            user = UserModel.query.filter_by(email=email).first()
-            if user:
+            # Check if user with this email already exists (to prevent multiple verifications)
+            existing_user = UserModel.query.filter_by(email=email).first()
+            if existing_user:
+                flash('Аккаунт с этой электронной почтой уже существует.')
                 # Delete the code from temporary storage
                 del confirmation_codes[email]
-                
-                # Login the user and redirect
-                login_user(user)
-                flash(get_text('registration_success'))
-                return redirect(url_for('edit_profile'))
+                return redirect(url_for('login'))
+            
+            # Create user after successful verification
+            user = UserModel(
+                username=stored_data['username'],
+                email=email
+            )
+            user.set_password(stored_data['password'])
+            
+            # Check if this is the first user (make them admin)
+            if stored_data.get('is_first_user', False) or UserModel.query.count() == 0:
+                user.is_admin = True
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            # Delete the code from temporary storage
+            del confirmation_codes[email]
+            
+            # Login the user and redirect
+            login_user(user)
+            flash(get_text('registration_success'))
+            return redirect(url_for('edit_profile'))
     
     flash('Неверный или просроченный код подтверждения.')
     return redirect(url_for('verify_email_page', email=email))
@@ -2378,19 +2382,23 @@ def resend_confirmation():
         flash('Неверный запрос.')
         return redirect(url_for('register'))
     
-    user = UserModel.query.filter_by(email=email).first()
-    if not user:
-        flash('Пользователь с таким email не найден.')
+    # Check if confirmation code exists for this email
+    if email not in confirmation_codes:
+        flash('Запрос на подтверждение не найден. Пожалуйста, зарегистрируйтесь снова.')
         return redirect(url_for('register'))
     
     # Generate new confirmation code
     new_code = generate_confirmation_code()
     
-    # Update temporary storage with new code
+    # Update temporary storage with new code, keeping other data
+    stored_data = confirmation_codes[email]
     confirmation_codes[email] = {
         'code': new_code,
         'expires': datetime.utcnow() + timedelta(hours=1),
-        'user_id': user.id
+        'username': stored_data['username'],
+        'email': stored_data['email'],
+        'password': stored_data['password'],
+        'is_first_user': stored_data['is_first_user']
     }
     
     # Send new confirmation email
