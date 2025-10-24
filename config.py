@@ -8,15 +8,8 @@ DEBUG = False if os.environ.get('FLASK_ENV') == 'production' else True
 import secrets
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your_fixed_secret_key_for_local_development_please_change_in_production_5a7b9c3d1e2f4a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3')
 
-# Database configuration - Default to SQLite
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///fetdate_local.db')
-
-# Handle PostgreSQL URL format for SQLAlchemy compatibility
-if DATABASE_URL.startswith('postgres://'):
-    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-elif DATABASE_URL.startswith('mysql://'):
-    # MySQL configuration for hosting
-    pass
+# Database configuration - Force SQLite regardless of environment
+DATABASE_URL = 'sqlite:///fetdate_local.db'
 
 # SQLAlchemy configuration
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
@@ -42,33 +35,13 @@ GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 HOST = '0.0.0.0'
 PORT = int(os.environ.get('PORT', 5000))
 
-# Engine options for SQLite vs PostgreSQL
-if DATABASE_URL.startswith('sqlite://'):
-    # SQLite options - no pooling needed for file-based database
-    DEFAULT_ENGINE_OPTIONS = {
-        'poolclass': None,  # No pooling for SQLite
-        'connect_args': {
-            'check_same_thread': False  # Required for Flask-SQLAlchemy with threading
-        }
+# Engine options for SQLite - no pooling needed for file-based database
+DEFAULT_ENGINE_OPTIONS = {
+    'poolclass': None,  # No pooling for SQLite
+    'connect_args': {
+        'check_same_thread': False  # Required for Flask-SQLAlchemy with threading
     }
-else:
-    # PostgreSQL options
-    DEFAULT_ENGINE_OPTIONS = {
-        'pool_size': 10,
-        'pool_recycle': 300,
-        'pool_pre_ping': True,
-        'pool_timeout': 30,
-        'max_overflow': 20,
-        'pool_reset_on_return': 'commit',
-        'connect_args': {
-            'connect_timeout': 30,
-            'sslmode': 'require',  # For Render PostgreSQL
-            'keepalives_idle': 300,
-            'keepalives_interval': 30,
-            'keepalives_count': 3,
-            'ssl_min_protocol_version': 'TLSv1.2'
-        }
-    }
+}
 
 # Export the engine options
 SQLALCHEMY_ENGINE_OPTIONS = DEFAULT_ENGINE_OPTIONS

@@ -49,8 +49,8 @@ app.config['CACHE_TYPE'] = 'simple'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes
 cache = Cache(app)
 
-# Configure SQLAlchemy - Default to SQLite
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///fetdate_local.db')
+# Configure SQLAlchemy - Force SQLite
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fetdate_local.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Import SQLAlchemy engine options from config
@@ -79,24 +79,12 @@ def before_request():
         try:
             db.session.execute(db.text('SELECT 1'))
         except Exception as e:
-            error_str = str(e)
-            # Check if it's an SSL-related error (only for PostgreSQL)
-            if 'postgresql' in str(db.engine.url).lower() and (
-               'SSL connection has been closed unexpectedly' in error_str or \
-               'server closed the connection unexpectedly' in error_str or \
-               'SSL SYSCALL error' in error_str or \
-               'connection is closed' in error_str):
-                print("Detected SSL connection issue in before_request, disposing connection...")
-                try:
-                    db.engine.dispose()
-                except Exception as dispose_error:
-                    print(f"Error disposing database connection in before_request: {dispose_error}")
-            else:
-                try:
-                    # For other errors or SQLite, dispose connection as well
-                    db.engine.dispose()
-                except Exception as dispose_error:
-                    print(f"Error disposing database connection in before_request: {dispose_error}")
+            print(f"Database connection error in before_request: {e}")
+            try:
+                # For SQLite, dispose connection as needed
+                db.engine.dispose()
+            except Exception as dispose_error:
+                print(f"Error disposing database connection in before_request: {dispose_error}")
 
 # Инициализация Flask-Mail
 mail = Mail(app)
@@ -2324,15 +2312,10 @@ def register():
         except Exception as e:
             db.session.rollback()
             error_str = str(e)
-            # Check if it's a duplicate email error
-            if 'duplicate key value violates unique constraint' in error_str and 'email' in error_str:
+            # Check if it's a duplicate email error (general check)
+            if 'UNIQUE constraint failed' in error_str and ('email' in error_str or 'username' in error_str):
                 flash(get_text('email_exists') or 'A user with this email already exists')
-            elif ('postgresql' in str(db.engine.url).lower() and (
-                 'SSL connection has been closed unexpectedly' in error_str or \
-                 'server closed the connection unexpectedly' in error_str or \
-                 'SSL SYSCALL error' in error_str or \
-                 'connection is closed' in error_str)) or \
-                 'connection' in error_str.lower() or 'timeout' in error_str.lower() or isinstance(e, TimeoutError):
+            elif 'connection' in error_str.lower() or 'timeout' in error_str.lower() or isinstance(e, TimeoutError):
                 # Обработка ошибок подключения к базе данных и таймаутов
                 flash('Сервис временно недоступен. Пожалуйста, попробуйте зарегистрироваться чуть позже.')
                 print(f"Database connection error or timeout during registration: {e}")
@@ -2445,12 +2428,7 @@ def login():
             return redirect(url_for('login'))
         except Exception as e:
             error_str = str(e)
-            if ('postgresql' in str(db.engine.url).lower() and (
-               'SSL connection has been closed unexpectedly' in error_str or \
-               'server closed the connection unexpectedly' in error_str or \
-               'SSL SYSCALL error' in error_str or \
-               'connection is closed' in error_str)) or \
-               'connection' in error_str.lower() or 'timeout' in error_str.lower() or isinstance(e, TimeoutError):
+            if 'connection' in error_str.lower() or 'timeout' in error_str.lower() or isinstance(e, TimeoutError):
                 # Обработка ошибок подключения к базе данных и таймаутов
                 flash('Сервис временно недоступен. Пожалуйста, попробуйте войти чуть позже.')
                 print(f"Database connection error or timeout during login: {e}")
@@ -2963,7 +2941,7 @@ def optimized_image(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 def ensure_db_connection():
-    """Ensure database connection is alive and working"""
+    """Ensure SQLite database connection is alive and working"""
     try:
         # Test the connection by executing a simple query
         db.session.execute(db.text('SELECT 1'))
@@ -2972,93 +2950,28 @@ def ensure_db_connection():
         error_str = str(e)
         print(f"Database connection test failed: {e}")
         
-        # Check if it's an SSL-related error (only for PostgreSQL)
-        if 'postgresql' in str(db.engine.url).lower() and (
-           'SSL connection has been closed unexpectedly' in error_str or \
-           'server closed the connection unexpectedly' in error_str or \
-           'SSL SYSCALL error' in error_str or \
-           'connection is closed' in error_str):
-            print("Detected SSL connection issue, attempting reconnection...")
-            try:
-                # Attempt to dispose and recreate the connection
-                db.engine.dispose()
-                print("Connection pool disposed, new connection will be created on next use")
-                return True
-            except Exception as dispose_error:
-                print(f"Error disposing database connection: {dispose_error}")
-                return False
-        else:
-            try:
-                # For other errors or SQLite, attempt to dispose and recreate the connection
-                db.engine.dispose()
-                return True  # Return True to continue application, connection will be re-established on next use
-            except Exception as dispose_error:
-                print(f"Error disposing database connection: {dispose_error}")
-                return False
+        try:
+            # For SQLite, attempt to dispose and recreate the connection
+            db.engine.dispose()
+            return True  # Return True to continue application, connection will be re-established on next use
+        except Exception as dispose_error:
+            print(f"Error disposing database connection: {dispose_error}")
+            return False
 
 def create_tables():
-    """Create database tables with connection check and retry logic"""
-    max_retries = 3
-    retry_count = 0
-    
-    while retry_count < max_retries:
-        try:
-            with app.app_context():
-                # Test connection first
-                if ensure_db_connection():
-                    # Create all tables
-                    db.create_all()
-                    
-                    # Skip column inspection for SQLite as it has limitations with ALTER TABLE
-                    if not str(db.engine.url).startswith('sqlite'):
-                        # Check and add missing columns to user table (only for PostgreSQL)
-                        inspector = db.inspect(db.engine)
-                        columns = [column['name'] for column in inspector.get_columns('user')]
-                        
-                        # List of columns to check and add if missing
-                        required_columns = [
-                            'about_me_video', 'relationship_goals', 'lifestyle', 'diet', 
-                            'smoking', 'drinking', 'occupation', 'education', 'children', 
-                            'pets', 'coins', 'match_by_city', 'match_by_country'
-                        ]
-                        
-                        for column in required_columns:
-                            if column not in columns:
-                                print(f"Column {column} is missing. Please run database migration.")
-                    
-                    print("Database tables created successfully!")
-                    return True
-                    
-        except Exception as e:
-            error_str = str(e)
-            retry_count += 1
-            print(f"Error creating database tables (attempt {retry_count}/{max_retries}): {e}")
+    """Create database tables for SQLite"""
+    try:
+        with app.app_context():
+            # Create all tables
+            db.create_all()
             
-            # Check if it's an SSL-related error (only relevant for PostgreSQL)
-            if 'postgresql' in str(db.engine.url).lower() and (
-               'SSL connection has been closed unexpectedly' in error_str or \
-               'server closed the connection unexpectedly' in error_str or \
-               'SSL SYSCALL error' in error_str or \
-               'connection is closed' in error_str):
-                print("Detected SSL connection issue, attempting reconnection...")
-                try:
-                    db.engine.dispose()
-                    print("Retrying in 10 seconds...")
-                    import time
-                    time.sleep(10)  # Wait before retrying
-                    continue
-                except Exception as dispose_error:
-                    print(f"Error disposing database connection: {dispose_error}")
-                    if retry_count >= max_retries:
-                        break
-            else:
-                import traceback
-                traceback.print_exc()
-                if retry_count >= max_retries:
-                    break
-    
-    if retry_count >= max_retries:
-        print("Max retries exceeded. Database tables creation failed.")
+            print("Database tables created successfully!")
+            return True
+            
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
+        import traceback
+        traceback.print_exc()
     
     print("Continuing application startup despite database issues...")
     print("Application will continue startup, but some features may be limited due to database issues...")
