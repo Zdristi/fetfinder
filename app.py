@@ -131,6 +131,20 @@ MATCHES_FILE = 'matches.json'
 # Temporary storage for confirmation codes (in production, use Redis or database)
 confirmation_codes = {}
 
+def cleanup_expired_confirmation_codes():
+    """Удаляет истекшие коды подтверждения из памяти"""
+    current_time = datetime.utcnow()
+    expired_emails = []
+    
+    for email, data in confirmation_codes.items():
+        if data['expires'] < current_time:
+            expired_emails.append(email)
+    
+    for email in expired_emails:
+        del confirmation_codes[email]
+    
+    return len(expired_emails)
+
 def generate_confirmation_code():
     """Генерирует 6-значный код подтверждения"""
     return ''.join(random.choices(string.digits, k=6))
@@ -2354,13 +2368,16 @@ def register():
                 flash(get_text('email_exists') or 'A user with this email already exists')
                 return render_template('register.html')
             
+            # Clean up expired confirmation codes to prevent memory buildup
+            cleanup_expired_confirmation_codes()
+            
             # Generate confirmation code
             confirmation_code = generate_confirmation_code()
             
             # Store the confirmation code in temporary storage - user will be created after verification
             confirmation_codes[email] = {
                 'code': confirmation_code,
-                'expires': datetime.now() + timedelta(hours=1),  # Код действителен 1 час
+                'expires': datetime.utcnow() + timedelta(hours=1),  # Код действителен 1 час
                 'username': username,
                 'email': email,
                 'password': password,  # Will be hashed when creating the user
@@ -2406,6 +2423,9 @@ def verify_email():
     if not email or not code:
         flash('Все поля обязательны для заполнения.')
         return redirect(url_for('verify_email_page', email=email))
+    
+    # Clean up expired confirmation codes to prevent memory buildup
+    cleanup_expired_confirmation_codes()
     
     # Check if code exists in temporary storage and is valid
     if email in confirmation_codes:
@@ -2454,6 +2474,9 @@ def resend_confirmation():
     if not email:
         flash('Неверный запрос.')
         return redirect(url_for('register'))
+    
+    # Clean up expired confirmation codes to prevent memory buildup
+    cleanup_expired_confirmation_codes()
     
     # Check if confirmation code exists for this email
     if email not in confirmation_codes:
