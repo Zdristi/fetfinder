@@ -2054,6 +2054,76 @@ def admin():
     users = UserModel.query.all()
     return render_template('admin.html', users=users)
 
+
+@app.route('/admin/chat_history/<int:user1_id>/<int:user2_id>')
+@login_required
+def admin_chat_history(user1_id, user2_id):
+    # Проверяем, является ли пользователь администратором
+    if not current_user.is_admin:
+        flash('Доступ запрещен. Требуются права администратора.')
+        return redirect(url_for('home'))
+    
+    # Получаем пользователей для отображения их имен
+    user1 = UserModel.query.get_or_404(user1_id)
+    user2 = UserModel.query.get_or_404(user2_id)
+    
+    # Получаем переписку между двумя пользователями (в обе стороны)
+    messages = Message.query.filter(
+        ((Message.sender_id == user1_id) & (Message.recipient_id == user2_id)) |
+        ((Message.sender_id == user2_id) & (Message.recipient_id == user1_id))
+    ).order_by(Message.timestamp).all()
+    
+    return render_template('admin_chat_history.html', 
+                          user1=user1, user2=user2, messages=messages)
+
+
+@app.route('/admin/chat_history')
+@login_required
+def admin_chat_history_list():
+    # Проверяем, является ли пользователь администратором
+    if not current_user.is_admin:
+        flash('Доступ запрещен. Требуются права администратора.')
+        return redirect(url_for('home'))
+    
+    # Получаем все уникальные пары пользователей, которые переписывались
+    chat_partners = db.session.query(
+        Message.sender_id, 
+        Message.recipient_id
+    ).distinct().filter(
+        (Message.sender_id != Message.recipient_id)
+    ).all()
+    
+    # Преобразуем в список уникальных пар
+    unique_pairs = set()
+    for sender_id, recipient_id in chat_partners:
+        # Сортируем ID, чтобы пара (A, B) и (B, A) считалась одинаковой
+        pair = tuple(sorted((sender_id, recipient_id)))
+        unique_pairs.add(pair)
+    
+    # Преобразуем ID в объекты пользователей
+    chat_data = []
+    for user1_id, user2_id in unique_pairs:
+        user1 = UserModel.query.get(user1_id)
+        user2 = UserModel.query.get(user2_id)
+        if user1 and user2:
+            # Получаем последнее сообщение для отображения в списке
+            last_message = Message.query.filter(
+                ((Message.sender_id == user1_id) & (Message.recipient_id == user2_id)) |
+                ((Message.sender_id == user2_id) & (Message.recipient_id == user1_id))
+            ).order_by(Message.timestamp.desc()).first()
+            
+            chat_data.append({
+                'user1': user1,
+                'user2': user2,
+                'last_message': last_message,
+                'message_count': Message.query.filter(
+                    ((Message.sender_id == user1_id) & (Message.recipient_id == user2_id)) |
+                    ((Message.sender_id == user2_id) & (Message.recipient_id == user1_id))
+                ).count()
+            })
+    
+    return render_template('admin_chat_list.html', chat_data=chat_data)
+
 @app.route('/admin_support_chat')
 @login_required
 def admin_support_chat():

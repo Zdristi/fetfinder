@@ -22,9 +22,12 @@
             </div>
         </div>
         
-        <div class="admin-quick-links" style="margin-bottom: 20px;">
+        <div class="admin-quick-links" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
             <a href="{{ url_for('admin_support_chat') }}" class="btn btn-primary">
                 <i class="fas fa-headset"></i> {{ get_text('admin_support_chat') }}
+            </a>
+            <a href="{{ url_for('admin_chat_history_list') }}" class="btn btn-info">
+                <i class="fas fa-comments"></i> Просмотр чатов
             </a>
         </div>
         
