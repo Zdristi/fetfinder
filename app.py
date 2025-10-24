@@ -44,9 +44,9 @@ app.config['SECRET_KEY'] = SECRET_KEY
 app.config['RECAPTCHA_PUBLIC_KEY'] = '6Lc6BhgUAAAAAAH5u7f8rXz8rXz8rXz8rXz8rXz8'
 app.config['RECAPTCHA_PRIVATE_KEY'] = '6Lc6BhgUAAAAAAH5u7f8rXz8rXz8rXz8rXz8rXz8'
 
-# Configure cache (using simple in-memory cache instead of Redis for local development)
-app.config['CACHE_TYPE'] = 'simple'
-app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes
+# Disable cache completely to save memory
+app.config['CACHE_TYPE'] = 'null'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 0
 cache = Cache(app)
 
 # Configure SQLAlchemy - Force SQLite
@@ -2551,9 +2551,9 @@ def show_profile(user_id):
     # Get the specified user
     user = UserModel.query.get_or_404(user_id)
     
-    # Get user's fetishes and interests
-    user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
-    user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+    # Get user's fetishes and interests in optimized way
+    user_fetishes = [f.name for f in Fetish.query.filter(Fetish.user_id == user.id).limit(50).all()]  # Limit to prevent memory issues
+    user_interests = [i.name for i in Interest.query.filter(Interest.user_id == user.id).limit(50).all()]  # Limit to prevent memory issues
     
     user_data = {
         'id': user.id,
@@ -2565,7 +2565,7 @@ def show_profile(user_id):
         'bio': user.bio,
         'fetishes': user_fetishes,
         'interests': user_interests,
-        'created_at': user.created_at.isoformat(),
+        'created_at': user.created_at.isoformat() if user.created_at else None,
         'is_premium': is_premium_user(user)
     }
     
@@ -2878,10 +2878,29 @@ def swipe():
 def users():
     # Get all users except current user
     db_users = UserModel.query.filter(UserModel.id != int(current_user.id)).all()
+    
+    # Optimize by getting all fetishes and interests at once, rather than N+1 queries
+    all_fetishes = Fetish.query.all()
+    all_interests = Interest.query.all()
+    
+    # Group fetishes and interests by user ID for efficient lookup
+    fetishes_by_user = {}
+    interests_by_user = {}
+    
+    for fetish in all_fetishes:
+        if fetish.user_id not in fetishes_by_user:
+            fetishes_by_user[fetish.user_id] = []
+        fetishes_by_user[fetish.user_id].append(fetish.name)
+    
+    for interest in all_interests:
+        if interest.user_id not in interests_by_user:
+            interests_by_user[interest.user_id] = []
+        interests_by_user[interest.user_id].append(interest.name)
+    
     users_dict = {}
     for user in db_users:
-        user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
-        user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+        user_fetishes = fetishes_by_user.get(user.id, [])
+        user_interests = interests_by_user.get(user.id, [])
         users_dict[user.id] = {
             'username': user.username,
             'email': user.email,
@@ -2891,7 +2910,7 @@ def users():
             'bio': user.bio,
             'fetishes': user_fetishes,
             'interests': user_interests,
-            'created_at': user.created_at.isoformat()
+            'created_at': user.created_at.isoformat() if user.created_at else None
         }
     
     return render_template('users.html', users=users_dict)
@@ -2915,6 +2934,40 @@ def api_notifications():
         })
     
     return jsonify(notifications_data)
+
+
+# API route for users data for swipe functionality
+@app.route('/api/users')
+@login_required
+def api_users():
+    """Return users data for swipe functionality - optimized for low memory usage"""
+    try:
+        # Get all users except current user with basic info only
+        # Limit to 50 users to prevent memory issues
+        db_users = UserModel.query.filter(
+            UserModel.id != int(current_user.id)
+        ).limit(50).all()
+        
+        # Create a lightweight representation of users data
+        users_list = []
+        for user in db_users:
+            # Only include essential information for swipe cards
+            user_data = {
+                'username': user.username,
+                'photo': user.photo,
+                'city': user.city,
+                'country': user.country,
+                'bio': user.bio[:100] if user.bio else '',  # Limit bio length
+            }
+            
+            # Add user to the list with their ID
+            users_list.append([user.id, user_data])
+        
+        return jsonify(users_list)
+    except Exception as e:
+        print(f"Error in api_users: {e}")
+        # Return empty list on error
+        return jsonify([])
 
 # Helper function to check if user is premium
 def is_premium_user(user):
@@ -2978,9 +3031,8 @@ def delete_photo(photo_id):
 
 
 @app.route('/optimized_image/<filename>')
-@cache.cached(timeout=86400)  # Cache for 24 hours
 def optimized_image(filename):
-    """Serve optimized images with WebP conversion when possible"""
+    """Serve optimized images with WebP conversion when possible (without caching to save memory)"""
     import os
     from PIL import Image
     import io
@@ -3007,13 +3059,18 @@ def optimized_image(filename):
             # Create optimized directory if it doesn't exist
             os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'optimized'), exist_ok=True)
             
-            # Optimize the image
+            # Optimize the image with lower quality to save memory
             img = img.convert('RGB')  # Convert to RGB if necessary
+            
+            # Resize large images to save memory
+            max_size = (800, 800)  # Reduce image size
+            img.thumbnail(max_size, Image.Resampling.LANCZOS)
+            
             output = io.BytesIO()
             
             if accept_webp:
-                # Save as WebP with optimization
-                img.save(output, format='WEBP', quality=80, optimize=True)
+                # Save as WebP with lower quality to save memory
+                img.save(output, format='WEBP', quality=60, optimize=True)  # Reduced quality from 80 to 60
                 output.seek(0)
                 
                 # Save optimized version for future requests
@@ -3023,8 +3080,8 @@ def optimized_image(filename):
                 output.seek(0)
                 return send_file(output, mimetype='image/webp')
             else:
-                # Save as JPEG with optimization
-                img.save(output, format='JPEG', quality=85, optimize=True)
+                # Save as JPEG with lower quality to save memory
+                img.save(output, format='JPEG', quality=70, optimize=True)  # Reduced quality from 85 to 70
                 output.seek(0)
                 
                 # Save optimized version for future requests
