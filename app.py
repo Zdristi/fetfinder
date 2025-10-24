@@ -2490,19 +2490,35 @@ def login():
         try:
             # Find user
             user = UserModel.query.filter_by(username=username).first()
-            if user and user.check_password(password):
-                # Check if user is blocked
-                if user.is_blocked:
-                    flash('Your account has been blocked')
-                    return redirect(url_for('login'))
+            
+            # Debug logging
+            if user:
+                print(f"User found: {user.username}")
+                print(f"Password hash: {user.password_hash}")
+                print(f"Trying to authenticate user with password: {'*' * len(password)}")
                 
-                # Log in the user with permanent session
-                login_user(user, remember=True)
-                return redirect(url_for('profile'))
+                # Check if password matches
+                password_match = user.check_password(password)
+                print(f"Password match result: {password_match}")
+                
+                if password_match:
+                    # Check if user is blocked
+                    if user.is_blocked:
+                        flash('Your account has been blocked')
+                        return redirect(url_for('login'))
+                    
+                    # Log in the user with permanent session
+                    login_user(user, remember=True)
+                    return redirect(url_for('profile'))
+                else:
+                    print(f"Password check failed for user: {username}")
+            else:
+                print(f"User not found: {username}")
             
             flash(get_text('invalid_credentials'))
             return redirect(url_for('login'))
         except Exception as e:
+            print(f"Exception during login: {e}")
             error_str = str(e)
             if 'connection' in error_str.lower() or 'timeout' in error_str.lower() or isinstance(e, TimeoutError):
                 # Обработка ошибок подключения к базе данных и таймаутов
