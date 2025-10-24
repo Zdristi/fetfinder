@@ -3078,42 +3078,50 @@ def optimized_image(filename):
     
     # Convert and optimize image
     try:
+        # Open and process image with lower memory usage
         with Image.open(original_path) as img:
             # Create optimized directory if it doesn't exist
             os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'optimized'), exist_ok=True)
             
-            # Optimize the image with lower quality to save memory
-            img = img.convert('RGB')  # Convert to RGB if necessary
+            # Convert to RGB if necessary but only if needed
+            if img.mode in ('RGBA', 'LA', 'P'):
+                img = img.convert('RGB')
             
-            # Resize large images to save memory
-            max_size = (800, 800)  # Reduce image size
+            # Significantly reduce image size to save memory - from 800x800 to 400x400
+            max_size = (400, 400)  # Reduced from 800 to 400 to save memory
+            img = img.copy()  # Copy to avoid potential issues with original image
             img.thumbnail(max_size, Image.Resampling.LANCZOS)
             
-            output = io.BytesIO()
+            # Save to a temporary file instead of BytesIO to reduce memory usage
+            temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'optimized', f'temp_{filename}')
             
             if accept_webp:
-                # Save as WebP with lower quality to save memory
-                img.save(output, format='WEBP', quality=60, optimize=True)  # Reduced quality from 80 to 60
-                output.seek(0)
-                
-                # Save optimized version for future requests
-                with open(optimized_path + '.webp', 'wb') as f:
-                    f.write(output.getvalue())
-                
-                output.seek(0)
-                return send_file(output, mimetype='image/webp')
+                # Save as WebP with much lower quality to save memory
+                img.save(temp_path, format='WEBP', quality=50, optimize=True)  # Reduced quality from 60 to 50
+                mimetype = 'image/webp'
             else:
-                # Save as JPEG with lower quality to save memory
-                img.save(output, format='JPEG', quality=70, optimize=True)  # Reduced quality from 85 to 70
-                output.seek(0)
-                
-                # Save optimized version for future requests
-                with open(optimized_path, 'wb') as f:
-                    f.write(output.getvalue())
-                
-                output.seek(0)
-                return send_file(output, mimetype='image/jpeg')
+                # Save as JPEG with much lower quality to save memory
+                img.save(temp_path, format='JPEG', quality=50, optimize=True)  # Reduced quality from 70 to 50
+                mimetype = 'image/jpeg'
+            
+            # Save optimized version for future requests
+            final_path = optimized_path if not accept_webp else optimized_path + '.webp'
+            if not os.path.exists(final_path):
+                import shutil
+                shutil.move(temp_path, final_path)
+            
+            return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], 'optimized'), 
+                                     os.path.basename(final_path))
+            
     except Exception as e:
+        # Clean up temp file if it was created
+        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'optimized', f'temp_{filename}')
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except:
+                pass  # Ignore error when trying to remove non-existent temp file
+        
         # If optimization fails, serve original image
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
