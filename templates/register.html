@@ -53,6 +53,17 @@
         </button>
     </form>
     
+    <!-- Google Sign-Up Button -->
+    {% if config.GOOGLE_CLIENT_ID %}
+    <div style="text-align: center; margin: 20px 0;">
+        <p style="color: var(--gray); margin-bottom: 15px;">{{ get_text('or_continue_with') or 'Or continue with' }}</p>
+        <a href="{{ url_for('google_login') }}" class="btn btn-outline" style="width: 100%; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid #ddd;">
+            <i class="fab fa-google" style="color: #DB4437;"></i>
+            {{ get_text('signup_with_google') or 'Sign up with Google' }}
+        </a>
+    </div>
+    {% endif %}
+    
     <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
         <p style="color: var(--gray);">
             {{ get_text('already_have_account') }} <a href="{{ url_for('login') }}">{{ get_text('login') }}</a>

@@ -1078,8 +1078,77 @@ input[type="file"].form-control {
   }
 }
 
-/* Enhanced mobile experience */
+/* Google Sign-In Button Styles */
+.btn-outline {
+  background: transparent;
+  border: 1px solid #ddd;
+  color: #333;
+  padding: 12px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-outline:hover {
+  background: #f8f9fa;
+  border-color: #ccc;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.btn-outline:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* Social login buttons */
+.social-login-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.social-login-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--gray);
+  margin: 20px 0;
+}
+
+.social-login-divider::before,
+.social-login-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.social-login-divider::before {
+  margin-right: 10px;
+}
+
+.social-login-divider::after {
+  margin-left: 10px;
+}
+
+/* Responsive adjustments for social buttons */
 @media (max-width: 768px) {
+  .btn-outline {
+    padding: 10px 15px;
+    font-size: 0.95rem;
+  }
+  
+  .social-login-buttons {
+    gap: 12px;
+  }
+}
   /* Improved header for mobile */
   .header-content {
     flex-direction: row;

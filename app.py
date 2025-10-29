@@ -3,10 +3,11 @@ import sys
 import time
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Загружаем переменные окружения из файла .env
+# Load environment variables from .env file
 from dotenv import load_dotenv
 load_dotenv()
 
+# Import required modules
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
@@ -17,13 +18,17 @@ from datetime import datetime, timedelta
 import uuid
 from werkzeug.utils import secure_filename
 import hashlib
-from models import db, User as UserModel, UserPhoto, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage, UserSwipe, Gift, UserGift
+from models import db, User as UserModel, UserPhoto, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage, UserSwipe, Gift, UserGift, UserTrack
 import hmac
 import hashlib
 import random
 import string
 import re
 import requests
+
+# Import OAuth libraries
+from authlib.integrations.flask_client import OAuth
+import secrets
 
 # Import configuration
 from config import config
@@ -81,6 +86,18 @@ def before_request():
 
 # Инициализация Flask-Mail
 mail = Mail(app)
+
+# Initialize OAuth
+oauth = OAuth(app)
+google = oauth.register(
+    name='google',
+    client_id=config.GOOGLE_CLIENT_ID,
+    client_secret=config.GOOGLE_CLIENT_SECRET,
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={
+        'scope': 'openid email profile'
+    }
+)
 
 # Create templates and static directories if they don't exist
 if not os.path.exists('templates'):
@@ -2426,6 +2443,86 @@ def with_timeout(seconds):
                 return result[0]
         return wrapper
     return decorator
+
+
+@app.route('/oauth/google')
+def google_login():
+    """Initiate Google OAuth login"""
+    redirect_uri = url_for('google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+
+@app.route('/oauth/google/callback')
+def google_callback():
+    """Handle Google OAuth callback"""
+    try:
+        # Get token from Google
+        token = google.authorize_access_token()
+        user_info = token.get('userinfo')
+        
+        if not user_info:
+            flash('Failed to get user information from Google')
+            return redirect(url_for('login'))
+        
+        # Extract user information
+        email = user_info.get('email')
+        name = user_info.get('name', email.split('@')[0] if email else 'User')
+        google_id = user_info.get('sub')  # Google user ID
+        
+        if not email:
+            flash('Email is required for registration')
+            return redirect(url_for('login'))
+        
+        # Check if user already exists
+        user = UserModel.query.filter_by(email=email).first()
+        
+        if user:
+            # User exists, log them in
+            login_user(user, remember=True)
+            flash(f'Welcome back, {user.first_name or user.username}!')
+            return redirect(url_for('profile'))
+        else:
+            # New user, create account
+            # Generate a unique username
+            base_username = email.split('@')[0]
+            username = base_username
+            counter = 1
+            
+            # Ensure username is unique
+            while UserModel.query.filter_by(username=username).first():
+                username = f"{base_username}_{counter}"
+                counter += 1
+            
+            # Create new user
+            user = UserModel(
+                username=username,
+                email=email,
+                first_name=name,
+                email_confirmed=True  # Google email is already verified
+            )
+            
+            # Set a random password for security (user won't know it)
+            import secrets
+            random_password = secrets.token_urlsafe(16)
+            user.set_password(random_password)
+            
+            # Set default location settings
+            user.match_by_city = False
+            user.match_by_country = True  # Default to country matching
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            # Log in the new user
+            login_user(user, remember=True)
+            flash(f'Welcome to FetDate, {user.first_name or user.username}! Please complete your profile.')
+            return redirect(url_for('edit_profile'))
+            
+    except Exception as e:
+        print(f"Error during Google OAuth: {e}")
+        flash('Authentication failed. Please try again.')
+        return redirect(url_for('login'))
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():

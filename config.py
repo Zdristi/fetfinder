@@ -39,9 +39,10 @@ class Config:
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("Warning: Email credentials not set in environment variables")
     
-    # Google OAuth (if you want to use it)
+    # Google OAuth configuration
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+    GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://localhost:5000/oauth/google/callback')
     
     # reCAPTCHA configuration
     RECAPTCHA_SITE_KEY = os.environ.get('RECAPTCHA_SITE_KEY')
