@@ -771,11 +771,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Global function for button clicks
 function swipe(action) {
-  console.log('Swipe action triggered by button:', action);
+  console.log('=== Swipe action triggered by button ===');
+  console.log('Action:', action);
+  console.log('Current swipe system:', window.swipeSystem);
   
   // Visual feedback on button click
   const button = event ? event.currentTarget : null;
   if (button) {
+    console.log('Button clicked:', button);
     button.style.transform = 'scale(0.9)';
     setTimeout(() => {
       button.style.transform = '';
@@ -784,54 +787,89 @@ function swipe(action) {
   
   // Perform the swipe if we have a current user
   if (window.swipeSystem && window.swipeSystem.currentUserId) {
+    console.log('Performing swipe for user:', window.swipeSystem.currentUserId);
     window.swipeSystem.performSwipe(action);
   } else {
     console.log('No current user to swipe on');
+    console.log('Current user ID:', window.swipeSystem ? window.swipeSystem.currentUserId : 'No swipe system');
+    
+    // Show error message to user
+    const errorMessage = document.createElement('div');
+    errorMessage.className = 'error-message';
+    errorMessage.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #dc3545;
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 10000;
+      font-weight: bold;
+    `;
+    errorMessage.textContent = 'Error: Cannot perform swipe action';
+    
+    document.body.appendChild(errorMessage);
+    
+    // Remove error message after 3 seconds
+    setTimeout(() => {
+      if (errorMessage.parentNode) {
+        errorMessage.remove();
+      }
+    }, 3000);
   }
 }
 
 // Superlike function
 function superlike() {
+  console.log('=== Superlike action triggered ===');
   swipe('superlike');
 }
 
 // Undo swipe function
 function undoSwipe() {
-  console.log('Undo swipe requested');
+  console.log('=== Undo swipe requested ===');
   // In a real implementation, this would connect to backend
-  alert('Undo swipe is a premium feature! Upgrade to premium to use this feature.');
+  const message = '{{ get_text("undo_swipe_premium") or "Undo swipe is a premium feature! Upgrade to premium to use this feature." }}';
+  alert(message);
 }
 
 // Message modal functions
 function openMessageModal() {
-  console.log('Opening message modal');
+  console.log('=== Opening message modal ===');
   const modal = document.getElementById('messageModal');
   if (modal) {
     modal.style.display = 'flex';
+  } else {
+    console.error('Message modal element not found');
   }
 }
 
 function closeMessageModal() {
-  console.log('Closing message modal');
+  console.log('=== Closing message modal ===');
   const modal = document.getElementById('messageModal');
   if (modal) {
     modal.style.display = 'none';
+  } else {
+    console.error('Message modal element not found');
   }
 }
 
 function sendMessageInsteadOfLike() {
-  console.log('Sending message instead of like');
+  console.log('=== Sending message instead of like ===');
   
   const messageInput = document.getElementById('messageInput');
-  const messageContent = messageInput.value.trim();
+  const messageContent = messageInput ? messageInput.value.trim() : '';
   
   if (!messageContent) {
-    alert('Please enter a message');
+    alert('{{ get_text("please_enter_message") or "Please enter a message" }}');
     return;
   }
   
   // In a real implementation, this would send the message to backend
-  alert('Message sent successfully!');
+  const successMessage = '{{ get_text("message_sent_successfully") or "Message sent successfully!" }}';
+  alert(successMessage);
   closeMessageModal();
   
   // Also perform like action
