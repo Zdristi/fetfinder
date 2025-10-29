@@ -268,3 +268,41 @@ class Rating(db.Model):
     
     def __repr__(self):
         return f'<Rating {self.rater_id}->{self.rated_user_id}: {self.stars} stars>'
+
+
+class Gift(db.Model):
+    __tablename__ = 'gift'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    price = db.Column(db.Integer, nullable=False)  # Цена в монетах
+    icon = db.Column(db.String(100), nullable=True)  # Иконка подарка
+    category = db.Column(db.String(50), nullable=True)  # Категория подарка
+    thumbnail_url = db.Column(db.String(200), nullable=True)  # URL миниатюры подарка
+    is_active = db.Column(db.Boolean, default=True)  # Активен ли подарок
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Gift {self.name}>'
+
+
+class UserGift(db.Model):
+    __tablename__ = 'user_gift'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кто отправляет подарок
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кому отправляют подарок
+    gift_id = db.Column(db.Integer, db.ForeignKey('gift.id'), nullable=False)  # Какой подарок
+    message = db.Column(db.Text)  # Сообщение к подарку
+    is_anonymous = db.Column(db.Boolean, default=False)  # Анонимный подарок
+    is_read = db.Column(db.Boolean, default=False)  # Прочитан ли подарок
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    sender = db.relationship('User', foreign_keys=[sender_id])
+    recipient = db.relationship('User', foreign_keys=[recipient_id])
+    gift = db.relationship('Gift')
+    
+    def __repr__(self):
+        return f'<UserGift from {self.sender_id} to {self.recipient_id}, gift: {self.gift_id}>'

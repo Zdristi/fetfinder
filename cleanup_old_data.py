@@ -61,10 +61,10 @@ def cleanup_all_user_related_data():
         
         for table in tables:
             if table_exists(cursor, table):
-                cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                cursor.execute("SELECT COUNT(*) FROM " + table.replace("'", "''"))
                 count = cursor.fetchone()[0]
                 
-                cursor.execute(f"DELETE FROM {table}")
+                cursor.execute("DELETE FROM " + table.replace("'", "''"))
                 print(f"Удалено {count} записей из таблицы {table}")
         
         conn.commit()
@@ -79,7 +79,7 @@ def cleanup_all_user_related_data():
 
 def table_exists(cursor, table_name):
     """Проверяет, существует ли таблица"""
-    cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
     return cursor.fetchone() is not None
 
 if __name__ == "__main__":

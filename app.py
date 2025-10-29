@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 import uuid
 from werkzeug.utils import secure_filename
 import hashlib
-from models import db, User as UserModel, UserPhoto, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage, UserSwipe
+from models import db, User as UserModel, UserPhoto, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage, UserSwipe, Gift, UserGift
 import hmac
 import hashlib
 import random
@@ -3638,6 +3638,87 @@ def api_match():
             response['matched_user_photo'] = matched_user.photo
     
     return jsonify(response)
+
+# Gift-related routes
+@app.route('/gifts')
+@login_required
+def gifts():
+    """Display available gifts and gift shop"""
+    # Get all active gifts
+    gifts = Gift.query.filter_by(is_active=True).all()
+    
+    # Get user's recent gifts
+    user_gifts_sent = UserGift.query.filter_by(sender_id=current_user.id).order_by(UserGift.timestamp.desc()).limit(10).all()
+    user_gifts_received = UserGift.query.filter_by(recipient_id=current_user.id).order_by(UserGift.timestamp.desc()).limit(10).all()
+    
+    return render_template('gifts.html', gifts=gifts, user_gifts_sent=user_gifts_sent, user_gifts_received=user_gifts_received)
+
+
+@app.route('/send_gift', methods=['POST'])
+@login_required
+def send_gift():
+    """Send a gift to another user"""
+    gift_id = request.form.get('gift_id')
+    recipient_id = request.form.get('recipient_id')
+    message = request.form.get('message', '')
+    is_anonymous = request.form.get('is_anonymous', False)
+    
+    # Validate input
+    if not gift_id or not recipient_id:
+        flash('Gift and recipient are required')
+        return redirect(url_for('gifts'))
+    
+    # Check if user has enough coins
+    gift = Gift.query.get(gift_id)
+    recipient = UserModel.query.get(recipient_id)
+    
+    if not gift or not recipient:
+        flash('Invalid gift or recipient')
+        return redirect(url_for('gifts'))
+    
+    if current_user.coins < gift.price:
+        flash('Not enough coins to send this gift')
+        return redirect(url_for('gifts'))
+    
+    # Deduct coins from sender
+    current_user.coins -= gift.price
+    
+    # Create user gift record
+    user_gift = UserGift(
+        sender_id=current_user.id,
+        recipient_id=recipient_id,
+        gift_id=gift_id,
+        message=message,
+        is_anonymous=is_anonymous
+    )
+    
+    db.session.add(user_gift)
+    db.session.commit()
+    
+    flash(f'Gift "{gift.name}" sent successfully!')
+    return redirect(url_for('gifts'))
+
+
+@app.route('/api/gifts')
+@login_required
+def api_gifts():
+    """API endpoint to get available gifts"""
+    gifts = Gift.query.filter_by(is_active=True).all()
+    
+    gifts_data = []
+    for gift in gifts:
+        gifts_data.append({
+            'id': gift.id,
+            'name': gift.name,
+            'description': gift.description,
+            'price': gift.price,
+            'icon': gift.icon,
+            'category': gift.category,
+            'thumbnail_url': gift.thumbnail_url
+        })
+    
+    return jsonify(gifts_data)
+
 
 def print_server_info():
     """Выводит информацию о том, к какому адресу привязан сервер"""
