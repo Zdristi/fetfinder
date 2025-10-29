@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 app = "fetfinder-ncuavg"
 
 [env]
@@ -28,3 +29,42 @@ app = "fetfinder-ncuavg"
 
 [build]
   dockerfile = "Dockerfile"
+=======
+app = "fetfinder-ncuavg"
+primary_region = 'fra'
+
+[env]
+  PORT = "8080"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+    interval = "10s"
+    grace_period = "5s"
+    restart_limit = 0
+    timeout = "2s"
+    method = "get"
+    path = "/"
+    protocol = "http"
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 2048
+>>>>>>> 47bc6ca41cca8c3d7465598155cfbeab258eb28c
