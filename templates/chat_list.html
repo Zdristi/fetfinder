@@ -16,12 +16,12 @@
                     <a href="{{ url_for('chat', recipient_id=chat_partner.user.id) }}" class="chat-link">
                         <div class="chat-avatar" {% if chat_partner.user.photo %}style="background-image: url('/static/uploads/{{ chat_partner.user.photo }}'); background-size: cover;"{% else %}style="background: linear-gradient(135deg, var(--primary), var(--secondary));"{% endif %}>
                             {% if not chat_partner.user.photo %}
-                                {{ chat_partner.user.username[0].upper() }}
+                                {{ (chat_partner.user.first_name or chat_partner.user.username)[0].upper() }}
                             {% endif %}
                         </div>
                         <div class="chat-info">
                             <div class="chat-user-info">
-                                <h3>{{ chat_partner.user.username }}</h3>
+                                <h3>{{ chat_partner.user.first_name or chat_partner.user.username }}</h3>
                                 {% if chat_partner.unread_count > 0 %}
                                     <span class="unread-badge">{{ chat_partner.unread_count }}</span>
                                 {% endif %}

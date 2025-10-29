@@ -118,7 +118,8 @@ class SwipeSystem {
     // Update user information - only update if elements exist
     const usernameElem = document.getElementById('username');
     if (usernameElem) {
-      usernameElem.textContent = user.username || 'Anonymous';
+      // Use first_name if available, otherwise fallback to username
+      usernameElem.textContent = user.first_name || user.username || 'Anonymous';
     } else {
       console.error('Username element not found');
     }

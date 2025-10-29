@@ -14,6 +14,13 @@
     
     <form method="POST" enctype="multipart/form-data" id="profileForm">
         <div class="form-group">
+            <label for="first_name" class="form-label">{{ get_text('name') or 'Name' }} *</label>
+            <input type="text" id="first_name" name="first_name" class="form-control" 
+                   value="{{ user.first_name or '' }}" 
+                   placeholder="{{ get_text('name') or 'Name' }}" required>
+        </div>
+        
+        <div class="form-group">
             <label for="bio" class="form-label">{{ get_text('bio') }} *</label>
             <textarea id="bio" name="bio" class="form-control" placeholder="{{ get_text('bio') }}" required>{{ user.bio or '' }}</textarea>
         </div>

@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}{{ user_data.username or 'Profile' }} - {{ SITE_NAME }}{% endblock %}
+{% block title %}{{ user_data.first_name or user_data.username or 'Profile' }} - {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
 <div class="card">
     <div class="profile-header">
         {% if user_data.photo %}
             <img src="{{ url_for('optimized_image', filename=user_data.photo) if user_data.photo and not user_data.photo.startswith('http') else user_data.photo }}" 
-                 alt="{{ user_data.username }}" class="profile-avatar" style="width: 100px; height: 100px; object-fit: cover;" loading="lazy">
+                 alt="{{ user_data.first_name or user_data.username }}" class="profile-avatar" style="width: 100px; height: 100px; object-fit: cover;" loading="lazy">
         {% else %}
             <div class="profile-avatar">
-                {{ user_data.username[0].upper() if user_data.username else '?' }}
+                {{ (user_data.first_name or user_data.username)[0].upper() if (user_data.first_name or user_data.username) else '?' }}
             </div>
         {% endif %}
         <div class="profile-info">
             <h1>
-                {{ user_data.username or 'Anonymous' }}
+                {{ user_data.first_name or user_data.username or 'Anonymous' }}
                 {% if user_data.is_premium %}
                     <span class="premium-badge" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 3px 8px; border-radius: 10px; font-size: 0.8rem; margin-left: 10px;">
                         <i class="fas fa-crown"></i> PREMIUM

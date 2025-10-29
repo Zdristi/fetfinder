@@ -2680,6 +2680,7 @@ def show_profile(user_id):
     user_data = {
         'id': user.id,
         'username': user.username,
+        'first_name': user.first_name,
         'email': user.email,
         'photo': user.photo,
         'country': user.country,
@@ -2748,6 +2749,7 @@ def edit_profile():
     
     if request.method == 'POST':
         # Get form data
+        first_name = request.form.get('first_name', '').strip()
         country = request.form.get('country', '').strip()
         city = request.form.get('city', '').strip()
         bio = request.form.get('bio', '').strip()
@@ -2755,11 +2757,35 @@ def edit_profile():
         # Validate required fields for new users (empty profile)
         is_new_user = not current_user.country and not current_user.city  # If both are empty, assume new user
         if is_new_user:
+            if not first_name:
+                flash('Name is required')
+                # Create minimal user_data for error cases
+                user_data = {
+                    'username': current_user.username,
+                    'first_name': current_user.first_name,
+                    'email': current_user.email,
+                    'photo': current_user.photo,
+                    'country': current_user.country,
+                    'city': current_user.city,
+                    'bio': current_user.bio,
+                    'fetishes': [],
+                    'interests': [],
+                    'created_at': current_user.created_at.isoformat(),
+                    'is_premium': is_premium_user(current_user),
+                    'user_photos': []
+                }
+                
+                # Get user's additional photos
+                user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
+                user_data['user_photos'] = user_photos
+                
+                return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
             if not country:
                 flash('Country is required')
                 # Create minimal user_data for error cases
                 user_data = {
                     'username': current_user.username,
+                    'first_name': current_user.first_name,
                     'email': current_user.email,
                     'photo': current_user.photo,
                     'country': current_user.country,
@@ -2782,6 +2808,7 @@ def edit_profile():
                 # Create minimal user_data for error cases
                 user_data = {
                     'username': current_user.username,
+                    'first_name': current_user.first_name,
                     'email': current_user.email,
                     'photo': current_user.photo,
                     'country': current_user.country,
@@ -2804,6 +2831,7 @@ def edit_profile():
                 # Create minimal user_data for error cases
                 user_data = {
                     'username': current_user.username,
+                    'first_name': current_user.first_name,
                     'email': current_user.email,
                     'photo': current_user.photo,
                     'country': current_user.country,
@@ -2823,6 +2851,7 @@ def edit_profile():
                 return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
         
         # Update user profile information
+        current_user.first_name = first_name
         current_user.country = country
         current_user.city = city
         current_user.bio = bio
@@ -2952,6 +2981,7 @@ def edit_profile():
         
     user_data = {
         'username': current_user.username,
+        'first_name': current_user.first_name,
         'email': current_user.email,
         'photo': current_user.photo,
         'country': current_user.country,
@@ -3449,6 +3479,7 @@ def api_user_info(user_id):
     user_data = {
         'id': user.id,
         'username': user.username,
+        'first_name': user.first_name,
         'email': user.email,
         'photo': user.photo,
         'country': user.country,
@@ -3461,6 +3492,29 @@ def api_user_info(user_id):
     }
     
     return jsonify(user_data)
+
+
+@app.route('/api/rating/<int:user_id>')
+@login_required
+def api_get_rating(user_id):
+    """API endpoint to get user rating"""
+    user = UserModel.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Calculate average rating
+    ratings = Rating.query.filter_by(rated_user_id=user.id).all()
+    if ratings:
+        avg_rating = sum(r.stars for r in ratings) / len(ratings)
+        return jsonify({
+            'avg_rating': avg_rating,
+            'total_ratings': len(ratings)
+        })
+    else:
+        return jsonify({
+            'avg_rating': 0,
+            'total_ratings': 0
+        })
 
 @app.route('/api/send_message', methods=['POST'])
 @login_required

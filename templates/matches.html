@@ -16,11 +16,11 @@
                     <div class="match-card-content">
                         <div class="match-avatar" {% if match.user.photo %}style="background-image: url('/static/uploads/{{ match.user.photo }}'); background-size: cover;"{% else %}style="background: linear-gradient(135deg, var(--primary), var(--secondary));"{% endif %}>
                             {% if not match.user.photo %}
-                                {{ match.user.username[0].upper() }}
+                                {{ (match.user.first_name or match.user.username)[0].upper() }}
                             {% endif %}
                         </div>
                         <div class="match-info">
-                            <h3><a href="{{ url_for('show_profile', user_id=match.user.id) }}" style="text-decoration: none; color: inherit;">{{ match.user.username }}</a></h3>
+                            <h3><a href="{{ url_for('show_profile', user_id=match.user.id) }}" style="text-decoration: none; color: inherit;">{{ match.user.first_name or match.user.username }}</a></h3>
                             <div class="user-rating">
                                 <!-- Звездочки рейтинга -->
                                 <span class="rating-stars"></span>
