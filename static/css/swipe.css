@@ -577,10 +577,65 @@
   }
 }
 
-/* Card animations */
-.swipe-right {
-  transform: translateX(150vw) rotate(20deg) !important;
-  opacity: 0;
+/* Music player styles */
+#musicSection {
+  margin-top: 15px;
+  padding: 15px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 15px;
+  border: 1px solid var(--border-color);
+}
+
+.user-track-item {
+  padding: 10px;
+  margin: 5px 0;
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.user-track-item:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.play-track-btn {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+}
+
+#userTrackPlayer {
+  width: 100%;
+  margin-top: 10px;
+}
+
+#nowPlayingTrack {
+  margin-top: 5px;
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--text-color);
+}
+
+/* Mobile-specific music player adjustments */
+@media (max-width: 768px) {
+  #musicSection {
+    padding: 10px;
+    margin-top: 10px;
+  }
+  
+  .user-track-item {
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+  
+  .play-track-btn {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+  
+  #userTrackPlayer {
+    height: 30px;
+  }
 }
 
 .swipe-left {

@@ -245,9 +245,110 @@ class SwipeSystem {
       console.error('Tags container element not found');
     }
     
+    // Load and display user's music tracks
+    this.loadUserTracks(user.id);
+    
     // Store current user ID
     this.currentUserId = user.id;
     console.log('Current user ID set to:', this.currentUserId);
+  }
+  
+  loadUserTracks(userId) {
+    console.log('Loading music tracks for user:', userId);
+    
+    // Fetch user's tracks
+    fetch(`/api/tracks/${userId}`)
+      .then(response => response.json())
+      .then(tracks => {
+        console.log('User tracks loaded:', tracks);
+        
+        const musicSection = document.getElementById('musicSection');
+        const tracksList = document.getElementById('userTracksList');
+        const audioPlayer = document.getElementById('userTrackPlayer');
+        
+        if (tracks && tracks.length > 0 && musicSection && tracksList) {
+          // Show music section
+          musicSection.style.display = 'block';
+          
+          // Display tracks
+          tracksList.innerHTML = '';
+          
+          tracks.slice(0, 3).forEach(track => { // Limit to 3 tracks
+            const trackDiv = document.createElement('div');
+            trackDiv.className = 'user-track-item';
+            trackDiv.style.cssText = 'padding: 8px; margin: 5px 0; background: rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; transition: background-color 0.3s;';
+            trackDiv.innerHTML = `
+              <div style="display: flex; align-items: center;">
+                <div style="margin-right: 10px; color: var(--primary);">
+                  <i class="fas fa-music"></i>
+                </div>
+                <div style="flex-grow: 1;">
+                  <div style="font-weight: bold; font-size: 0.9rem;">${track.title}</div>
+                  ${track.artist ? `<div style="font-size: 0.8rem; color: var(--gray);">${track.artist}</div>` : ''}
+                </div>
+                <div style="margin-left: 10px;">
+                  <button class="btn btn-sm play-track-btn" data-track-id="${track.id}" style="padding: 5px 10px; font-size: 0.8rem;">
+                    <i class="fas fa-play"></i>
+                  </button>
+                </div>
+              </div>
+            `;
+            
+            // Add click event to play button
+            const playButton = trackDiv.querySelector('.play-track-btn');
+            playButton.addEventListener('click', (e) => {
+              e.stopPropagation();
+              this.playUserTrack(track.id, track.title, track.artist);
+            });
+            
+            tracksList.appendChild(trackDiv);
+          });
+        } else if (musicSection) {
+          // Hide music section if no tracks
+          musicSection.style.display = 'none';
+        }
+      })
+      .catch(error => {
+        console.error('Error loading user tracks:', error);
+      });
+  }
+  
+  playUserTrack(trackId, trackTitle, trackArtist) {
+    console.log('Playing user track:', trackId);
+    
+    const audioPlayer = document.getElementById('userTrackPlayer');
+    const nowPlaying = document.getElementById('nowPlayingTrack');
+    
+    if (audioPlayer && nowPlaying) {
+      // Increment play count
+      fetch(`/api/track/${trackId}/play`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            console.log('Play count updated:', data.play_count);
+          }
+        })
+        .catch(error => {
+          console.error('Error updating play count:', error);
+        });
+      
+      // Show and play track
+      audioPlayer.style.display = 'block';
+      nowPlaying.style.display = 'block';
+      nowPlaying.textContent = `${trackTitle}${trackArtist ? ' - ' + trackArtist : ''}`;
+      
+      // Set track source (this would need to be implemented in the backend)
+      audioPlayer.src = `/tracks/${trackId}`;
+      audioPlayer.play()
+        .then(() => {
+          console.log('Track playback started');
+        })
+        .catch(error => {
+          console.error('Error playing track:', error);
+          // Show error message
+          alert('{{ get_text("error_playing_track") or "Error playing track" }}');
+        });
+    }
   }
   
   setupEventListeners() {

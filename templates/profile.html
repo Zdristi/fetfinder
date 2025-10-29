@@ -87,6 +87,202 @@
     {% else %}
         <p>{{ get_text('no_interests') }}</p>
     {% endif %}
+    
+    <!-- Music section -->
+    <div class="section-title" id="musicSection" style="display: none;">
+        <h2 class="section-title-text"><i class="fas fa-music"></i> {{ get_text('music') or 'Music' }}</h2>
+    </div>
+    
+    <div id="musicPlayerContainer" style="display: none; margin-top: 20px; padding: 20px; background: var(--card-bg); border-radius: 15px; border: 1px solid var(--border-color);">
+        <h3>{{ get_text('my_tracks') or 'My Tracks' }}</h3>
+        <div id="tracksList" style="margin-top: 15px;">
+            <!-- Tracks will be loaded here via JavaScript -->
+        </div>
+        
+        <!-- Audio player -->
+        <div id="audioPlayer" style="margin-top: 20px; display: none;">
+            <audio id="trackPlayer" controls style="width: 100%;">
+                Your browser does not support the audio element.
+            </audio>
+            <div id="nowPlaying" style="margin-top: 10px; text-align: center; font-weight: bold;"></div>
+        </div>
+        
+        <!-- Upload form for owner -->
+        {% if current_user and current_user.is_authenticated and current_user.id == user_data.id %}
+        <div id="uploadMusicForm" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <h3>{{ get_text('upload_music') or 'Upload Music' }}</h3>
+            <form id="trackUploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="trackFile">{{ get_text('select_track') or 'Select Track' }}:</label>
+                    <input type="file" id="trackFile" name="track" accept="audio/*" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="trackTitle">{{ get_text('track_title') or 'Track Title' }}:</label>
+                    <input type="text" id="trackTitle" name="title" class="form-control" placeholder="{{ get_text('enter_track_title') or 'Enter track title' }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="trackArtist">{{ get_text('artist') or 'Artist' }}:</label>
+                    <input type="text" id="trackArtist" name="artist" class="form-control" placeholder="{{ get_text('enter_artist_name') or 'Enter artist name' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="isPublic" name="is_public" value="1" checked>
+                        {{ get_text('public_track') or 'Make track public' }}
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-success">{{ get_text('upload') or 'Upload' }}</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
 </div>
 
+<script>
+// Load user tracks when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const userId = {{ user_data.id }};
+    
+    // Load user tracks
+    fetch(`/api/tracks/${userId}`)
+        .then(response => response.json())
+        .then(tracks => {
+            if (tracks && tracks.length > 0) {
+                // Show music section
+                document.getElementById('musicSection').style.display = 'block';
+                document.getElementById('musicPlayerContainer').style.display = 'block';
+                
+                // Display tracks
+                const tracksList = document.getElementById('tracksList');
+                tracksList.innerHTML = '';
+                
+                tracks.forEach(track => {
+                    const trackDiv = document.createElement('div');
+                    trackDiv.className = 'track-item';
+                    trackDiv.style.cssText = 'padding: 10px; margin: 5px 0; background: var(--bg-color); border-radius: 8px; cursor: pointer; transition: background-color 0.3s;';
+                    trackDiv.innerHTML = `
+                        <div style="display: flex; align-items: center;">
+                            <div style="margin-right: 10px;">
+                                <i class="fas fa-music" style="color: var(--primary);"></i>
+                            </div>
+                            <div style="flex-grow: 1;">
+                                <div style="font-weight: bold;">${track.title}</div>
+                                ${track.artist ? `<div style="font-size: 0.9rem; color: var(--gray);">${track.artist}</div>` : ''}
+                                <div style="font-size: 0.8rem; color: var(--gray);">plays: ${track.play_count}</div>
+                            </div>
+                            <div style="margin-left: 10px;">
+                                <button class="btn btn-sm btn-outline play-track-btn" data-track-id="${track.id}" data-track-title="${track.title}" data-track-artist="${track.artist || ''}">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    tracksList.appendChild(trackDiv);
+                });
+                
+                // Add event listeners to play buttons
+                document.querySelectorAll('.play-track-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const trackId = this.dataset.trackId;
+                        const trackTitle = this.dataset.trackTitle;
+                        const trackArtist = this.dataset.trackArtist;
+                        
+                        playTrack(trackId, trackTitle, trackArtist);
+                    });
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tracks:', error);
+        });
+    
+    // Handle track upload for owner
+    {% if current_user and current_user.is_authenticated and current_user.id == user_data.id %}
+    const uploadForm = document.getElementById('trackUploadForm');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const trackFile = document.getElementById('trackFile').files[0];
+            const title = document.getElementById('trackTitle').value;
+            const artist = document.getElementById('trackArtist').value;
+            const isPublic = document.getElementById('isPublic').checked ? 1 : 0;
+            
+            if (!trackFile) {
+                alert('{{ get_text("please_select_track") or "Please select a track file" }}');
+                return;
+            }
+            
+            formData.append('track', trackFile);
+            formData.append('title', title);
+            formData.append('artist', artist);
+            formData.append('is_public', isPublic);
+            
+            fetch('/upload_track', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('{{ get_text("track_uploaded_successfully") or "Track uploaded successfully!" }}');
+                    // Reload page to show new track
+                    location.reload();
+                } else {
+                    alert('{{ get_text("error_uploading_track") or "Error uploading track" }}: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('{{ get_text("error_uploading_track") or "Error uploading track" }}');
+            });
+        });
+    }
+    {% endif %}
+});
+
+// Play track function
+function playTrack(trackId, trackTitle, trackArtist) {
+    // Increment play count
+    fetch(`/api/track/${trackId}/play`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Update play count display
+                const playCountElement = document.querySelector(`[data-track-id="${trackId}"]`).closest('.track-item').querySelector('[style*="plays"]');
+                if (playCountElement) {
+                    playCountElement.textContent = `plays: ${data.play_count}`;
+                }
+            }
+        })
+        .catch(error => console.error('Error updating play count:', error));
+    
+    // Show audio player
+    const audioPlayer = document.getElementById('audioPlayer');
+    const trackPlayer = document.getElementById('trackPlayer');
+    const nowPlaying = document.getElementById('nowPlaying');
+    
+    if (audioPlayer && trackPlayer) {
+        audioPlayer.style.display = 'block';
+        trackPlayer.src = `/tracks/${trackId}`; // This would need to be implemented
+        nowPlaying.textContent = `${trackTitle}${trackArtist ? ' - ' + trackArtist : ''}`;
+        trackPlayer.play();
+    }
+}
+</script>
+
+<style>
+.track-item:hover {
+    background-color: var(--bg-color) !important;
+}
+
+.track-item.playing {
+    background-color: rgba(102, 126, 234, 0.1) !important;
+    border-left: 3px solid var(--primary);
+}
+</style>
 {% endblock %}

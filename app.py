@@ -3732,6 +3732,156 @@ def api_gifts():
     return jsonify(gifts_data)
 
 
+# Music-related routes
+@app.route('/upload_track', methods=['POST'])
+@login_required
+def upload_track():
+    """Upload a music track to user's profile"""
+    try:
+        if 'track' not in request.files:
+            return jsonify({'status': 'error', 'message': 'No track file provided'}), 400
+        
+        track_file = request.files['track']
+        if track_file.filename == '':
+            return jsonify({'status': 'error', 'message': 'No track selected'}), 400
+        
+        # Check if file is audio
+        allowed_extensions = {'.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac'}
+        file_ext = os.path.splitext(track_file.filename)[1].lower()
+        if file_ext not in allowed_extensions:
+            return jsonify({'status': 'error', 'message': 'Invalid file type. Supported: MP3, WAV, OGG, FLAC, M4A, AAC'}), 400
+        
+        # Create uploads directory for tracks if it doesn't exist
+        tracks_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'tracks')
+        if not os.path.exists(tracks_upload_dir):
+            os.makedirs(tracks_upload_dir)
+        
+        # Generate unique filename
+        filename = f"{uuid.uuid4().hex}{file_ext}"
+        filepath = os.path.join(tracks_upload_dir, filename)
+        
+        # Save file
+        track_file.save(filepath)
+        
+        # Get track metadata (title, artist, duration)
+        title = request.form.get('title', 'Untitled Track')
+        artist = request.form.get('artist', '')
+        is_public = request.form.get('is_public', True)
+        
+        # Create track record
+        from models import UserTrack
+        user_track = UserTrack(
+            user_id=current_user.id,
+            title=title,
+            artist=artist,
+            file_path=os.path.join('tracks', filename),
+            is_public=is_public
+        )
+        
+        db.session.add(user_track)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success', 
+            'message': 'Track uploaded successfully',
+            'track': {
+                'id': user_track.id,
+                'title': user_track.title,
+                'artist': user_track.artist,
+                'duration': user_track.duration,
+                'is_public': user_track.is_public,
+                'upload_date': user_track.upload_date.isoformat()
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error uploading track: {e}")
+        return jsonify({'status': 'error', 'message': 'Error uploading track'}), 500
+
+
+@app.route('/api/tracks/<int:user_id>')
+@login_required
+def api_user_tracks(user_id):
+    """Get user's music tracks"""
+    try:
+        from models import UserTrack
+        
+        # Get user's public tracks
+        tracks = UserTrack.query.filter_by(
+            user_id=user_id,
+            is_public=True
+        ).order_by(UserTrack.upload_date.desc()).all()
+        
+        tracks_data = []
+        for track in tracks:
+            tracks_data.append({
+                'id': track.id,
+                'title': track.title,
+                'artist': track.artist,
+                'duration': track.duration,
+                'upload_date': track.upload_date.isoformat() if track.upload_date else None,
+                'play_count': track.play_count
+            })
+        
+        return jsonify(tracks_data)
+        
+    except Exception as e:
+        print(f"Error getting user tracks: {e}")
+        return jsonify([])
+
+
+@app.route('/api/track/<int:track_id>/play')
+@login_required
+def play_track(track_id):
+    """Increment play count for a track"""
+    try:
+        from models import UserTrack
+        
+        track = UserTrack.query.get(track_id)
+        if not track:
+            return jsonify({'status': 'error', 'message': 'Track not found'}), 404
+        
+        # Increment play count
+        track.play_count += 1
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'play_count': track.play_count})
+        
+    except Exception as e:
+        print(f"Error playing track: {e}")
+        return jsonify({'status': 'error', 'message': 'Error playing track'}), 500
+
+
+@app.route('/tracks/<int:track_id>')
+@login_required
+def serve_track(track_id):
+    """Serve track files"""
+    try:
+        from models import UserTrack
+        
+        # Get track info
+        track = UserTrack.query.get(track_id)
+        if not track:
+            return jsonify({'status': 'error', 'message': 'Track not found'}), 404
+        
+        # Check if track is public or user has permission to access it
+        if not track.is_public and track.user_id != current_user.id:
+            # Check if current user is premium or has permission
+            if not current_user.is_premium:
+                return jsonify({'status': 'error', 'message': 'Access denied'}), 403
+        
+        tracks_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'tracks')
+        track_path = os.path.join(tracks_dir, os.path.basename(track.file_path))
+        
+        if not os.path.exists(track_path):
+            return jsonify({'status': 'error', 'message': 'Track file not found'}), 404
+        
+        return send_from_directory(tracks_dir, os.path.basename(track.file_path))
+    except Exception as e:
+        print(f"Error serving track: {e}")
+        return jsonify({'status': 'error', 'message': 'Track not found'}), 404
+
+
 def print_server_info():
     """Выводит информацию о том, к какому адресу привязан сервер"""
     port = int(os.environ.get('PORT', 5000))

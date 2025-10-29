@@ -55,6 +55,7 @@ class User(UserMixin, db.Model):
     # Relationships
     fetishes = db.relationship('Fetish', backref='user', lazy=True, cascade='all, delete-orphan')
     interests = db.relationship('Interest', backref='user', lazy=True, cascade='all, delete-orphan')
+    tracks = db.relationship('UserTrack', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
         """Set user password using secure password hashing"""
@@ -306,3 +307,23 @@ class UserGift(db.Model):
     
     def __repr__(self):
         return f'<UserGift from {self.sender_id} to {self.recipient_id}, gift: {self.gift_id}>'
+
+
+class UserTrack(db.Model):
+    __tablename__ = 'user_track'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)  # Название трека
+    artist = db.Column(db.String(200), nullable=True)  # Исполнитель
+    file_path = db.Column(db.String(300), nullable=False)  # Путь к файлу
+    duration = db.Column(db.Integer, nullable=True)  # Длительность в секундах
+    is_public = db.Column(db.Boolean, default=True)  # Публичный трек
+    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
+    play_count = db.Column(db.Integer, default=0)  # Количество прослушиваний
+    
+    # Relationships
+    user = db.relationship('User', backref='tracks')
+    
+    def __repr__(self):
+        return f'<UserTrack {self.title} by {self.artist}>'

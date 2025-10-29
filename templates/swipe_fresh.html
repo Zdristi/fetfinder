@@ -22,6 +22,14 @@
                         <p id="location"></p>
                         <p id="bio"></p>
                         <div id="tags" class="tags-container"></div>
+                        
+                        <!-- Music player for user tracks -->
+                        <div id="musicSection" style="display: none; margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 10px;">
+                            <h4 style="margin: 0 0 10px 0; font-size: 1rem;"><i class="fas fa-music"></i> {{ get_text('user_music') or 'User Music' }}</h4>
+                            <div id="userTracksList" style="margin-bottom: 10px;"></div>
+                            <audio id="userTrackPlayer" controls style="width: 100%; display: none;"></audio>
+                            <div id="nowPlayingTrack" style="margin-top: 5px; font-size: 0.8rem; text-align: center; display: none;"></div>
+                        </div>
                     </div>
                 </div>
                 
