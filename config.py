@@ -1,4 +1,4 @@
-# Configuration file for Render
+# Configuration file for local development
 import os
 
 # Enable debug mode for development

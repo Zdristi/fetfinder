@@ -1,44 +1,24 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
 
-# Установка переменных окружения
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    FLASK_APP=app.py \
-    FLASK_ENV=production
-
-# Установка рабочей директории
 WORKDIR /app
 
-# Установка зависимостей системы
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        build-essential \
-        libpq-dev \
-        gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Копирование зависимостей Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-# Ensure gunicorn is installed as it's required for the CMD instruction
-RUN pip install --no-cache-dir gunicorn
 
-# Копирование исходного кода
 COPY . .
 
-# Создание необходимых директорий
-RUN mkdir -p static/uploads
+# Создаем директорию для загрузок и базы данных
+RUN mkdir -p /app/uploads /app/uploads/optimized
+RUN touch /app/fetdate_production.db
 
-# Установка прав доступа
-RUN chmod +x /app
+EXPOSE 8080
 
-# Создание пользователя для безопасности
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
-USER app
+# Устанавливаем переменные окружения для production
+ENV DATABASE_URL=sqlite:////app/fetdate_production.db
+ENV UPLOAD_FOLDER=/app/uploads
 
-# Открытие порта
-EXPOSE 5000
+# Создаем скрипт запуска для корректного запуска приложения с логгированием ошибок
+RUN echo '#!/bin/bash\n\necho "Starting application setup..."\npython -c "from app import app; app.app_context().push(); from models import db; db.create_all(); print(\\\"Database setup completed\\\")" 2>&1 | tee -a /app/startup.log || echo "Database setup completed with potential issues"\n\necho "Starting WSGI application..."\ngunicorn --bind 0.0.0.0:8080 --workers 1 --timeout 120 --chdir /app wsgi:app 2>&1 | tee -a /app/gunicorn.log' > /start.sh
+RUN chmod +x /start.sh
 
-# Команда запуска
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "app:app"]
+CMD ["/start.sh"]

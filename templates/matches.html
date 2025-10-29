@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Your Matches - {{ SITE_NAME }}{% endblock %}
+{% block title %}{{ get_text('matches') }} - {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="card">
         <div class="card-header">
-            <h1 class="card-title">Your Chat</h1>
+            <h1 class="card-title">{{ get_text('mutual_matches') }}</h1>
         </div>
         
         {% if matches %}
@@ -38,11 +38,11 @@
                                 </p>
                             {% endif %}
                             {% if match.unread_count > 0 %}
-                                <span class="unread-badge">{{ match.unread_count }} unread</span>
+                                <span class="unread-badge">{{ match.unread_count }} {{ get_text('unread_messages')|default('unread') }}</span>
                             {% endif %}
                         </div>
                         <div class="match-actions">
-                            <a href="{{ url_for('chat', recipient_id=match.user.id) }}" class="btn btn-outline">Chat</a>
+                            <a href="{{ url_for('chat', recipient_id=match.user.id) }}" class="btn btn-outline">{{ get_text('chat') }}</a>
                         </div>
                     </div>
                     
@@ -50,7 +50,7 @@
                     <div class="match-tags">
                         {% if match.fetishes %}
                             <div class="tags-section">
-                                <strong>Fetishes:</strong>
+                                <strong>{{ get_text('fetishes') }}:</strong>
                                 <div class="tag-list">
                                     {% for fetish in match.fetishes[:3] %}
                                         <span class="badge badge-fetish">{{ fetish }}</span>
@@ -61,7 +61,7 @@
                         
                         {% if match.interests %}
                             <div class="tags-section">
-                                <strong>Interests:</strong>
+                                <strong>{{ get_text('interests') }}:</strong>
                                 <div class="tag-list">
                                     {% for interest in match.interests[:3] %}
                                         <span class="badge badge-interest">{{ interest }}</span>
@@ -76,10 +76,10 @@
             </div>
         {% else %}
             <div class="empty-state">
-                <div>💬</div>
-                <h3>No conversations yet</h3>
-                <p>Start swiping to find people to chat with!</p>
-                <a href="{{ url_for('swipe') }}" class="btn">Start Swiping</a>
+                <div>💖</div>
+                <h3>{{ get_text('no_matches')|default('No matches yet') }}</h3>
+                <p>{{ get_text('no_matches_description')|default('Start swiping to find your perfect match!') }}</p>
+                <a href="{{ url_for('swipe') }}" class="btn">{{ get_text('swipe_now') }}</a>
             </div>
         {% endif %}
     </div>

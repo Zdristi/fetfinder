@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 import uuid
 from werkzeug.utils import secure_filename
 import hashlib
-from models import db, User as UserModel, UserPhoto, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage
+from models import db, User as UserModel, UserPhoto, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage, UserSwipe
 import hmac
 import hashlib
 import random
@@ -28,13 +28,7 @@ import requests
 # Import configuration
 from config import SECRET_KEY
 
-# Import face detection functionality
-try:
-    from face_detection import validate_avatar_image
-    FACE_DETECTION_AVAILABLE = True
-except ImportError:
-    FACE_DETECTION_AVAILABLE = False
-    print("Warning: face_detection module not available. Avatar validation disabled.")
+
 
 # Create Flask app
 app = Flask(__name__)
@@ -49,8 +43,10 @@ app.config['CACHE_TYPE'] = 'null'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 0
 cache = Cache(app)
 
-# Configure SQLAlchemy - Force SQLite
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fetdate_local.db'
+# Configure SQLAlchemy - Use environment variable for database URL, fallback to local SQLite
+import os
+db_path = os.environ.get('DATABASE_URL', 'sqlite:///fetdate_local.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = db_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Import SQLAlchemy engine options from config
@@ -267,6 +263,8 @@ LANGUAGES = {
         'create_profile': 'Create Profile',
         'complete_profile': 'Complete Profile',
         'discover': 'Discover Matches',
+        'matches': 'Matches',
+        'mutual_matches': 'Mutual Matches',
         'connect': 'Connect',
         'signup': 'Sign Up',
         'login': 'Login',
@@ -324,6 +322,9 @@ LANGUAGES = {
         'reject': 'Reject',
         'superlike': 'Super Like',
         'like': 'Like',
+        'no_matches': 'No matches yet',
+        'no_matches_description': 'Start swiping to find your perfect match!',
+        'unread_messages': 'unread',
         'home': 'Home',
         'profile': 'Profile',
         'chat': 'Chat',
@@ -666,6 +667,8 @@ LANGUAGES = {
         'create_profile': 'Создать профиль',
         'complete_profile': 'Завершить профиль',
         'discover': 'Метчи',
+        'matches': 'Матчи',
+        'mutual_matches': 'Взаимные матчи',
         'connect': 'Связаться',
         'signup': 'Зарегистрироваться',
         'login': 'Войти',
@@ -712,12 +715,15 @@ LANGUAGES = {
         'no_bio': 'Биография не указана',
         'no_fetishes': 'Фетиши не указаны',
         'no_interests': 'Интересы не указаны',
-        'discover_matches': 'Метчи',
+        'discover_matches': 'Найти метчи',
         'no_more_users': 'Больше нет пользователей для показа',
         'check_later': 'Загляните позже для новых совпадений!',
         'reject': 'Отклонить',
         'superlike': 'Супер Лайк',
         'like': 'Лайк',
+        'no_matches': 'Пока нет совпадений',
+        'no_matches_description': 'Начните свайпить, чтобы найти свою идеальную пару!',
+        'unread_messages': 'непрочитанных',
         'home': 'Главная',
         'profile': 'Профиль',
         'chat': 'Чат',
@@ -1897,11 +1903,58 @@ def set_language(lang):
 @app.route('/chat_list')
 @login_required
 def chat_list():
-    # Заглушка для списка чатов
-    # В реальной реализации здесь будет логика получения списка чатов
-    # Для шаблона chat.html нам нужно передать recipient, но для списка чатов нужен другой шаблон
-    # Создадим пользовательский шаблон для списка чатов
-    return render_template('chat_list.html')
+    """Display a list of active chats"""
+    # Get all users that current user has chatted with
+    # This includes both sent and received messages
+    chat_partners = db.session.query(
+        Message.sender_id, 
+        Message.recipient_id
+    ).filter(
+        (Message.sender_id == current_user.id) | (Message.recipient_id == current_user.id)
+    ).distinct().all()
+    
+    # Create a set of unique chat partner IDs
+    chat_partner_ids = set()
+    for sender_id, recipient_id in chat_partners:
+        if sender_id != current_user.id:
+            chat_partner_ids.add(sender_id)
+        if recipient_id != current_user.id:
+            chat_partner_ids.add(recipient_id)
+    
+    # Get user objects for these IDs
+    chat_partners_info = []
+    for user_id in chat_partner_ids:
+        user = UserModel.query.get(user_id)
+        if user and not user.is_blocked:
+            # Get last message in the conversation
+            last_message = Message.query.filter(
+                ((Message.sender_id == current_user.id) & (Message.recipient_id == user_id)) |
+                ((Message.sender_id == user_id) & (Message.recipient_id == current_user.id))
+            ).order_by(Message.timestamp.desc()).first()
+            
+            # Get unread message count for this chat
+            unread_count = Message.query.filter(
+                Message.sender_id == user_id,
+                Message.recipient_id == current_user.id,
+                Message.is_read == False
+            ).count()
+            
+            # Get user's fetishes and interests
+            user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
+            user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+            
+            chat_partners_info.append({
+                'user': user,
+                'last_message': last_message,
+                'unread_count': unread_count,
+                'fetishes': user_fetishes,
+                'interests': user_interests
+            })
+    
+    # Sort by last message timestamp (most recent first)
+    chat_partners_info.sort(key=lambda x: x['last_message'].timestamp if x['last_message'] else x['user'].created_at, reverse=True)
+    
+    return render_template('chat_list.html', chat_partners=chat_partners_info)
 
 @app.route('/premium')
 @login_required
@@ -2206,9 +2259,26 @@ def admin_delete_user(user_id):
         return redirect(url_for('home'))
     
     user = UserModel.query.get_or_404(user_id)
+    
+    # Удаляем все связанные данные перед удалением пользователя
+    # Удаляем записи из UserSwipe, где пользователь является swiper или swipee
+    from models import UserSwipe, Match, Message, UserPhoto
+    UserSwipe.query.filter((UserSwipe.swiper_id == user.id) | (UserSwipe.swipee_id == user.id)).delete()
+    
+    # Удаляем записи из Match, где пользователь является user_id или matched_user_id
+    Match.query.filter((Match.user_id == user.id) | (Match.matched_user_id == user.id)).delete()
+    
+    # Удаляем сообщения, где пользователь является отправителем или получателем
+    Message.query.filter((Message.sender_id == user.id) | (Message.recipient_id == user.id)).delete()
+    
+    # Удаляем дополнительные фото пользователя
+    UserPhoto.query.filter_by(user_id=user.id).delete()
+    
+    # Удаляем самого пользователя
     db.session.delete(user)
     db.session.commit()
-    flash(f'Пользователь {user.username} удален.')
+    
+    flash(f'Пользователь {user.username} и все связанные данные удалены.')
     return redirect(url_for('admin'))
 
 @app.route('/admin/make_admin/<int:user_id>', methods=['POST'])
@@ -2247,9 +2317,33 @@ def buy_coins():
 @app.route('/chat/<int:recipient_id>')
 @login_required
 def chat(recipient_id):
-    # Заглушка для чата с конкретным пользователем
+    """Display chat with a specific user"""
+    # Verify recipient exists and is not blocked
     recipient = UserModel.query.get_or_404(recipient_id)
-    return render_template('chat.html', recipient=recipient)
+    
+    if recipient.is_blocked:
+        flash('This user is blocked')
+        return redirect(url_for('chat_list'))
+    
+    # Get messages between current user and recipient
+    messages = Message.query.filter(
+        ((Message.sender_id == current_user.id) & (Message.recipient_id == recipient_id)) |
+        ((Message.sender_id == recipient_id) & (Message.recipient_id == current_user.id))
+    ).order_by(Message.timestamp).all()
+    
+    # Mark messages sent by recipient to current user as read
+    unread_messages = Message.query.filter(
+        Message.sender_id == recipient_id,
+        Message.recipient_id == current_user.id,
+        Message.is_read == False
+    ).all()
+    
+    for msg in unread_messages:
+        msg.is_read = True
+    
+    db.session.commit()
+    
+    return render_template('chat.html', recipient=recipient, messages=messages)
 
 @app.route('/gift_shop')
 @login_required
@@ -2454,6 +2548,9 @@ def verify_email():
             if stored_data.get('is_first_user', False) or (UserModel.query.first() is None):
                 user.is_admin = True
             
+            # Mark email as confirmed
+            user.email_confirmed = True
+            
             db.session.add(user)
             db.session.commit()
             
@@ -2602,6 +2699,51 @@ def edit_profile():
         flash('You need to be logged in to edit your profile.')
         return redirect(url_for('login'))
     
+    # Get user's fetishes and interests
+    user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=current_user.id).all()]
+    user_interests = [i.name for i in Interest.query.filter_by(user_id=current_user.id).all()]
+    
+    # Get all available fetishes and interests
+    db_fetishes = [f.name for f in Fetish.query.distinct(Fetish.name)]
+    db_interests = [i.name for i in Interest.query.distinct(Interest.name)]
+    
+    # Get current language
+    current_language = session.get('language', 'en')
+    
+    # Predefined popular fetishes and interests with translations
+    if current_language == 'ru':
+        predefined_fetishes = [
+            'Кожа', 'Латекс', 'Бондаж', 'Доминирование', 'Подчинение', 
+            'Ролевые игры', 'Игра на возраст', 'Водные игры', 'Игра с болью', 'Экспозиционизм',
+            'Фурри', 'Возрастной фетиш', 'Гигантизм', 'Игра с животными', 'Целомудрие', 
+            'Принудительный оргазм', 'Игра с ощущениями', 'Игра с ударами', 'Оскорбление'
+        ]
+        
+        predefined_interests = [
+            'Пешие прогулки', 'Фотография', 'Кулинария', 'Путешествия', 'Чтение', 
+            'Музыка', 'Фильмы', 'Игры', 'Искусство', 'Танцы',
+            'Спорт', 'Йога', 'Медитация', 'Садоводство', 'Рыбалка',
+            'Велоспорт', 'Плавание', 'Бег', 'Дайвинг', 'Технологии'
+        ]
+    else:  # English
+        predefined_fetishes = [
+            'Leather', 'Latex', 'Bondage', 'Dominance', 'Submission', 
+            'Roleplay', 'Age Play', 'Water Sports', 'Pain Play', 'Exhibitionism',
+            'Furry', 'Age Fetish', 'Giantess', 'Pet Play', 'Chastity', 
+            'Forced Orgasm', 'Sensation Play', 'Impact Play', 'Humiliation'
+        ]
+        
+        predefined_interests = [
+            'Hiking', 'Photography', 'Cooking', 'Travel', 'Reading', 
+            'Music', 'Movies', 'Gaming', 'Art', 'Dancing',
+            'Sports', 'Yoga', 'Meditation', 'Gardening', 'Fishing',
+            'Cycling', 'Swimming', 'Running', 'Diving', 'Technology'
+        ]
+    
+    # Combine database values with predefined values
+    all_fetishes = list(set(db_fetishes + predefined_fetishes))
+    all_interests = list(set(db_interests + predefined_interests))
+    
     if request.method == 'POST':
         # Get form data
         country = request.form.get('country', '').strip()
@@ -2691,33 +2833,6 @@ def edit_profile():
         if 'photo' in request.files:
             photo = request.files['photo']
             if photo and photo.filename != '':
-                # Validate the image for face detection if the module is available
-                if FACE_DETECTION_AVAILABLE:
-                    # Validate the image for human faces
-                    validation_result = validate_avatar_image(photo)
-                    if not validation_result['valid']:
-                        flash(f'Ошибка при проверке аватара: {validation_result["message"]}')
-                        # Create minimal user_data for error cases
-                        user_data = {
-                            'username': current_user.username,
-                            'email': current_user.email,
-                            'photo': current_user.photo,
-                            'country': current_user.country,
-                            'city': current_user.city,
-                            'bio': current_user.bio,
-                            'fetishes': [],
-                            'interests': [],
-                            'created_at': current_user.created_at.isoformat(),
-                            'is_premium': is_premium_user(current_user),
-                            'user_photos': []
-                        }
-                        
-                        # Get user's additional photos
-                        user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
-                        user_data['user_photos'] = user_photos
-                        
-                        return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
-                
                 # Create unique filename
                 ext = photo.filename.split('.')[-1]
                 filename = f"{uuid.uuid4().hex}.{ext}"
@@ -2782,33 +2897,6 @@ def edit_profile():
             photo_files = request.files.getlist('additional_photos')
             for photo_file in photo_files:
                 if photo_file and photo_file.filename != '':
-                    # Validate the image for face detection if the module is available
-                    if FACE_DETECTION_AVAILABLE:
-                        # Validate the image for human faces
-                        validation_result = validate_avatar_image(photo_file)
-                        if not validation_result['valid']:
-                            flash(f'Ошибка при проверке дополнительной фотографии: {validation_result["message"]}')
-                            # Create minimal user_data for error cases
-                            user_data = {
-                                'username': current_user.username,
-                                'email': current_user.email,
-                                'photo': current_user.photo,
-                                'country': current_user.country,
-                                'city': current_user.city,
-                                'bio': current_user.bio,
-                                'fetishes': [],
-                                'interests': [],
-                                'created_at': current_user.created_at.isoformat(),
-                                'is_premium': is_premium_user(current_user),
-                                'user_photos': []
-                            }
-                            
-                            # Get user's additional photos
-                            user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
-                            user_data['user_photos'] = user_photos
-                            
-                            return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
-                    
                     # Create unique filename
                     ext = photo_file.filename.split('.')[-1]
                     filename = f"{uuid.uuid4().hex}.{ext}"
@@ -2860,17 +2948,6 @@ def edit_profile():
             'Forced Orgasm', 'Sensation Play', 'Impact Play', 'Humiliation'
         ]
         
-        predefined_interests = [
-            'Hiking', 'Photography', 'Cooking', 'Travel', 'Reading', 
-            'Music', 'Movies', 'Gaming', 'Art', 'Dancing',
-            'Sports', 'Yoga', 'Meditation', 'Gardening', 'Fishing',
-            'Cycling', 'Swimming', 'Running', 'Diving', 'Technology'
-        ]
-    
-    # Combine database values with predefined values
-    all_fetishes = list(set(db_fetishes + predefined_fetishes))
-    all_interests = list(set(db_interests + predefined_interests))
-    
     user_data = {
         'username': current_user.username,
         'email': current_user.email,
@@ -2938,6 +3015,86 @@ def users():
     
     return render_template('users.html', users=users_dict)
 
+@app.route('/matches')
+@login_required
+def matches():
+    """Display mutual matches (people you liked who also liked you) - same as mutual matches"""
+    # Get all users that current user liked (user_id = current_user.id, matched_user_id = other user)
+    user_liked_ids = db.session.query(Match.matched_user_id).filter(Match.user_id == current_user.id).all()
+    user_liked_ids = [id[0] for id in user_liked_ids]
+    
+    # Get all users who liked current user (matched_user_id = current_user.id, user_id = other user)
+    liked_user_ids = db.session.query(Match.user_id).filter(Match.matched_user_id == current_user.id).all()
+    liked_user_ids = [id[0] for id in liked_user_ids]
+    
+    # Get mutual matches - intersection of both lists
+    mutual_match_ids = list(set(user_liked_ids) & set(liked_user_ids))
+    
+    matches_data = []
+    
+    for user_id in mutual_match_ids:
+        matched_user = UserModel.query.get(user_id)
+        if matched_user and not matched_user.is_blocked:
+            # Get user's fetishes and interests
+            user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=matched_user.id).all()]
+            user_interests = [i.name for i in Interest.query.filter_by(user_id=matched_user.id).all()]
+            
+            # Get unread message count
+            unread_count = Message.query.filter(
+                Message.sender_id == matched_user.id,
+                Message.recipient_id == current_user.id,
+                Message.is_read == False
+            ).count()
+            
+            matches_data.append({
+                'user': matched_user,
+                'fetishes': user_fetishes,
+                'interests': user_interests,
+                'unread_count': unread_count
+            })
+    
+    return render_template('matches.html', matches=matches_data)
+
+@app.route('/mutual_matches')
+@login_required
+def mutual_matches():
+    """Display mutual matches (people you liked who also liked you)"""
+    # Get all users that current user liked (user_id = current_user.id, matched_user_id = other user)
+    user_liked_ids = db.session.query(Match.matched_user_id).filter(Match.user_id == current_user.id).all()
+    user_liked_ids = [id[0] for id in user_liked_ids]
+    
+    # Get all users who liked current user (matched_user_id = current_user.id, user_id = other user)
+    liked_user_ids = db.session.query(Match.user_id).filter(Match.matched_user_id == current_user.id).all()
+    liked_user_ids = [id[0] for id in liked_user_ids]
+    
+    # Get mutual matches - intersection of both lists
+    mutual_match_ids = list(set(user_liked_ids) & set(liked_user_ids))
+    
+    matches_data = []
+    
+    for user_id in mutual_match_ids:
+        matched_user = UserModel.query.get(user_id)
+        if matched_user and not matched_user.is_blocked:
+            # Get user's fetishes and interests
+            user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=matched_user.id).all()]
+            user_interests = [i.name for i in Interest.query.filter_by(user_id=matched_user.id).all()]
+            
+            # Get unread message count
+            unread_count = Message.query.filter(
+                Message.sender_id == matched_user.id,
+                Message.recipient_id == current_user.id,
+                Message.is_read == False
+            ).count()
+            
+            matches_data.append({
+                'user': matched_user,
+                'fetishes': user_fetishes,
+                'interests': user_interests,
+                'unread_count': unread_count
+            })
+    
+    return render_template('matches.html', matches=matches_data)
+
 # API routes for notifications
 @app.route('/api/notifications')
 @login_required
@@ -2965,11 +3122,35 @@ def api_notifications():
 def api_users():
     """Return users data for swipe functionality - optimized for low memory usage"""
     try:
-        # Get all users except current user with basic info only
+        # Import UserSwipe here to avoid issues
+        from models import UserSwipe
+        
+        # Get IDs of users that current user has already swiped on
+        swiped_user_ids = db.session.query(UserSwipe.swipee_id).filter_by(
+            swiper_id=int(current_user.id)
+        ).all()
+        swiped_user_ids = [id[0] for id in swiped_user_ids]
+        
+        # Also get IDs of users that have blocked the current user
+        blocked_user_ids = db.session.query(UserModel.id).filter_by(is_blocked=True).all()
+        blocked_user_ids = [id[0] for id in blocked_user_ids]
+        
+        # Get all users except current user, already swiped users, and blocked users
+        # Apply location matching settings if configured
+        query = UserModel.query.filter(
+            UserModel.id != int(current_user.id),
+            UserModel.id.notin_(swiped_user_ids),
+            UserModel.id.notin_(blocked_user_ids)
+        )
+        
+        # Apply location-based matching if enabled
+        if current_user.match_by_city and current_user.city:
+            query = query.filter_by(city=current_user.city)
+        elif current_user.match_by_country and current_user.country:
+            query = query.filter_by(country=current_user.country)
+        
         # Limit to 50 users to prevent memory issues
-        db_users = UserModel.query.filter(
-            UserModel.id != int(current_user.id)
-        ).limit(50).all()
+        db_users = query.limit(50).all()
         
         # Create a lightweight representation of users data
         users_list = []
@@ -2989,6 +3170,8 @@ def api_users():
         return jsonify(users_list)
     except Exception as e:
         print(f"Error in api_users: {e}")
+        import traceback
+        traceback.print_exc()
         # Return empty list on error
         return jsonify([])
 
@@ -3203,6 +3386,202 @@ def export_data():
         print("Data exported successfully!")
     except Exception as e:
         print(f"Error exporting data: {e}")
+
+@app.route('/api/messages/<int:recipient_id>')
+@login_required
+def api_get_messages(recipient_id):
+    """API endpoint to get message history with a specific user"""
+    # Verify recipient exists
+    recipient = UserModel.query.get(recipient_id)
+    if not recipient:
+        return jsonify({'error': 'Recipient not found'}), 404
+    
+    # Get messages between current user and recipient
+    messages = Message.query.filter(
+        ((Message.sender_id == current_user.id) & (Message.recipient_id == recipient_id)) |
+        ((Message.sender_id == recipient_id) & (Message.recipient_id == current_user.id))
+    ).order_by(Message.timestamp).all()
+    
+    # Mark messages sent to current user as read
+    unread_messages = Message.query.filter(
+        Message.sender_id == recipient_id,
+        Message.recipient_id == current_user.id,
+        Message.is_read == False
+    ).all()
+    
+    for msg in unread_messages:
+        msg.is_read = True
+    
+    db.session.commit()
+    
+    # Format messages for response
+    messages_data = []
+    for msg in messages:
+        messages_data.append({
+            'id': msg.id,
+            'sender_id': msg.sender_id,
+            'recipient_id': msg.recipient_id,
+            'content': msg.content,
+            'timestamp': msg.timestamp.isoformat(),
+            'is_read': msg.is_read
+        })
+    
+    return jsonify(messages_data)
+
+@app.route('/api/user_info/<int:user_id>')
+@login_required
+def api_user_info(user_id):
+    """API endpoint to get user information"""
+    user = UserModel.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Check if user is blocked
+    if user.is_blocked:
+        return jsonify({'error': 'User is blocked'}), 404
+    
+    # Get user's fetishes and interests
+    user_fetishes = [f.name for f in Fetish.query.filter_by(user_id=user.id).all()]
+    user_interests = [i.name for i in Interest.query.filter_by(user_id=user.id).all()]
+    
+    user_data = {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'photo': user.photo,
+        'country': user.country,
+        'city': user.city,
+        'bio': user.bio,
+        'fetishes': user_fetishes,
+        'interests': user_interests,
+        'created_at': user.created_at.isoformat() if user.created_at else None,
+        'is_premium': is_premium_user(user)
+    }
+    
+    return jsonify(user_data)
+
+@app.route('/api/send_message', methods=['POST'])
+@login_required
+def api_send_message():
+    """API endpoint to send a message to another user"""
+    data = request.get_json()
+    recipient_id = data.get('recipient_id')
+    content = data.get('content')
+    
+    if not recipient_id or not content:
+        return jsonify({'status': 'error', 'message': 'Missing recipient_id or content'}), 400
+    
+    # Check if recipient exists
+    recipient = UserModel.query.get(int(recipient_id))
+    if not recipient:
+        return jsonify({'status': 'error', 'message': 'Recipient not found'}), 404
+    
+    # Check if user is blocked
+    if recipient.is_blocked:
+        return jsonify({'status': 'error', 'message': 'Cannot send message to blocked user'}), 400
+    
+    # Check if current user is blocked by recipient
+    if current_user.is_blocked:
+        return jsonify({'status': 'error', 'message': 'Your account is blocked'}), 400
+    
+    # Check if both users are mutual matches (optional, for platforms that require mutual match to message)
+    # You can remove this if you want to allow messaging without mutual match
+    # mutual_match_1 = Match.query.filter_by(user_id=current_user.id, matched_user_id=recipient.id).first()
+    # mutual_match_2 = Match.query.filter_by(user_id=recipient.id, matched_user_id=current_user.id).first()
+    # if not (mutual_match_1 and mutual_match_2):
+    #     return jsonify({'status': 'error', 'message': 'Messaging requires mutual match'}), 400
+    
+    # Create message
+    message = Message(
+        sender_id=current_user.id,
+        recipient_id=recipient.id,
+        content=content
+    )
+    
+    db.session.add(message)
+    db.session.commit()
+    
+    return jsonify({
+        'status': 'success',
+        'message': {
+            'id': message.id,
+            'sender_id': message.sender_id,
+            'recipient_id': message.recipient_id,
+            'content': message.content,
+            'timestamp': message.timestamp.isoformat(),
+            'is_read': message.is_read
+        }
+    })
+
+@app.route('/api/match', methods=['POST'])
+@login_required
+def api_match():
+    from models import UserSwipe
+    from datetime import datetime
+    data = request.get_json()
+    user2 = data.get('user2')
+    action = data.get('action')  # 'like' or 'dislike'
+    
+    is_mutual_match = False
+    
+    # Record the swipe action (like or dislike)
+    existing_swipe = UserSwipe.query.filter_by(
+        swiper_id=int(current_user.id), 
+        swipee_id=int(user2)
+    ).first()
+    
+    if existing_swipe:
+        # Update existing swipe if needed
+        existing_swipe.action = action
+        existing_swipe.timestamp = datetime.utcnow()
+    else:
+        # Create new swipe record
+        swipe = UserSwipe(
+            swiper_id=int(current_user.id),
+            swipee_id=int(user2),
+            action=action
+        )
+        db.session.add(swipe)
+    
+    if action == 'like':
+        # Check if match already exists
+        existing_match = Match.query.filter_by(
+            user_id=int(current_user.id), 
+            matched_user_id=int(user2)
+        ).first()
+        
+        if not existing_match:
+            match = Match(
+                user_id=int(current_user.id),
+                matched_user_id=int(user2)
+            )
+            db.session.add(match)
+            
+            # Check if this is a mutual match
+            reverse_match = Match.query.filter_by(
+                user_id=int(user2),
+                matched_user_id=int(current_user.id)
+            ).first()
+            
+            # Return True if it's a mutual match
+            is_mutual_match = reverse_match is not None
+    
+    # Commit all changes
+    db.session.commit()
+
+    response = {'status': 'success'}
+    
+    # If it's a mutual match, add notification
+    if is_mutual_match:
+        response['mutual_match'] = True
+        response['matched_user_id'] = user2
+        # Get matched user info
+        matched_user = UserModel.query.get(int(user2))
+        if matched_user:
+            response['matched_user_name'] = matched_user.username
+            response['matched_user_photo'] = matched_user.photo
+    
+    return jsonify(response)
 
 def print_server_info():
     """Выводит информацию о том, к какому адресу привязан сервер"""
