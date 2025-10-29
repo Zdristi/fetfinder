@@ -33,6 +33,14 @@
             <h3>{{ get_text('premium_badge') }}</h3>
             <p>{{ get_text('premium_badge_desc') }}</p>
         </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-search-plus"></i>
+            </div>
+            <h3>{{ get_text('priority_in_search') or 'Priority in Search' }}</h3>
+            <p>{{ get_text('priority_in_search_desc') or 'Premium members appear first in search results and swipe queues, increasing visibility and match chances.' }}</p>
+        </div>
     </div>
     
     <div class="premium-pricing">
@@ -51,6 +59,7 @@
                 <li><i class="fas fa-check-circle"></i> {{ get_text('priority_matching') or 'Priority matching' }}</li>
                 <li><i class="fas fa-check-circle"></i> {{ get_text('advanced_filters') or 'Advanced filters' }}</li>
                 <li><i class="fas fa-check-circle"></i> {{ get_text('extended_profile_visibility') or 'Extended profile visibility' }}</li>
+                <li><i class="fas fa-check-circle"></i> {{ get_text('priority_in_search') or 'Priority in search results' }}</li>
             </ul>
             
             <button class="btn btn-primary btn-premium">

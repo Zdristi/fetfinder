@@ -119,7 +119,14 @@ class SwipeSystem {
     const usernameElem = document.getElementById('username');
     if (usernameElem) {
       // Use first_name if available, otherwise fallback to username
-      usernameElem.textContent = user.first_name || user.username || 'Anonymous';
+      let displayName = user.first_name || user.username || 'Anonymous';
+      
+      // Add premium badge if user is premium
+      if (user.is_premium) {
+        displayName = `${displayName} <span class="premium-badge star" title="Premium Member"></span>`;
+      }
+      
+      usernameElem.innerHTML = displayName;
     } else {
       console.error('Username element not found');
     }

@@ -523,6 +523,60 @@
   }
 }
 
+/* Premium badge styles */
+.premium-badge {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: black;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  margin-left: 8px;
+  font-weight: bold;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.premium-badge::before {
+  content: "PREMIUM";
+}
+
+/* Alternative star badge for premium users */
+.premium-badge.star {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: black;
+  padding: 2px 6px;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  margin-left: 8px;
+  font-weight: bold;
+  display: inline-block;
+  vertical-align: middle;
+  width: 20px;
+  height: 20px;
+  text-align: center;
+  line-height: 16px;
+}
+
+.premium-badge.star::before {
+  content: "★";
+}
+
+/* Mobile-specific premium badge */
+@media (max-width: 768px) {
+  .premium-badge {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+    margin-left: 5px;
+  }
+  
+  .premium-badge.star {
+    width: 16px;
+    height: 16px;
+    line-height: 12px;
+    font-size: 0.7rem;
+  }
+}
+
 /* Card animations */
 .swipe-right {
   transform: translateX(150vw) rotate(20deg) !important;

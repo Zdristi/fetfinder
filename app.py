@@ -3181,8 +3181,18 @@ def api_users():
         elif current_user.match_by_country and current_user.country:
             query = query.filter_by(country=current_user.country)
         
+        # Get all users first
+        all_users = query.limit(100).all()  # Increase limit to get more users for sorting
+        
+        # Sort users: premium users first, then others
+        # Within each group, sort by created_at (newer first)
+        sorted_users = sorted(all_users, key=lambda u: (
+            not is_premium_user(u),  # False (premium) comes before True (non-premium)
+            u.created_at or datetime.min  # Newer users first
+        ), reverse=True)  # Reverse to put newer first within groups
+        
         # Limit to 50 users to prevent memory issues
-        db_users = query.limit(50).all()
+        db_users = sorted_users[:50]
         
         # Create a lightweight representation of users data
         users_list = []
@@ -3190,10 +3200,12 @@ def api_users():
             # Only include essential information for swipe cards
             user_data = {
                 'username': user.username,
+                'first_name': user.first_name,
                 'photo': user.photo,
                 'city': user.city,
                 'country': user.country,
                 'bio': user.bio[:100] if user.bio else '',  # Limit bio length
+                'is_premium': is_premium_user(user)  # Add premium status for UI
             }
             
             # Add user to the list with their ID
