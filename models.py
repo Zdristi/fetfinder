@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
-import hashlib
+from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
@@ -56,12 +56,12 @@ class User(UserMixin, db.Model):
     interests = db.relationship('Interest', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
-        """Set user password (hash)"""
-        self.password_hash = hashlib.sha256(password.encode()).hexdigest()
+        """Set user password using secure password hashing"""
+        self.password_hash = generate_password_hash(password)
     
     def check_password(self, password):
-        """Check user password"""
-        return self.password_hash == hashlib.sha256(password.encode()).hexdigest()
+        """Check user password against hash"""
+        return check_password_hash(self.password_hash, password)
     
     def __repr__(self):
         return f'<User {self.username}>'

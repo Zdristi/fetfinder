@@ -5,7 +5,7 @@ A modern dating website built with Python and Flask, featuring a Tinder-like swi
 ## Features
 
 - User registration and authentication with secure password hashing
-- Persistent user profiles stored in PostgreSQL database
+- Persistent user profiles stored in SQLite database (with PostgreSQL support available)
 - Profile completion with location (country/city) and photo upload
 - Separate categories for sexual fetishes and general interests/hobbies
 - Modern, responsive design inspired by popular dating apps
@@ -29,15 +29,15 @@ A modern dating website built with Python and Flask, featuring a Tinder-like swi
 
 2. Create a `.env` file in the root directory with your email credentials:
    ```
-   DB_PASSWORD=fetdate_password
-   SECRET_KEY=your_default_secret_key_for_local_development_please_change_in_production_5a7b9c3d1e2f4a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3
-   MAIL_SERVER=smtp.gmail.com
+   SECRET_KEY=your-very-secure-random-secret-key-here
+   DATABASE_URL=sqlite:///fetdate_local.db
+   MAIL_SERVER=smtp.yourmailprovider.com
    MAIL_PORT=587
    MAIL_USE_TLS=True
-   MAIL_USE_SSL=False
-   MAIL_USERNAME=sup.fetdate@gmail.com
-   MAIL_PASSWORD=cvjorlnpwtvygrcx
-   MAIL_DEFAULT_SENDER=sup.fetdate@gmail.com
+   MAIL_USERNAME=your-email@domain.com
+   MAIL_PASSWORD=your-app-password
+   RECAPTCHA_SITE_KEY=your-recaptcha-site-key
+   RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
    ```
 
 3. Run the application:
@@ -63,9 +63,9 @@ The application uses email for user registration confirmation. To configure emai
 1. For Gmail:
    - Enable 2-factor authentication
    - Generate an "App Password" in your Google Account settings
-   - Use this app password instead of your regular password
+   - Use this app password instead of your regular password (keep it secret!)
 
-2. Set the following environment variables:
+2. Set the following environment variables in your `.env` file:
    - `MAIL_USERNAME`: Your email address
    - `MAIL_PASSWORD`: Your app password (not regular password!)
    - `MAIL_SERVER`: SMTP server (default: smtp.gmail.com)
@@ -117,7 +117,7 @@ Users can specify their country and city during profile completion:
 
 ## Database
 
-FetDate uses PostgreSQL database for persistent storage:
+FetDate uses SQLite database by default for persistent storage (PostgreSQL support available via DATABASE_URL):
 - User profiles and authentication
 - User preferences (fetishes and interests)
 - Match information

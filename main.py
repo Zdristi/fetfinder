@@ -1,5 +1,6 @@
 import os
 from app import app, db
+from config import config
 
 # Create database tables when the module is imported
 try:
@@ -13,5 +14,5 @@ except Exception as e:
 
 if __name__ == "__main__":
     # For local development
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='127.0.0.1', port=port, debug=True)
+    app.config['SECRET_KEY'] = config.SECRET_KEY
+    app.run(host=config.HOST, port=config.PORT, debug=config.DEBUG)

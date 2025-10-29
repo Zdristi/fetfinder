@@ -26,44 +26,41 @@ import re
 import requests
 
 # Import configuration
-from config import SECRET_KEY
+from config import config
 
 
 
 # Create Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = SECRET_KEY
+app.config['SECRET_KEY'] = config.SECRET_KEY
 
 # Add reCAPTCHA configuration
-app.config['RECAPTCHA_PUBLIC_KEY'] = '6Lc6BhgUAAAAAAH5u7f8rXz8rXz8rXz8rXz8rXz8'
-app.config['RECAPTCHA_PRIVATE_KEY'] = '6Lc6BhgUAAAAAAH5u7f8rXz8rXz8rXz8rXz8rXz8'
+app.config['RECAPTCHA_PUBLIC_KEY'] = config.RECAPTCHA_SITE_KEY
+app.config['RECAPTCHA_PRIVATE_KEY'] = config.RECAPTCHA_SECRET_KEY
 
 # Disable cache completely to save memory
 app.config['CACHE_TYPE'] = 'null'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 0
 cache = Cache(app)
 
-# Configure SQLAlchemy - Use environment variable for database URL, fallback to local SQLite
-import os
-db_path = os.environ.get('DATABASE_URL', 'sqlite:///fetdate_local.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = db_path
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Configure SQLAlchemy using config object
+app.config['SQLALCHEMY_DATABASE_URI'] = config.DATABASE_URL
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICATIONS
 
 # Import SQLAlchemy engine options from config
-from config import SQLALCHEMY_ENGINE_OPTIONS
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = SQLALCHEMY_ENGINE_OPTIONS
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = config.SQLALCHEMY_ENGINE_OPTIONS
 
 # Initialize database
 db.init_app(app)
 
 # Email configuration
-app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
-app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1']
-app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', 'on', '1']
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'sup.fetdate@gmail.com')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  # Пароль приложения Gmail
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'sup.fetdate@gmail.com')
+app.config['MAIL_SERVER'] = config.MAIL_SERVER
+app.config['MAIL_PORT'] = config.MAIL_PORT
+app.config['MAIL_USE_TLS'] = config.MAIL_USE_TLS
+app.config['MAIL_USE_SSL'] = config.MAIL_USE_SSL
+app.config['MAIL_USERNAME'] = config.MAIL_USERNAME
+app.config['MAIL_PASSWORD'] = config.MAIL_PASSWORD
+app.config['MAIL_DEFAULT_SENDER'] = config.MAIL_DEFAULT_SENDER
 
 # Function to ensure database connection before requests that need it
 @app.before_request

@@ -1,48 +1,68 @@
-# Configuration file for local development
+# Configuration file for local development and production
 import os
+from dotenv import load_dotenv
 
-# Enable debug mode for development
-DEBUG = False if os.environ.get('FLASK_ENV') == 'production' else True
+# Load environment variables from .env file
+load_dotenv()
 
-# Secret key for sessions - using a fixed key for persistent sessions across restarts
-import secrets
-SECRET_KEY = os.environ.get('SECRET_KEY', 'your_fixed_secret_key_for_local_development_please_change_in_production_5a7b9c3d1e2f4a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3')
-
-# Database configuration - Force SQLite regardless of environment
-DATABASE_URL = 'sqlite:///fetdate_local.db'
-
-# SQLAlchemy configuration
-SQLALCHEMY_DATABASE_URI = DATABASE_URL
-SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-# Upload folder
-UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'static/uploads')
-
-# Email configuration
-MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
-MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
-MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1']
-MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', 'on', '1']
-MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'sup.fetdate@gmail.com')
-MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')  # Пароль приложения Gmail
-MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'sup.fetdate@gmail.com')
-
-# Google OAuth (if you want to use it)
-GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
-GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
-
-# Host and Port
-HOST = '0.0.0.0'
-PORT = int(os.environ.get('PORT', 5000))
-
-# Engine options for SQLite - no pooling needed for file-based database
-DEFAULT_ENGINE_OPTIONS = {
-    'poolclass': None,  # No pooling for SQLite
-    'connect_args': {
-        'check_same_thread': False  # Required for Flask-SQLAlchemy with threading
+class Config:
+    """Base configuration class."""
+    
+    # Debug mode - enabled by default for development, disabled for production
+    DEBUG = False if os.environ.get('FLASK_ENV') == 'production' else True
+    
+    # Secret key for sessions - must be set in environment variables
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        raise ValueError("SECRET_KEY must be set in environment variables")
+    
+    # Database configuration - can be SQLite or PostgreSQL
+    DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///fetdate_local.db')
+    
+    # SQLAlchemy configuration
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Upload folder
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'static/uploads')
+    
+    # Email configuration
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1']
+    MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', 'on', '1']
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@fetdate.com')
+    
+    # Check if required email configuration is present
+    if not MAIL_USERNAME or not MAIL_PASSWORD:
+        print("Warning: Email credentials not set in environment variables")
+    
+    # Google OAuth (if you want to use it)
+    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+    
+    # reCAPTCHA configuration
+    RECAPTCHA_SITE_KEY = os.environ.get('RECAPTCHA_SITE_KEY')
+    RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY')
+    
+    # Host and Port
+    HOST = os.environ.get('HOST', '0.0.0.0')
+    PORT = int(os.environ.get('PORT', 5000))
+    
+    # Engine options for SQLite/PostgreSQL
+    DEFAULT_ENGINE_OPTIONS = {
+        'poolclass': None,  # No pooling for SQLite, adjust for production databases
+        'connect_args': {
+            'check_same_thread': False  # Required for Flask-SQLAlchemy with threading
+        }
     }
-}
+    
+    # Export the engine options
+    SQLALCHEMY_ENGINE_OPTIONS = DEFAULT_ENGINE_OPTIONS
 
-# Export the engine options
-SQLALCHEMY_ENGINE_OPTIONS = DEFAULT_ENGINE_OPTIONS
+
+# Create configuration instance
+config = Config()
 

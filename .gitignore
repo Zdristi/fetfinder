@@ -12,6 +12,21 @@ node_modules/
 static/uploads/*
 !static/uploads/.gitkeep
 
+# Environment variables
+.env
+.env.local
+.env.dev
+.env.production
+
+# Database files
+*.db
+*.db-journal
+instance/
+
+# Configuration files with secrets
+config_local.py
+config_local.py.env
+
 # Deployment temporary files
 -r
 25.2
@@ -33,8 +48,12 @@ Using
 Your
 matches.json
 users.json
-*.db
-instance/
-# Environment files
-.env
-config_local.py.env 
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
