@@ -60,8 +60,16 @@ class User(UserMixin, db.Model):
         self.password_hash = generate_password_hash(password)
     
     def check_password(self, password):
-        """Check user password against hash"""
-        return check_password_hash(self.password_hash, password)
+        """Check user password against hash with backward compatibility"""
+        # First try the new secure method
+        if check_password_hash(self.password_hash, password):
+            return True
+        
+        # If that fails, try the old hashlib.sha256 method for backward compatibility
+        # This is for migrating users who registered before the security update
+        import hashlib
+        old_hash = hashlib.sha256(password.encode()).hexdigest()
+        return self.password_hash == old_hash
     
     def __repr__(self):
         return f'<User {self.username}>'

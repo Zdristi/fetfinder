@@ -2626,6 +2626,11 @@ def login():
                     
                     # Log in the user with permanent session
                     login_user(user, remember=True)
+                    
+                    # Мигрируем пароль, если нужно (обновляем до нового формата, если использовался старый)
+                    from migrate_passwords import migrate_password_if_needed
+                    migrate_password_if_needed(user, password)
+                    
                     return redirect(url_for('profile'))
                 else:
                     print(f"Password check failed for user: {username}")
