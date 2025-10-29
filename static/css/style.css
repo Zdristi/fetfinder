@@ -40,6 +40,270 @@
               box-shadow 0.3s ease !important;
 }
 
+/* Mobile styles */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+    margin: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .header-content {
+    flex-direction: column;
+    padding: 15px 10px;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .nav-links a {
+    margin: 0;
+    padding: 8px 15px;
+  }
+
+  .header-user {
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .card {
+    margin: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+  }
+
+  .btn {
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-control {
+    padding: 12px;
+    font-size: 1rem;
+  }
+
+  .swipe-header {
+    padding: 15px 10px;
+  }
+
+  .swipe-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .swipe-actions {
+    padding: 10px;
+  }
+
+  .actions-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-large {
+    width: 60px;
+    height: 60px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+    padding: 20px 10px;
+  }
+
+  .profile-avatar {
+    width: 120px;
+    height: 120px;
+    min-width: 120px;
+  }
+
+  .profile-info {
+    text-align: center;
+  }
+
+  .chat-container {
+    height: calc(100vh - 150px);
+    margin: 5px;
+    border-radius: 0;
+  }
+
+  .chat-header-content {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .recipient-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+  }
+
+  .recipient-avatar {
+    width: 60px;
+    height: 60px;
+  }
+
+  .chat-messages {
+    padding: 10px;
+  }
+
+  .message {
+    max-width: 85%;
+  }
+
+  .chat-input-form {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .chat-input-form input {
+    width: 100%;
+  }
+
+  .send-btn {
+    width: 100%;
+    height: 45px;
+  }
+
+  .mobile-swipe-instructions {
+    font-size: 0.8rem;
+    padding: 10px;
+  }
+
+  .section-title {
+    font-size: 1.2rem;
+    padding: 15px 10px;
+  }
+
+  /* Home page adjustments */
+  .hero-section {
+    padding: 30px 15px;
+  }
+
+  .hero-content h1 {
+    font-size: 1.8rem;
+  }
+
+  .hero-content p {
+    font-size: 1rem;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* Adjustments for better touch targets */
+  .checkbox-container {
+    font-size: 1.1rem;
+  }
+
+  .checkmark {
+    height: 28px;
+    width: 28px;
+  }
+
+  /* Adjustments for swipe cards */
+  .swipe-card {
+    width: 95%;
+    max-width: 95%;
+  }
+
+  .swipe-card-content {
+    font-size: 0.9rem;
+  }
+
+  .user-info h2 {
+    font-size: 1.4rem;
+  }
+}
+
+/* Extra small devices (phones, 600px and down) */
+@media (max-width: 600px) {
+  body {
+    font-size: 14px;
+  }
+
+  .header {
+    padding: 10px 5px;
+  }
+
+  .btn {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+
+  .card-title {
+    font-size: 1.3rem;
+  }
+
+  .form-control {
+    font-size: 0.95rem;
+  }
+
+  .swipe-actions .btn-large {
+    width: 55px;
+    height: 55px;
+  }
+
+  /* Adjustments for better mobile UX */
+  .gifts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .gift-card {
+    width: 100%;
+  }
+}
+
+/* For very small screens */
+@media (max-width: 480px) {
+  .hero-content h1 {
+    font-size: 1.5rem;
+  }
+
+  .btn-large {
+    width: 50px;
+    height: 50px;
+  }
+
+  .swipe-card {
+    width: 100%;
+  }
+
+  .user-info h2 {
+    font-size: 1.2rem;
+  }
+
+  .message-content {
+    padding: 10px 14px;
+    font-size: 0.95rem;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -811,6 +1075,269 @@ input[type="file"].form-control {
   .match-actions .btn {
     min-width: auto;
     padding: 8px 16px;
+  }
+}
+
+/* Enhanced mobile experience */
+@media (max-width: 768px) {
+  /* Improved header for mobile */
+  .header-content {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 10px 15px;
+  }
+  
+  .site-logo {
+    font-size: 1.2rem;
+  }
+  
+  .nav-toggle {
+    display: block;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    margin-right: 10px;
+  }
+  
+  .nav-links {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: var(--header-bg, linear-gradient(135deg, #667eea, #764ba2));
+    flex-direction: column;
+    gap: 0;
+    display: none;
+    z-index: 999;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    padding: 10px 0;
+  }
+  
+  .nav-links.show {
+    display: flex;
+  }
+  
+  .nav-links a, .nav-links .dropdown {
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    width: 100%;
+    text-align: center;
+  }
+  
+  .nav-links a:last-child, .nav-links .dropdown:last-child {
+    border-bottom: none;
+  }
+  
+  .mobile-nav-spacer {
+    height: 70px; /* Space for fixed header */
+  }
+  
+  /* Improved form layouts for mobile */
+  .form-container {
+    padding: 15px;
+    margin: 10px;
+  }
+  
+  .form-group label {
+    font-size: 0.95rem;
+  }
+  
+  .form-control {
+    font-size: 1rem;
+    padding: 12px 15px;
+  }
+  
+  /* Better card layouts for mobile */
+  .card {
+    margin: 10px;
+    padding: 15px;
+  }
+  
+  .card-title {
+    font-size: 1.4rem;
+  }
+  
+  /* Improved button sizes for touch */
+  .btn {
+    padding: 12px 20px;
+    font-size: 1rem;
+    min-height: 44px; /* Minimum touch target size */
+  }
+  
+  /* Better spacing for mobile content */
+  .container {
+    padding: 10px;
+  }
+  
+  /* Improved profile layouts */
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 15px;
+  }
+  
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 15px;
+  }
+  
+  /* Better chat interface for mobile */
+  .chat-container {
+    height: calc(100vh - 120px);
+    margin: 5px;
+    border-radius: 0;
+  }
+  
+  .chat-header-content {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .recipient-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .recipient-avatar {
+    width: 60px;
+    height: 60px;
+  }
+  
+  /* Improved grid layouts for mobile */
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  /* Better spacing for sections */
+  .section {
+    padding: 15px 0;
+  }
+  
+  .section-title {
+    font-size: 1.3rem;
+    padding: 15px 10px;
+  }
+  
+  /* Improved footer for mobile */
+  .footer-content {
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px 15px;
+    text-align: center;
+  }
+  
+  .footer-links {
+    justify-content: center;
+  }
+  
+  /* Mobile-specific dropdowns */
+  .dropdown-menu {
+    position: static;
+    width: 100%;
+    box-shadow: none;
+    border-radius: 0;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  .dropdown-menu a {
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  .dropdown-menu a:last-child {
+    border-bottom: none;
+  }
+  
+  /* Mobile user info */
+  .header-user {
+    display: none; /* Hide on mobile, user info is in profile */
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content {
+    padding: 10px;
+  }
+  
+  .site-logo {
+    font-size: 1.1rem;
+  }
+  
+  .card {
+    margin: 5px;
+    padding: 12px;
+  }
+  
+  .btn {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  .form-container {
+    padding: 10px;
+    margin: 5px;
+  }
+  
+  .chat-container {
+    height: calc(100vh - 100px);
+  }
+  
+  /* Even better touch targets */
+  .btn-large {
+    min-width: 50px;
+    min-height: 50px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch targets for better usability */
+  .btn, .form-control, .nav-links a {
+    min-height: 44px;
+  }
+  
+  /* Reduce animations for better performance on touch devices */
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  /* Improve scrolling on touch devices */
+  .scrollable {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #000;
+  }
+  
+  .btn {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .card, .btn, .header {
+    transition: none;
   }
 }
 

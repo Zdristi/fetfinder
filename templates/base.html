@@ -2,7 +2,11 @@
 <html lang="{{ session.get('language', 'en') }}">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="{{ SITE_NAME }}">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
     
     <!-- Favicon for different browsers and devices -->
@@ -10,6 +14,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
     <style>
         /* Critical CSS to prevent FOUC (Flash of Unstyled Content) */
         :root {
@@ -140,33 +145,38 @@
 </head>
 <body>
     <div class="header">
-        <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem;">
+        <div class="header-content">
+            <button class="nav-toggle" id="navToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            
             <div class="logo">
-                <a href="{{ url_for('home') }}" style="display: flex; align-items: center; text-decoration: none; color: white; font-size: 1.5rem; font-weight: bold;">
-                    <i class="fas fa-heart" style="margin-right: 10px; color: #ff6b6b;"></i>
+                <a href="{{ url_for('home') }}" class="site-logo">
+                    <i class="fas fa-heart"></i>
                     FetDate
                 </a>
             </div>
-            <div class="nav-links" style="display: flex; flex-wrap: nowrap; gap: 15px; align-items: center;">
+            
+            <nav class="nav-links" id="navLinks">
                 {% if current_user.is_authenticated %}
                     <a href="{{ url_for('profile') }}">{{ get_text('profile') }}</a>
                     <a href="{{ url_for('chat_list') }}">{{ get_text('my_chats') or 'Chats' }}</a>
-                    <div class="matches-menu" style="position: relative; display: inline-block;">
-                        <a href="#" class="matches-menu-link" style="text-decoration: none; color: inherit;">{{ get_text('matches') }}</a>
-                        <div class="matches-dropdown" style="display: none; position: absolute; top: 100%; left: 0; background: var(--card-bg); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; min-width: 180px;">
-                            <a href="{{ url_for('swipe') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('discover_matches') }}</a>
-                            <a href="{{ url_for('mutual_matches') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none;">{{ get_text('mutual_matches') }}</a>
+                    <div class="matches-menu dropdown">
+                        <a href="#" class="matches-menu-link dropdown-toggle">{{ get_text('matches') }}</a>
+                        <div class="matches-dropdown dropdown-menu">
+                            <a href="{{ url_for('swipe') }}">{{ get_text('discover_matches') }}</a>
+                            <a href="{{ url_for('mutual_matches') }}">{{ get_text('mutual_matches') }}</a>
                         </div>
                     </div>
                     <a href="{{ url_for('premium') }}">Premium</a>
-                    <div class="faq-menu" style="position: relative; display: inline-block;">
-                        <a href="{{ url_for('faq') }}" class="faq-menu-link" style="text-decoration: none; color: inherit;">
+                    <div class="faq-menu dropdown">
+                        <a href="{{ url_for('faq') }}" class="faq-menu-link dropdown-toggle">
                             {{ get_text('information') or 'Information' }}
                         </a>
-                        <div class="faq-dropdown" style="display: none; position: absolute; top: 100%; left: 0; background: var(--card-bg); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; min-width: 180px;">
-                            <a href="{{ url_for('about') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('about_us') or 'About Us' }}</a>
-                            <a href="{{ url_for('faq') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('faq') or 'FAQ' }}</a>
-                            <a href="{{ url_for('support_chat') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('support') or 'Support' }}</a>
+                        <div class="faq-dropdown dropdown-menu">
+                            <a href="{{ url_for('about') }}">{{ get_text('about_us') or 'About Us' }}</a>
+                            <a href="{{ url_for('faq') }}">{{ get_text('faq') or 'FAQ' }}</a>
+                            <a href="{{ url_for('support_chat') }}">{{ get_text('support') or 'Support' }}</a>
                         </div>
                     </div>
 
@@ -179,25 +189,37 @@
                 {% endif %}
                 
                 <!-- Theme Switcher -->
-                <div class="theme-switcher" style="position: relative; display: inline-block;">
-                    <button class="btn" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 8px 15px; font-size: 0.9rem;" onclick="toggleTheme()">
+                <div class="theme-switcher">
+                    <button class="btn" onclick="toggleTheme()">
                         <i class="fas fa-moon theme-icon" id="themeIcon"></i>
                     </button>
                 </div>
                 
                 <!-- Language Switcher -->
-                <div class="language-switcher" style="position: relative; display: inline-block;">
-                    <button class="btn" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 8px 15px; font-size: 0.9rem;" onclick="toggleLanguageMenu()">
+                <div class="language-switcher dropdown">
+                    <button class="btn dropdown-toggle" onclick="toggleLanguageMenu()">
                         <i class="fas fa-globe"></i> {{ get_text('language') }}
                     </button>
-                    <div id="languageMenu" style="display: none; position: absolute; top: 100%; right: 0; background: var(--card-bg); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; min-width: 150px;">
-                        <a href="{{ url_for('set_language', lang='en') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none; border-bottom: 1px solid var(--border-color);">{{ get_text('english') }}</a>
-                        <a href="{{ url_for('set_language', lang='ru') }}" style="display: block; padding: 10px 15px; color: var(--text-color); text-decoration: none;">{{ get_text('russian') }}</a>
+                    <div id="languageMenu" class="dropdown-menu">
+                        <a href="{{ url_for('set_language', lang='en') }}">{{ get_text('english') }}</a>
+                        <a href="{{ url_for('set_language', lang='ru') }}">{{ get_text('russian') }}</a>
                     </div>
                 </div>
+            </nav>
+            
+            <div class="header-user">
+                {% if current_user.is_authenticated %}
+                    <div class="user-info">
+                        <div class="user-avatar" title="{{ current_user.username }}">
+                            {{ (current_user.first_name or current_user.username)[0].upper() }}
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
+    
+    <div class="mobile-nav-spacer"></div>
     
     <div class="container">
         {% with messages = get_flashed_messages() %}
@@ -284,13 +306,54 @@
             menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         }
         
-        // Close language menu when clicking outside
+        // Mobile navigation toggle
+        document.getElementById('navToggle').addEventListener('click', function() {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.classList.toggle('show');
+        });
+        
+        // Close mobile menu when clicking outside
         document.addEventListener('click', function(event) {
-            const languageSwitcher = document.querySelector('.language-switcher');
-            const menu = document.getElementById('languageMenu');
+            const navToggle = document.getElementById('navToggle');
+            const navLinks = document.getElementById('navLinks');
             
-            if (menu && languageSwitcher && !languageSwitcher.contains(event.target)) {
-                menu.style.display = 'none';
+            if (navLinks.classList.contains('show') && 
+                !navToggle.contains(event.target) && 
+                !navLinks.contains(event.target)) {
+                navLinks.classList.remove('show');
+            }
+        });
+        
+        // Close mobile menu when resizing to desktop
+        window.addEventListener('resize', function() {
+            const navLinks = document.getElementById('navLinks');
+            if (window.innerWidth > 768) {
+                navLinks.classList.remove('show');
+            }
+        });
+        
+        // Dropdown menus
+        document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                const dropdown = this.nextElementSibling;
+                dropdown.classList.toggle('show');
+                
+                // Close other dropdowns
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    if (menu !== dropdown) {
+                        menu.classList.remove('show');
+                    }
+                });
+            });
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.classList.remove('show');
+                });
             }
         });
         
