@@ -139,19 +139,6 @@
     font-size: 0.7rem;
     padding: 4px 8px;
   }
-  
-  /* Улучшенная мобильная версия для карточек */
-  .swipe-card-content {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .user-info {
-    overflow-y: auto;
-    max-height: 45%;
-    padding: 15px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -184,7 +171,6 @@
   
   .user-info {
     padding: 12px;
-    max-height: 40%;
   }
   
   .user-info h2 {
@@ -198,90 +184,6 @@
   .modal-content {
     width: 95%;
     padding: 20px;
-  }
-  
-  /* Улучшения для очень маленьких экранов */
-  .btn-large {
-    width: 50px;
-    height: 50px;
-    font-size: 1.1em;
-  }
-  
-  .action-hint {
-    top: 10px;
-    font-size: 0.8em;
-    padding: 6px 12px;
-  }
-  
-  .like-hint {
-    right: 10px;
-  }
-  
-  .dislike-hint {
-    left: 10px;
-  }
-}
-
-/* Для устройств с touch-экранами */
-@media (hover: none) and (pointer: coarse) {
-  .btn-large {
-    /* Увеличиваем размер кнопок для лучшего тапа */
-    width: 70px !important;
-    height: 70px !important;
-  }
-  
-  .actions-container {
-    gap: 15px;
-  }
-}
-
-/* Дополнительные улучшения для мобильных устройств */
-@media (max-width: 768px) {
-  /* Улучшаем доступность и UX на мобильных */
-  .swipe-card {
-    touch-action: pan-y;
-  }
-  
-  /* Улучшаем размер текста для лучшей читаемости */
-  .user-info h2 {
-    line-height: 1.3;
-  }
-  
-  .user-info p {
-    line-height: 1.4;
-  }
-  
-  /* Делаем элементы более доступными для тапа */
-  .tag-list {
-    gap: 5px;
-  }
-  
-  .badge {
-    padding: 6px 12px;
-    font-size: 0.75rem;
-    margin: 2px;
-  }
-  
-  /* Добавляем больше пространства для карточки */
-  .swipe-card {
-    margin: 0 10px;
-  }
-}
-
-/* Улучшения для экранов с высоким соотношением сторон */
-@media (max-height: 700px) {
-  .swipe-card-container {
-    height: 70vh;
-    min-height: 300px;
-  }
-  
-  .user-avatar {
-    height: 45%;
-    min-height: 150px;
-  }
-  
-  .user-info {
-    max-height: 55%;
   }
 }
 
@@ -523,119 +425,10 @@
   }
 }
 
-/* Premium badge styles */
-.premium-badge {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: black;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 0.7rem;
-  margin-left: 8px;
-  font-weight: bold;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.premium-badge::before {
-  content: "PREMIUM";
-}
-
-/* Alternative star badge for premium users */
-.premium-badge.star {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: black;
-  padding: 2px 6px;
-  border-radius: 50%;
-  font-size: 0.8rem;
-  margin-left: 8px;
-  font-weight: bold;
-  display: inline-block;
-  vertical-align: middle;
-  width: 20px;
-  height: 20px;
-  text-align: center;
-  line-height: 16px;
-}
-
-.premium-badge.star::before {
-  content: "★";
-}
-
-/* Mobile-specific premium badge */
-@media (max-width: 768px) {
-  .premium-badge {
-    font-size: 0.6rem;
-    padding: 1px 4px;
-    margin-left: 5px;
-  }
-  
-  .premium-badge.star {
-    width: 16px;
-    height: 16px;
-    line-height: 12px;
-    font-size: 0.7rem;
-  }
-}
-
-/* Music player styles */
-#musicSection {
-  margin-top: 15px;
-  padding: 15px;
-  background: rgba(0,0,0,0.05);
-  border-radius: 15px;
-  border: 1px solid var(--border-color);
-}
-
-.user-track-item {
-  padding: 10px;
-  margin: 5px 0;
-  background: rgba(255,255,255,0.1);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.user-track-item:hover {
-  background: rgba(255,255,255,0.2);
-}
-
-.play-track-btn {
-  padding: 5px 10px;
-  font-size: 0.8rem;
-}
-
-#userTrackPlayer {
-  width: 100%;
-  margin-top: 10px;
-}
-
-#nowPlayingTrack {
-  margin-top: 5px;
-  font-size: 0.8rem;
-  text-align: center;
-  color: var(--text-color);
-}
-
-/* Mobile-specific music player adjustments */
-@media (max-width: 768px) {
-  #musicSection {
-    padding: 10px;
-    margin-top: 10px;
-  }
-  
-  .user-track-item {
-    padding: 8px;
-    font-size: 0.9rem;
-  }
-  
-  .play-track-btn {
-    padding: 4px 8px;
-    font-size: 0.7rem;
-  }
-  
-  #userTrackPlayer {
-    height: 30px;
-  }
+/* Card animations */
+.swipe-right {
+  transform: translateX(150vw) rotate(20deg) !important;
+  opacity: 0;
 }
 
 .swipe-left {
@@ -776,115 +569,19 @@ textarea#messageInput:focus {
   font-size: 0.9rem;
 }
 
-/* Button hover and active states for better feedback */
-.btn-large {
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-large:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-}
-
-.btn-large:active {
-  transform: scale(0.95);
-  transition: transform 0.1s ease;
-}
-
-.btn-large i {
-  pointer-events: none; /* Prevent icon from interfering with button events */
-}
-
-/* Error message styles */
-.error-message {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: #dc3545;
+/* Gift badge styles */
+.gift-badge {
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 10000;
-  font-weight: bold;
-  animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* Improved modal styles */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
-  z-index: 2000;
-  justify-content: center;
+  padding: 3px 6px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  display: inline-flex;
   align-items: center;
-  display: none;
-  animation: fadeIn 0.3s ease;
+  margin-left: 5px;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.modal-content {
-  background: var(--card-bg, #fff);
-  padding: 25px;
-  border-radius: 15px;
-  width: 90%;
-  max-width: 500px;
-  position: relative;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  animation: slideUp 0.3s ease;
-  border: none;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.close {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  font-size: 28px;
-  cursor: pointer;
-  color: var(--text-color, #000);
-  background: none;
-  border: none;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: background-color 0.3s ease;
-}
-
-.close:hover {
-  background-color: #f8f9fa;
-  color: #333;
+.badge-gift {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: white;
 }

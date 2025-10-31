@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
+import hashlib
 
 db = SQLAlchemy()
 
@@ -9,10 +9,9 @@ class User(UserMixin, db.Model):
     __tablename__ = 'user'
     
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)  # Только для входа, не отображается публично
+    username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
-    first_name = db.Column(db.String(100), nullable=True)  # Отображаемое имя
     photo = db.Column(db.String(200), nullable=True)  # Основная фотография профиля
     country = db.Column(db.String(100), nullable=True)
     city = db.Column(db.String(100), nullable=True)
@@ -50,28 +49,26 @@ class User(UserMixin, db.Model):
     confirmation_code = db.Column(db.String(6), nullable=True)
     confirmation_code_expires = db.Column(db.DateTime, nullable=True)
     
+    # Поле для указания сексуальной ориентации
+    orientation = db.Column(db.String(50), nullable=True)  # heterosexual, homosexual, bisexual, etc.
+    
+    # Поля для Google OAuth
+    google_id = db.Column(db.String(100), unique=True, nullable=True)  # Google ID
+    google_avatar = db.Column(db.String(200), nullable=True)  # Google avatar URL
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     fetishes = db.relationship('Fetish', backref='user', lazy=True, cascade='all, delete-orphan')
     interests = db.relationship('Interest', backref='user', lazy=True, cascade='all, delete-orphan')
-    tracks = db.relationship('UserTrack', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
-        """Set user password using secure password hashing"""
-        self.password_hash = generate_password_hash(password)
+        """Set user password (hash)"""
+        self.password_hash = hashlib.sha256(password.encode()).hexdigest()
     
     def check_password(self, password):
-        """Check user password against hash with backward compatibility"""
-        # First try the new secure method
-        if check_password_hash(self.password_hash, password):
-            return True
-        
-        # If that fails, try the old hashlib.sha256 method for backward compatibility
-        # This is for migrating users who registered before the security update
-        import hashlib
-        old_hash = hashlib.sha256(password.encode()).hexdigest()
-        return self.password_hash == old_hash
+        """Check user password"""
+        return self.password_hash == hashlib.sha256(password.encode()).hexdigest()
     
     def __repr__(self):
         return f'<User {self.username}>'
@@ -156,9 +153,13 @@ class Gift(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Integer, nullable=False)  # Цена в монетах
     icon = db.Column(db.String(100), nullable=True)  # Иконка подарка
     category = db.Column(db.String(50), nullable=True)  # Категория подарка
+    thumbnail_url = db.Column(db.String(200), nullable=True)  # URL миниатюры подарка
+    is_active = db.Column(db.Boolean, default=True)  # Активен ли подарок
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
         return f'<Gift {self.name}>'
@@ -269,61 +270,3 @@ class Rating(db.Model):
     
     def __repr__(self):
         return f'<Rating {self.rater_id}->{self.rated_user_id}: {self.stars} stars>'
-
-
-class Gift(db.Model):
-    __tablename__ = 'gift'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    price = db.Column(db.Integer, nullable=False)  # Цена в монетах
-    icon = db.Column(db.String(100), nullable=True)  # Иконка подарка
-    category = db.Column(db.String(50), nullable=True)  # Категория подарка
-    thumbnail_url = db.Column(db.String(200), nullable=True)  # URL миниатюры подарка
-    is_active = db.Column(db.Boolean, default=True)  # Активен ли подарок
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<Gift {self.name}>'
-
-
-class UserGift(db.Model):
-    __tablename__ = 'user_gift'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кто отправляет подарок
-    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Кому отправляют подарок
-    gift_id = db.Column(db.Integer, db.ForeignKey('gift.id'), nullable=False)  # Какой подарок
-    message = db.Column(db.Text)  # Сообщение к подарку
-    is_anonymous = db.Column(db.Boolean, default=False)  # Анонимный подарок
-    is_read = db.Column(db.Boolean, default=False)  # Прочитан ли подарок
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    sender = db.relationship('User', foreign_keys=[sender_id])
-    recipient = db.relationship('User', foreign_keys=[recipient_id])
-    gift = db.relationship('Gift')
-    
-    def __repr__(self):
-        return f'<UserGift from {self.sender_id} to {self.recipient_id}, gift: {self.gift_id}>'
-
-
-class UserTrack(db.Model):
-    __tablename__ = 'user_track'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    title = db.Column(db.String(200), nullable=False)  # Название трека
-    artist = db.Column(db.String(200), nullable=True)  # Исполнитель
-    file_path = db.Column(db.String(300), nullable=False)  # Путь к файлу
-    duration = db.Column(db.Integer, nullable=True)  # Длительность в секундах
-    is_public = db.Column(db.Boolean, default=True)  # Публичный трек
-    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
-    play_count = db.Column(db.Integer, default=0)  # Количество прослушиваний
-    
-    # Relationships
-    user = db.relationship('User', backref='tracks')
-    
-    def __repr__(self):
-        return f'<UserTrack {self.title} by {self.artist}>'

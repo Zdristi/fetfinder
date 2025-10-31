@@ -3,22 +3,22 @@ import sys
 import time
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Load environment variables from .env file
+# Загружаем переменные окружения из файла .env
 from dotenv import load_dotenv
 load_dotenv()
 
-# Import required modules
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message as EmailMessage
 from flask_caching import Cache
+import requests
 import json
 from datetime import datetime, timedelta
 import uuid
 from werkzeug.utils import secure_filename
 import hashlib
-from models import db, User as UserModel, UserPhoto, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage, UserSwipe, Gift, UserGift, UserTrack
+from models import db, User as UserModel, UserPhoto, Fetish, Interest, Match, Message, Notification, Rating, SupportTicket, SupportMessage, UserSwipe
 import hmac
 import hashlib
 import random
@@ -26,46 +26,208 @@ import string
 import re
 import requests
 
-# Import OAuth libraries
-from authlib.integrations.flask_client import OAuth
-import secrets
-
 # Import configuration
-from config import config
+from config import SECRET_KEY
 
 
 
 # Create Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = config.SECRET_KEY
+app.config['SECRET_KEY'] = SECRET_KEY
 
 # Add reCAPTCHA configuration
-app.config['RECAPTCHA_PUBLIC_KEY'] = config.RECAPTCHA_SITE_KEY
-app.config['RECAPTCHA_PRIVATE_KEY'] = config.RECAPTCHA_SECRET_KEY
+app.config['RECAPTCHA_PUBLIC_KEY'] = '6Lc6BhgUAAAAAAH5u7f8rXz8rXz8rXz8rXz8rXz8'
+app.config['RECAPTCHA_PRIVATE_KEY'] = '6Lc6BhgUAAAAAAH5u7f8rXz8rXz8rXz8rXz8rXz8'
 
 # Disable cache completely to save memory
 app.config['CACHE_TYPE'] = 'null'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 0
 cache = Cache(app)
 
-# Configure SQLAlchemy using config object
-app.config['SQLALCHEMY_DATABASE_URI'] = config.DATABASE_URL
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICATIONS
+# Configure SQLAlchemy - Use environment variable for database URL, fallback to local SQLite
+import os
+db_path = os.environ.get('DATABASE_URL', 'sqlite:///fetdate_local.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = db_path
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Import SQLAlchemy engine options from config
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = config.SQLALCHEMY_ENGINE_OPTIONS
+from config import SQLALCHEMY_ENGINE_OPTIONS
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = SQLALCHEMY_ENGINE_OPTIONS
 
 # Initialize database
 db.init_app(app)
 
+# Function to initialize default gifts
+def initialize_default_gifts():
+    """Initialize default gifts in the database"""
+    from models import Gift, db
+    import sqlalchemy
+    from sqlalchemy import inspect
+    
+    try:
+        # Check if the Gift table has the required columns
+        # This is to handle the case where the table exists but doesn't have the new columns
+        inspector = inspect(db.engine)
+        columns = [column['name'] for column in inspector.get_columns('gift')]
+        
+        required_columns = ['description', 'thumbnail_url', 'is_active', 'created_at']
+        missing_columns = [col for col in required_columns if col not in columns]
+        
+        if missing_columns:
+            print(f"Missing columns in gift table: {missing_columns}. Skipping gift initialization until database is updated.")
+            return
+        
+        # Check if gifts already exist to avoid duplicates
+        existing_gift_count = Gift.query.count()
+        if existing_gift_count > 0:
+            print(f"Found {existing_gift_count} existing gifts, skipping default gift creation")
+            return
+        
+        # Create default gifts with English names (translations will be applied on display)
+        default_gifts = [
+            {
+                'name': 'Rose',
+                'description': 'A beautiful red rose to show your affection',
+                'price': 10,
+                'icon': 'fas fa-rose',
+                'category': 'Flowers'
+            },
+            {
+                'name': 'Tulips',
+                'description': 'Colorful tulips to brighten someone\'s day',
+                'price': 12,
+                'icon': 'fas fa-seedling',
+                'category': 'Flowers'
+            },
+            {
+                'name': 'Sunflower',
+                'description': 'A bright sunflower to bring joy and happiness',
+                'price': 15,
+                'icon': 'fas fa-sun',
+                'category': 'Flowers'
+            },
+            {
+                'name': 'Ring',
+                'description': 'A beautiful ring symbolizing your affection',
+                'price': 50,
+                'icon': 'fas fa-gem',
+                'category': 'Jewelry'
+            },
+            {
+                'name': 'Diamond Ring',
+                'description': 'A sparkling diamond ring showing serious commitment',
+                'price': 200,
+                'icon': 'fas fa-gem',
+                'category': 'Jewelry'
+            },
+            {
+                'name': 'Perfume',
+                'description': 'A lovely perfume for a special someone',
+                'price': 40,
+                'icon': 'fas fa-spray-can-sparkles',
+                'category': 'Beauty'
+            },
+            {
+                'name': 'Handbag',
+                'description': 'An elegant handbag as a token of appreciation',
+                'price': 35,
+                'icon': 'fas fa-bag-shopping',
+                'category': 'Accessories'
+            },
+            {
+                'name': 'Chocolate',
+                'description': 'Sweet chocolate for a sweet person',
+                'price': 15,
+                'icon': 'fas fa-candy-cane',
+                'category': 'Food'
+            },
+            {
+                'name': 'Wine',
+                'description': 'A bottle of fine wine for a special occasion',
+                'price': 25,
+                'icon': 'fas fa-wine-bottle',
+                'category': 'Drinks'
+            },
+            {
+                'name': 'Champagne',
+                'description': 'A bottle of sparkling champagne to celebrate',
+                'price': 60,
+                'icon': 'fas fa-champagne-glasses',
+                'category': 'Drinks'
+            },
+            {
+                'name': 'Teddy Bear',
+                'description': 'A cute teddy bear to hug',
+                'price': 30,
+                'icon': 'fas fa-paw',
+                'category': 'Toys'
+            },
+            {
+                'name': 'Kiss',
+                'description': 'A virtual kiss to show your love',
+                'price': 5,
+                'icon': 'fas fa-kiss-beam',
+                'category': 'Affection'
+            },
+            {
+                'name': 'Heart',
+                'description': 'A symbol of love and affection',
+                'price': 8,
+                'icon': 'fas fa-heart',
+                'category': 'Symbols'
+            },
+            {
+                'name': 'Love Letter',
+                'description': 'A heartfelt love letter expressing your feelings',
+                'price': 12,
+                'icon': 'fas fa-envelope',
+                'category': 'Affection'
+            },
+            {
+                'name': 'Dinner Date',
+                'description': 'A romantic dinner date to remember',
+                'price': 75,
+                'icon': 'fas fa-utensils',
+                'category': 'Experiences'
+            },
+            {
+                'name': 'Concert Tickets',
+                'description': 'Tickets to a concert for an unforgettable experience',
+                'price': 100,
+                'icon': 'fas fa-ticket-alt',
+                'category': 'Experiences'
+            }
+        ]
+        
+        for gift_data in default_gifts:
+            gift = Gift(
+                name=gift_data['name'],
+                description=gift_data['description'],
+                price=gift_data['price'],
+                icon=gift_data['icon'],
+                category=gift_data['category']
+            )
+            db.session.add(gift)
+        
+        try:
+            db.session.commit()
+            print(f"Successfully added {len(default_gifts)} default gifts to the database")
+        except Exception as e:
+            print(f"Error adding default gifts: {e}")
+            db.session.rollback()
+    except Exception as e:
+        print(f"Error during gift initialization check: {e}")
+        # Continue without gifts if there's a problem
+
+
 # Email configuration
-app.config['MAIL_SERVER'] = config.MAIL_SERVER
-app.config['MAIL_PORT'] = config.MAIL_PORT
-app.config['MAIL_USE_TLS'] = config.MAIL_USE_TLS
-app.config['MAIL_USE_SSL'] = config.MAIL_USE_SSL
-app.config['MAIL_USERNAME'] = config.MAIL_USERNAME
-app.config['MAIL_PASSWORD'] = config.MAIL_PASSWORD
-app.config['MAIL_DEFAULT_SENDER'] = config.MAIL_DEFAULT_SENDER
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1']
+app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', 'on', '1']
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'sup.fetdate@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  # Пароль приложения Gmail
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'sup.fetdate@gmail.com')
 
 # Function to ensure database connection before requests that need it
 @app.before_request
@@ -86,18 +248,6 @@ def before_request():
 
 # Инициализация Flask-Mail
 mail = Mail(app)
-
-# Initialize OAuth
-oauth = OAuth(app)
-google = oauth.register(
-    name='google',
-    client_id=config.GOOGLE_CLIENT_ID,
-    client_secret=config.GOOGLE_CLIENT_SECRET,
-    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={
-        'scope': 'openid email profile'
-    }
-)
 
 # Create templates and static directories if they don't exist
 if not os.path.exists('templates'):
@@ -438,6 +588,9 @@ LANGUAGES = {
         'primary_photo_set': 'Primary photo set successfully',
         'error_setting_primary_photo': 'Error setting primary photo',
         'delete': 'Delete',
+        'shop': 'Shop',
+        'gift_shop': 'Gift Shop',
+        'my_gifts': 'My Gifts',
         'faq': 'FAQ',
         'support': 'Support',
         'contacts': 'Contacts',
@@ -518,6 +671,24 @@ LANGUAGES = {
         'non_refundable_items_desc': 'The following items are non-refundable:',
         'individual_coins_item': 'Individual coins purchased for gifts or features',
         'gifts_sent_item': 'Gifts sent to other users',
+        'coins': 'coins',
+        'no_description': 'No description',
+        'or': 'Or',
+        'buy_gift': 'Buy Gift',
+        'great_for_start': 'Perfect for getting started',
+        'good_value': 'Great value for active users',
+        'best_value': 'Best value and savings',
+        'premium_experience': 'Premium experience package',
+        'confirm_purchase': 'Confirm Purchase',
+        'coins_spent_on_gifts': 'Use coins to send gifts to other users',
+        'send_gift': 'Send Gift',
+        'no_gifts_available': 'No gifts available',
+        'gifts_will_appear_here': 'Gifts will appear here when added by administrators',
+        'recipient': 'Recipient',
+        'search_recipient': 'Search recipient...',
+        'message_optional': 'Message (optional)',
+        'write_message': 'Write a message...',
+        'send_anonymously': 'Send anonymously',
         'subscriptions_7_days_item': 'Subscriptions that have been active for more than 7 days',
         'heavily_used_subscriptions_item': 'Subscriptions that have been heavily used',
         'how_to_request_refund': 'How to Request a Refund',
@@ -672,7 +843,8 @@ LANGUAGES = {
         'need_immediate_help': 'Need immediate help?',
         'contact_us_by_email': 'You can also contact us by email:',
         'error_sending_message': 'Error sending message. Please try again.',
-        'required_fields_note': 'Fields marked with * are required to complete registration'
+        'required_fields_note': 'Fields marked with * are required to complete registration',
+        'click_to_buy_coins': 'Buy coins'
     },
     'ru': {
         'welcome': 'Добро пожаловать в FetDate!',
@@ -907,6 +1079,36 @@ LANGUAGES = {
         'non_refundable_items_desc': 'Следующие пункты не подлежат возврату:',
         'individual_coins_item': 'Отдельные монеты, приобретенные для подарков или функций',
         'gifts_sent_item': 'Подарки, отправленные другим пользователям',
+        'coins': 'монет',
+        'no_description': 'Без описания',
+        'or': 'Или',
+        'buy_gift': 'Купить подарок',
+        'great_for_start': 'Идеально для начала',
+        'good_value': 'Отличное соотношение для активных пользователей',
+        'best_value': 'Лучшее соотношение цены и качества',
+        'premium_experience': 'Премиум-пакет',
+        'confirm_purchase': 'Подтвердить покупку',
+        'coins_spent_on_gifts': 'Используйте монеты, чтобы отправлять подарки другим пользователям',
+        'send_gift': 'Отправить подарок',
+        'no_gifts_available': 'Нет доступных подарков',
+        'gifts_will_appear_here': 'Подарки появятся здесь, когда их добавят администраторы',
+        'received_gifts': 'Полученные подарки',
+        'anonymous_sender': 'Анонимный',
+        'from': 'От',
+        'message': 'Сообщение',
+        'mark_as_read': 'Отметить как прочитанное',
+        'no_received_gifts': 'Нет полученных подарков',
+        'no_received_gifts_text': 'Вы еще не получили ни одного подарка',
+        'sent_gifts': 'Отправленные подарки',
+        'to': 'Для',
+        'no_sent_gifts': 'Нет отправленных подарков',
+        'no_sent_gifts_text': 'Вы еще не отправили ни одного подарка',
+        'send_first_gift': 'Отправить первый подарок',
+        'recipient': 'Получатель',
+        'search_recipient': 'Поиск получателя...',
+        'message_optional': 'Сообщение (необязательно)',
+        'write_message': 'Написать сообщение...',
+        'send_anonymously': 'Отправить анонимно',
         'subscriptions_7_days_item': 'Подписки, которые были активны более 7 дней',
         'heavily_used_subscriptions_item': 'Подписки, которые использовались в значительной степени',
         'how_to_request_refund': 'Как запросить возврат',
@@ -1120,10 +1322,32 @@ LANGUAGES = {
         'note': 'Примечание',
         'continue_swiping': 'Продолжить свайпинг',
         'view_matches': 'Просмотреть совпадения',
+        'shop': 'Магазин',
+        'gift_shop': 'Магазин подарков',
+        'my_gifts': 'Мои подарки',
+        'available_gifts': 'Доступные подарки',
+        'buy_coins': 'Купить монеты',
+        'my_balance': 'Мой баланс',
+        'coins_balance': 'Баланс монет',
+        'coin_packages': 'Пакеты монет',
+        'select_coin_package': 'Выберите пакет монет',
+        'add_coins': 'Добавить монеты',
+        'choose_package': 'Выберите пакет',
+        'buy_now': 'Купить сейчас',
+        'orientation': 'Ориентация',
+        'select_orientation': 'Выберите вашу ориентацию',
+        'heterosexual': 'Гетеросексуальная',
+        'homosexual': 'Гомосексуальная',
+        'bisexual': 'Бисексуальная',
+        'pansexual': 'Пансексуальная',
+        'asexual': 'Асексуальная',
+        'other': 'Другое',
+        'prefer_not_to_say': 'Не хочу говорить',
         'terms_of_use': 'Условия использования',
         'privacy_policy': 'Политика конфиденциальности',
         'refund_policy': 'Политика возврата',
-        'terms_of_service': 'Условия предоставления услуг'
+        'terms_of_service': 'Условия предоставления услуг',
+        'click_to_buy_coins': 'Купить монеты'
     }
 }
 
@@ -1527,7 +1751,9 @@ def inject_language():
             countries=translated_countries,
             COUNTRIES_CITIES=translated_countries_cities,
             SITE_NAME=SITE_NAME,
-            is_premium_user=is_premium_user
+            is_premium_user=is_premium_user,
+            get_user_gift_badges=get_user_gift_badges,
+            has_yolo_mode=has_yolo_mode
         )
     else:
         # Return original English values
@@ -1536,7 +1762,9 @@ def inject_language():
             countries=['Russia', 'USA', 'UK', 'Germany', 'France', 'Japan', 'Canada', 'Australia', 'Italy', 'Spain', 'Brazil', 'Mexico', 'South Korea', 'India', 'China', 'Netherlands', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Poland', 'Ukraine', 'Turkey', 'Saudi Arabia', 'United Arab Emirates', 'South Africa'],
             COUNTRIES_CITIES=countries_cities,
             SITE_NAME=SITE_NAME,
-            is_premium_user=is_premium_user
+            is_premium_user=is_premium_user,
+            get_user_gift_badges=get_user_gift_badges,
+            has_yolo_mode=has_yolo_mode
         )
 
 @app.route('/get_cities/<country>')
@@ -2325,8 +2553,183 @@ def admin_close_support_ticket(ticket_id):
 @app.route('/buy_coins')
 @login_required
 def buy_coins():
-    # Заглушка для покупки монет
+    # Страница для покупки монет
     return render_template('buy_coins.html')
+
+@app.route('/api/coins/balance')
+@login_required
+def api_coins_balance():
+    """API endpoint to get user's coin balance"""
+    return jsonify({
+        'status': 'success',
+        'balance': current_user.coins
+    })
+
+@app.route('/api/coins/add', methods=['POST'])
+@login_required
+def api_add_coins():
+    """API endpoint to add coins to user's balance (for testing or actual purchases)"""
+    data = request.get_json()
+    coins_to_add = data.get('coins', 0)
+    
+    if coins_to_add <= 0:
+        return jsonify({'status': 'error', 'message': 'Invalid coin amount'}), 400
+    
+    # In a real application, you would validate payment before adding coins
+    current_user.coins += coins_to_add
+    db.session.commit()
+    
+    return jsonify({
+        'status': 'success',
+        'new_balance': current_user.coins,
+        'message': f'Added {coins_to_add} coins to your account'
+    })
+
+@app.route('/api/coins/deduct', methods=['POST'])
+@login_required
+def api_deduct_coins():
+    """API endpoint to deduct coins from user's balance"""
+    data = request.get_json()
+    coins_to_deduct = data.get('coins', 0)
+    reason = data.get('reason', 'General purchase')
+    
+    if coins_to_deduct <= 0:
+        return jsonify({'status': 'error', 'message': 'Invalid coin amount'}), 400
+    
+    if current_user.coins < coins_to_deduct:
+        return jsonify({'status': 'error', 'message': 'Insufficient coins'}), 400
+    
+    current_user.coins -= coins_to_deduct
+    db.session.commit()
+    
+    return jsonify({
+        'status': 'success',
+        'new_balance': current_user.coins,
+        'message': f'Deducted {coins_to_deduct} coins from your account for {reason}'
+    })
+
+# Google OAuth routes
+@app.route('/login/google')
+def google_login():
+    """Redirect to Google OAuth"""
+    # Google OAuth URL
+    google_client_id = os.environ.get('GOOGLE_CLIENT_ID')
+    google_client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
+    
+    if not google_client_id or not google_client_secret:
+        flash('Google login is not configured')
+        return redirect(url_for('login'))
+    
+    # Redirect URL where Google will send the user after authentication
+    redirect_uri = url_for('google_callback', _external=True)
+    
+    # Google OAuth URL
+    google_auth_url = (
+        f"https://accounts.google.com/o/oauth2/auth?"
+        f"client_id={google_client_id}&"
+        f"redirect_uri={redirect_uri}&"
+        f"response_type=code&"
+        f"scope=openid email profile"
+    )
+    
+    return redirect(google_auth_url)
+
+@app.route('/login/google/callback')
+def google_callback():
+    """Handle Google OAuth callback"""
+    google_client_id = os.environ.get('GOOGLE_CLIENT_ID')
+    google_client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
+    
+    if not google_client_id or not google_client_secret:
+        flash('Google login is not configured')
+        return redirect(url_for('login'))
+    
+    # Get authorization code from Google
+    code = request.args.get('code')
+    
+    if not code:
+        flash('Authorization failed')
+        return redirect(url_for('login'))
+    
+    # Exchange authorization code for access token
+    token_url = 'https://oauth2.googleapis.com/token'
+    redirect_uri = url_for('google_callback', _external=True)
+    
+    token_data = {
+        'client_id': google_client_id,
+        'client_secret': google_client_secret,
+        'code': code,
+        'grant_type': 'authorization_code',
+        'redirect_uri': redirect_uri
+    }
+    
+    token_response = requests.post(token_url, data=token_data)
+    token_json = token_response.json()
+    
+    if 'access_token' not in token_json:
+        flash('Failed to get access token from Google')
+        return redirect(url_for('login'))
+    
+    access_token = token_json['access_token']
+    
+    # Get user info from Google
+    user_info_url = 'https://www.googleapis.com/oauth2/v2/userinfo'
+    user_headers = {'Authorization': f'Bearer {access_token}'}
+    
+    user_response = requests.get(user_info_url, headers=user_headers)
+    user_info = user_response.json()
+    
+    if 'id' not in user_info:
+        flash('Failed to get user info from Google')
+        return redirect(url_for('login'))
+    
+    # Check if user already exists by Google ID
+    user = UserModel.query.filter_by(google_id=user_info['id']).first()
+    
+    if user:
+        # User exists, log them in
+        login_user(user, remember=True)
+        flash('Successfully logged in with Google')
+        return redirect(url_for('profile'))
+    else:
+        # Check if user exists by email
+        existing_user = UserModel.query.filter_by(email=user_info['email']).first()
+        
+        if existing_user:
+            # Update existing user with Google ID
+            existing_user.google_id = user_info['id']
+            if 'picture' in user_info:
+                existing_user.google_avatar = user_info['picture']
+            db.session.commit()
+            login_user(existing_user, remember=True)
+            flash('Successfully logged in with Google')
+            return redirect(url_for('profile'))
+        else:
+            # Create new user
+            username = user_info['name'] if 'name' in user_info else user_info['email'].split('@')[0]
+            # Ensure username is unique
+            counter = 1
+            original_username = username
+            while UserModel.query.filter_by(username=username).first():
+                username = f"{original_username}{counter}"
+                counter += 1
+            
+            new_user = UserModel(
+                username=username,
+                email=user_info['email'],
+                password_hash=None,  # No password since using Google login
+                photo=user_info.get('picture', None),
+                google_id=user_info['id'],
+                google_avatar=user_info.get('picture', None),
+                coins=100  # Give new users 100 coins as welcome bonus
+            )
+            
+            db.session.add(new_user)
+            db.session.commit()
+            
+            login_user(new_user, remember=True)
+            flash('Account created successfully with Google login')
+            return redirect(url_for('edit_profile'))  # Redirect to profile editing for new users
 
 @app.route('/chat/<int:recipient_id>')
 @login_required
@@ -2359,11 +2762,288 @@ def chat(recipient_id):
     
     return render_template('chat.html', recipient=recipient, messages=messages)
 
+# Helper function to translate gifts based on language
+def translate_gifts(gifts, lang='en'):
+    gift_translations = {
+        'Rose': {
+            'en': {'name': 'Rose', 'description': 'A beautiful red rose to show your affection'},
+            'ru': {'name': 'Роза', 'description': 'Прекрасная красная роза, чтобы выразить свои чувства'}
+        },
+        'Tulips': {
+            'en': {'name': 'Tulips', 'description': 'Colorful tulips to brighten someone\'s day'},
+            'ru': {'name': 'Тюльпаны', 'description': 'Цветные тюльпаны, чтобы осветить чей-то день'}
+        },
+        'Sunflower': {
+            'en': {'name': 'Sunflower', 'description': 'A bright sunflower to bring joy and happiness'},
+            'ru': {'name': 'Подсолнух', 'description': 'Яркий подсолнух, чтобы принести радость и счастье'}
+        },
+        'Ring': {
+            'en': {'name': 'Ring', 'description': 'A beautiful ring symbolizing your affection'},
+            'ru': {'name': 'Кольцо', 'description': 'Красивое кольцо, символизирующее ваши чувства'}
+        },
+        'Diamond Ring': {
+            'en': {'name': 'Diamond Ring', 'description': 'A sparkling diamond ring showing serious commitment'},
+            'ru': {'name': 'Бриллиантовое кольцо', 'description': 'Сверкающее бриллиантовое кольцо, показывающее серьезные намерения'}
+        },
+        'Perfume': {
+            'en': {'name': 'Perfume', 'description': 'A lovely perfume for a special someone'},
+            'ru': {'name': 'Парфюм', 'description': 'Прекрасный парфюм для особенного человека'}
+        },
+        'Handbag': {
+            'en': {'name': 'Handbag', 'description': 'An elegant handbag as a token of appreciation'},
+            'ru': {'name': 'Сумка', 'description': 'Элегантная сумка как знак признания'}
+        },
+        'Chocolate': {
+            'en': {'name': 'Chocolate', 'description': 'Sweet chocolate for a sweet person'},
+            'ru': {'name': 'Шоколад', 'description': 'Сладкий шоколад для сладкого человека'}
+        },
+        'Wine': {
+            'en': {'name': 'Wine', 'description': 'A bottle of fine wine for a special occasion'},
+            'ru': {'name': 'Вино', 'description': 'Бутылка хорошего вина для особого случая'}
+        },
+        'Champagne': {
+            'en': {'name': 'Champagne', 'description': 'A bottle of sparkling champagne to celebrate'},
+            'ru': {'name': 'Шампанское', 'description': 'Бутылка игристого шампанского для празднования'}
+        },
+        'Teddy Bear': {
+            'en': {'name': 'Teddy Bear', 'description': 'A cute teddy bear to hug'},
+            'ru': {'name': 'Плюшевый мишка', 'description': 'Милый плюшевый мишка для объятий'}
+        },
+        'Kiss': {
+            'en': {'name': 'Kiss', 'description': 'A virtual kiss to show your love'},
+            'ru': {'name': 'Поцелуй', 'description': 'Виртуальный поцелуй, чтобы выразить свою любовь'}
+        },
+        'Heart': {
+            'en': {'name': 'Heart', 'description': 'A symbol of love and affection'},
+            'ru': {'name': 'Сердце', 'description': 'Символ любви и нежности'}
+        },
+        'Love Letter': {
+            'en': {'name': 'Love Letter', 'description': 'A heartfelt love letter expressing your feelings'},
+            'ru': {'name': 'Любовное письмо', 'description': 'Искреннее любовное письмо, выражающее ваши чувства'}
+        },
+        'Dinner Date': {
+            'en': {'name': 'Dinner Date', 'description': 'A romantic dinner date to remember'},
+            'ru': {'name': 'Ужин', 'description': 'Романтический ужин, который запомнится'}
+        },
+        'Concert Tickets': {
+            'en': {'name': 'Concert Tickets', 'description': 'Tickets to a concert for an unforgettable experience'},
+            'ru': {'name': 'Билеты на концерт', 'description': 'Билеты на концерт для незабываемого впечатления'}
+        }
+    }
+    
+    # Применяем переводы к подаркам в зависимости от языка
+    translated_gifts = []
+    for gift in gifts:
+        translated_gift = {
+            'id': gift.id,
+            'name': gift.name,
+            'description': gift.description,
+            'price': gift.price,
+            'icon': gift.icon,
+            'category': gift.category
+        }
+        
+        # Проверяем, есть ли перевод для текущего подарка
+        for original_name, translations in gift_translations.items():
+            if gift.name == translations['en']['name'] or gift.name == translations['ru']['name']:
+                translated_gift['name'] = translations[lang]['name']
+                translated_gift['description'] = translations[lang]['description']
+                break
+        
+        translated_gifts.append(translated_gift)
+    
+    return translated_gifts
+
+
+# Function to get gift badges for a user (based on received gifts)
+def get_user_gift_badges(user_id):
+    """Return a list of badges earned by a user based on received gifts"""
+    from models import UserGift, Gift
+    from sqlalchemy import func
+    
+    # Define badge thresholds and types
+    badge_definitions = {
+        'rose_badge': {'gift_name': 'Rose', 'min_count': 3, 'icon': '🌹', 'name': 'Flower Lover', 'description': 'Received 3 or more roses'},
+        'chocolate_badge': {'gift_name': 'Chocolate', 'min_count': 3, 'icon': '🍫', 'name': 'Sweet Tooth', 'description': 'Received 3 or more chocolates'},
+        'teddy_badge': {'gift_name': 'Teddy Bear', 'min_count': 2, 'icon': '🧸', 'name': 'Cuddle Expert', 'description': 'Received 2 or more teddy bears'},
+        'champagne_badge': {'gift_name': 'Champagne', 'min_count': 2, 'icon': '🍾', 'name': 'Celebrity', 'description': 'Received 2 or more champagnes'},
+        'diamond_badge': {'gift_name': 'Diamond Ring', 'min_count': 1, 'icon': '💎', 'name': 'Precious', 'description': 'Received a diamond ring'},
+        'heart_badge': {'gift_name': 'Heart', 'min_count': 5, 'icon': '❤️', 'name': 'Heart Collector', 'description': 'Received 5 or more hearts'},
+        'lover_badge': {'gift_name': 'Kiss', 'min_count': 5, 'icon': '💋', 'name': 'Kiss Collector', 'description': 'Received 5 or more kisses'},
+        'romantic_badge': {'gift_name': 'Love Letter', 'min_count': 3, 'icon': '💌', 'name': 'Romantic', 'description': 'Received 3 or more love letters'}
+    }
+    
+    badges = []
+    
+    # Count received gifts by type
+    gift_counts = db.session.query(
+        Gift.name, 
+        func.count(UserGift.id).label('count')
+    ).join(UserGift, Gift.id == UserGift.gift_id).filter(
+        UserGift.recipient_id == user_id
+    ).group_by(Gift.name).all()
+    
+    # Check for each badge type
+    for badge_key, badge_def in badge_definitions.items():
+        gift_count = next((count for name, count in gift_counts if name == badge_def['gift_name']), 0)
+        
+        if gift_count >= badge_def['min_count']:
+            badges.append({
+                'key': badge_key,
+                'name': badge_def['name'],
+                'icon': badge_def['icon'],
+                'description': badge_def['description'],
+                'count': gift_count
+            })
+    
+    return badges
+
+
+# Function to check if user has YOLO mode (special premium feature)
+def has_yolo_mode(user):
+    """Check if user has YOLO mode activated"""
+    # YOLO mode could be activated by receiving certain gifts or through premium subscription
+    # For now, we'll make it available to premium users and those who received special gifts
+    if user.is_premium:
+        return True
+    
+    # Check if user received special gift to activate YOLO mode
+    from models import UserGift, Gift, db
+    yolo_gift = Gift.query.filter_by(name='Dinner Date').first()
+    if yolo_gift:
+        yolo_gift_count = UserGift.query.filter_by(
+            recipient_id=user.id,
+            gift_id=yolo_gift.id
+        ).count()
+        
+        if yolo_gift_count > 0:
+            return True
+    
+    return False
+
+
+# Function to enable YOLO mode for a user
+def activate_yolo_mode(user_id):
+    """Activate YOLO mode for a user, potentially by giving them special status"""
+    from models import User
+    user = User.query.get(user_id)
+    if user:
+        # For now, we'll just store a flag in the database
+        # In a real implementation, this might involve setting a special status or flag
+        # Since there's no specific YOLO field in the User model, we'll make it a temporary session-based feature
+        # Or we could add a field to the user model in the future
+        pass
+
+
+@app.route('/api/activate_yolo_mode', methods=['POST'])
+@login_required
+def api_activate_yolo_mode():
+    """API endpoint to activate YOLO mode if user has earned it"""
+    if has_yolo_mode(current_user):
+        # Create a notification for YOLO mode activation
+        from models import Notification
+        
+        notification = Notification(
+            user_id=current_user.id,
+            type='yolo_mode',
+            title='YOLO Mode Activated!',
+            content='You are now in YOLO mode! Enjoy special features and benefits.',
+            url=url_for('profile')
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'YOLO mode activated!',
+            'has_yolo_mode': True
+        })
+    else:
+        return jsonify({
+            'status': 'error',
+            'message': 'You do not have YOLO mode access yet',
+            'has_yolo_mode': False
+        })
+
 @app.route('/gift_shop')
 @login_required
 def gift_shop():
-    # Заглушка для магазина подарков
-    return render_template('gift_shop.html')
+    # Получаем все подарки из базы данных
+    from models import Gift
+    gifts = Gift.query.all()
+    
+    # Для отладки выведем, какие подарки есть в базе
+    print(f"DEBUG: Found {len(gifts)} gifts in database")
+    for i, gift in enumerate(gifts):
+        print(f"DEBUG: Gift {i+1} - Name: {gift.name}, Price: {gift.price}, Icon: {gift.icon}")
+    
+    # Обеспечим, что у всех подарков есть необходимые поля
+    default_gifts_data = {
+        'Rose': {'price': 10, 'icon': '🌹'},
+        'Chocolate': {'price': 25, 'icon': '🍫'},
+        'Teddy Bear': {'price': 50, 'icon': '🧸'},
+        'Champagne': {'price': 100, 'icon': '🍾'},
+        'Diamond': {'price': 250, 'icon': '💎'},
+        'Heart': {'price': 500, 'icon': '❤️'},
+    }
+    
+    for gift in gifts:
+        # Установим значения по умолчанию, если поле пустое
+        if not gift.icon:
+            gift.icon = default_gifts_data.get(gift.name, {}).get('icon', '🎁')
+        if not gift.price:
+            gift.price = default_gifts_data.get(gift.name, {}).get('price', 0)
+    
+    # Если подарков нет в базе, создаем стандартные
+    if not gifts:
+        for name, data in default_gifts_data.items():
+            gift = Gift(name=name, price=data['price'], icon=data['icon'])
+            db.session.add(gift)
+        db.session.commit()
+        gifts = Gift.query.all()
+    
+    # Получаем текущий язык пользователя
+    lang = session.get('language', 'en')
+    
+    # Применяем переводы к подаркам
+    translated_gifts = translate_gifts(gifts, lang)
+    
+    # Добавим принт для проверки вызова функции
+    print(f"DEBUG: Rendering gift_shop with {len(translated_gifts)} gifts in {lang} language")
+    
+    return render_template('gift_shop.html', gifts=translated_gifts)
+
+
+@app.route('/gift_shop_debug')
+def gift_shop_debug():
+    """Отладочный маршрут для проверки данных подарков без авторизации"""
+    from models import Gift
+    gifts = Gift.query.all()
+    
+    response = f"DEBUG: Found {len(gifts)} gifts in database<br>"
+    for i, gift in enumerate(gifts):
+        response += f"Gift {i+1}: Name={gift.name}, Price={gift.price}, Icon={gift.icon}<br>"
+    
+    # Если подарков нет, создадим тестовые
+    if not gifts:
+        response += "No gifts found, creating test gifts...<br>"
+        # Создать тестовые подарки
+        test_gifts = [
+            {'name': 'Rose', 'price': 10, 'icon': '🌹'},
+            {'name': 'Chocolate', 'price': 25, 'icon': '🍫'},
+            {'name': 'Teddy Bear', 'price': 50, 'icon': '🧸'},
+            {'name': 'Champagne', 'price': 100, 'icon': '🍾'},
+            {'name': 'Diamond', 'price': 250, 'icon': '💎'},
+            {'name': 'Heart', 'price': 500, 'icon': '❤️'},
+        ]
+        for gift_data in test_gifts:
+            gift = Gift(name=gift_data['name'], price=gift_data['price'], icon=gift_data['icon'])
+            db.session.add(gift)
+        db.session.commit()
+        gifts = Gift.query.all()
+        response += f"Now there are {len(gifts)} gifts in database<br>"
+    
+    return response
 
 @app.route('/')
 def home():
@@ -2443,86 +3123,6 @@ def with_timeout(seconds):
                 return result[0]
         return wrapper
     return decorator
-
-
-@app.route('/oauth/google')
-def google_login():
-    """Initiate Google OAuth login"""
-    redirect_uri = url_for('google_callback', _external=True)
-    return google.authorize_redirect(redirect_uri)
-
-
-@app.route('/oauth/google/callback')
-def google_callback():
-    """Handle Google OAuth callback"""
-    try:
-        # Get token from Google
-        token = google.authorize_access_token()
-        user_info = token.get('userinfo')
-        
-        if not user_info:
-            flash('Failed to get user information from Google')
-            return redirect(url_for('login'))
-        
-        # Extract user information
-        email = user_info.get('email')
-        name = user_info.get('name', email.split('@')[0] if email else 'User')
-        google_id = user_info.get('sub')  # Google user ID
-        
-        if not email:
-            flash('Email is required for registration')
-            return redirect(url_for('login'))
-        
-        # Check if user already exists
-        user = UserModel.query.filter_by(email=email).first()
-        
-        if user:
-            # User exists, log them in
-            login_user(user, remember=True)
-            flash(f'Welcome back, {user.first_name or user.username}!')
-            return redirect(url_for('profile'))
-        else:
-            # New user, create account
-            # Generate a unique username
-            base_username = email.split('@')[0]
-            username = base_username
-            counter = 1
-            
-            # Ensure username is unique
-            while UserModel.query.filter_by(username=username).first():
-                username = f"{base_username}_{counter}"
-                counter += 1
-            
-            # Create new user
-            user = UserModel(
-                username=username,
-                email=email,
-                first_name=name,
-                email_confirmed=True  # Google email is already verified
-            )
-            
-            # Set a random password for security (user won't know it)
-            import secrets
-            random_password = secrets.token_urlsafe(16)
-            user.set_password(random_password)
-            
-            # Set default location settings
-            user.match_by_city = False
-            user.match_by_country = True  # Default to country matching
-            
-            db.session.add(user)
-            db.session.commit()
-            
-            # Log in the new user
-            login_user(user, remember=True)
-            flash(f'Welcome to FetDate, {user.first_name or user.username}! Please complete your profile.')
-            return redirect(url_for('edit_profile'))
-            
-    except Exception as e:
-        print(f"Error during Google OAuth: {e}")
-        flash('Authentication failed. Please try again.')
-        return redirect(url_for('login'))
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -2723,11 +3323,6 @@ def login():
                     
                     # Log in the user with permanent session
                     login_user(user, remember=True)
-                    
-                    # Мигрируем пароль, если нужно (обновляем до нового формата, если использовался старый)
-                    from migrate_passwords import migrate_password_if_needed
-                    migrate_password_if_needed(user, password)
-                    
                     return redirect(url_for('profile'))
                 else:
                     print(f"Password check failed for user: {username}")
@@ -2777,7 +3372,6 @@ def show_profile(user_id):
     user_data = {
         'id': user.id,
         'username': user.username,
-        'first_name': user.first_name,
         'email': user.email,
         'photo': user.photo,
         'country': user.country,
@@ -2785,6 +3379,7 @@ def show_profile(user_id):
         'bio': user.bio,
         'fetishes': user_fetishes,
         'interests': user_interests,
+        'orientation': user.orientation,
         'created_at': user.created_at.isoformat() if user.created_at else None,
         'is_premium': is_premium_user(user)
     }
@@ -2846,7 +3441,6 @@ def edit_profile():
     
     if request.method == 'POST':
         # Get form data
-        first_name = request.form.get('first_name', '').strip()
         country = request.form.get('country', '').strip()
         city = request.form.get('city', '').strip()
         bio = request.form.get('bio', '').strip()
@@ -2854,35 +3448,11 @@ def edit_profile():
         # Validate required fields for new users (empty profile)
         is_new_user = not current_user.country and not current_user.city  # If both are empty, assume new user
         if is_new_user:
-            if not first_name:
-                flash('Name is required')
-                # Create minimal user_data for error cases
-                user_data = {
-                    'username': current_user.username,
-                    'first_name': current_user.first_name,
-                    'email': current_user.email,
-                    'photo': current_user.photo,
-                    'country': current_user.country,
-                    'city': current_user.city,
-                    'bio': current_user.bio,
-                    'fetishes': [],
-                    'interests': [],
-                    'created_at': current_user.created_at.isoformat(),
-                    'is_premium': is_premium_user(current_user),
-                    'user_photos': []
-                }
-                
-                # Get user's additional photos
-                user_photos = UserPhoto.query.filter_by(user_id=current_user.id).all()
-                user_data['user_photos'] = user_photos
-                
-                return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
             if not country:
                 flash('Country is required')
                 # Create minimal user_data for error cases
                 user_data = {
                     'username': current_user.username,
-                    'first_name': current_user.first_name,
                     'email': current_user.email,
                     'photo': current_user.photo,
                     'country': current_user.country,
@@ -2905,7 +3475,6 @@ def edit_profile():
                 # Create minimal user_data for error cases
                 user_data = {
                     'username': current_user.username,
-                    'first_name': current_user.first_name,
                     'email': current_user.email,
                     'photo': current_user.photo,
                     'country': current_user.country,
@@ -2928,7 +3497,6 @@ def edit_profile():
                 # Create minimal user_data for error cases
                 user_data = {
                     'username': current_user.username,
-                    'first_name': current_user.first_name,
                     'email': current_user.email,
                     'photo': current_user.photo,
                     'country': current_user.country,
@@ -2948,7 +3516,6 @@ def edit_profile():
                 return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
         
         # Update user profile information
-        current_user.first_name = first_name
         current_user.country = country
         current_user.city = city
         current_user.bio = bio
@@ -2967,6 +3534,11 @@ def edit_profile():
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 photo.save(filepath)
                 current_user.photo = filename
+        
+        # Update orientation if provided
+        orientation = request.form.get('orientation')
+        if orientation:
+            current_user.orientation = orientation
         
         # If user is new and doesn't have a photo, require photo upload
         if is_new_user and not current_user.photo:
@@ -3078,7 +3650,6 @@ def edit_profile():
         
     user_data = {
         'username': current_user.username,
-        'first_name': current_user.first_name,
         'email': current_user.email,
         'photo': current_user.photo,
         'country': current_user.country,
@@ -3096,6 +3667,70 @@ def edit_profile():
     user_data['user_photos'] = user_photos
     
     return render_template('edit_profile.html', user=user_data, fetishes=all_fetishes, interests=all_interests)
+
+@app.route('/my_gifts')
+@login_required
+def my_gifts():
+    # Страница с полученными и отправленными подарками
+    from models import UserGift, Gift, User
+    
+    # Get current language
+    lang = session.get('language', 'en')
+    
+    # Get received gifts
+    received_gifts = UserGift.query.filter_by(recipient_id=current_user.id).order_by(UserGift.timestamp.desc()).all()
+    
+    # Get sent gifts
+    sent_gifts = UserGift.query.filter_by(sender_id=current_user.id).order_by(UserGift.timestamp.desc()).all()
+    
+    # Prepare data for template with translations
+    received_gifts_data = []
+    for gift in received_gifts:
+        # Translate the gift name and description
+        translated_gifts = translate_gifts([gift.gift], lang)
+        if translated_gifts:
+            gift_name = translated_gifts[0]['name']
+            gift_description = translated_gifts[0]['description']
+        else:
+            gift_name = gift.gift.name
+            gift_description = gift.gift.description
+        
+        gift_data = {
+            'id': gift.id,
+            'gift_name': gift_name,
+            'gift_description': gift_description,
+            'sender': 'Anonymous' if gift.is_anonymous else (gift.sender.first_name or gift.sender.username),
+            'message': gift.message,
+            'timestamp': gift.timestamp,
+            'is_read': gift.is_read,
+            'is_anonymous': gift.is_anonymous
+        }
+        received_gifts_data.append(gift_data)
+    
+    sent_gifts_data = []
+    for gift in sent_gifts:
+        # Translate the gift name and description
+        translated_gifts = translate_gifts([gift.gift], lang)
+        if translated_gifts:
+            gift_name = translated_gifts[0]['name']
+            gift_description = translated_gifts[0]['description']
+        else:
+            gift_name = gift.gift.name
+            gift_description = gift.gift.description
+        
+        gift_data = {
+            'id': gift.id,
+            'gift_name': gift_name,
+            'gift_description': gift_description,
+            'recipient': gift.recipient.first_name or gift.recipient.username,
+            'message': gift.message,
+            'timestamp': gift.timestamp,
+            'is_read': True  # Sent gifts are always considered "read"
+        }
+        sent_gifts_data.append(gift_data)
+    
+    return render_template('my_gifts.html', received_gifts=received_gifts_data, sent_gifts=sent_gifts_data)
+
 
 @app.route('/swipe')
 @login_required
@@ -3245,6 +3880,210 @@ def api_notifications():
     return jsonify(notifications_data)
 
 
+# API route to send a gift
+@app.route('/api/send_gift', methods=['POST'])
+@login_required
+def api_send_gift():
+    try:
+        from models import User, UserGift, Gift
+        from flask import request, jsonify
+        import json
+        
+        data = request.get_json()
+        gift_id = data.get('gift_id')
+        recipient_username = data.get('recipient_username')
+        message = data.get('message', '')
+        is_anonymous = data.get('is_anonymous', False)
+        
+        gift = Gift.query.get(gift_id)
+        if not gift:
+            return jsonify({'status': 'error', 'message': 'Gift not found'}), 404
+        
+        recipient = User.query.filter_by(username=recipient_username).first()
+        if not recipient:
+            return jsonify({'status': 'error', 'message': 'Recipient not found'}), 404
+        
+        # Check if user has enough coins to send this gift
+        if current_user.coins < gift.price:
+            return jsonify({'status': 'error', 'message': 'Not enough coins to send this gift'}), 400
+        
+        # Deduct gift price from sender's coins
+        current_user.coins -= gift.price
+        db.session.commit()
+        
+        # Get current language for gift name translation in notification
+        lang = session.get('language', 'en')
+        
+        # Define gift translations
+        gift_translations = {
+            'Rose': {
+                'en': {'name': 'Rose', 'description': 'A beautiful red rose to show your affection'},
+                'ru': {'name': 'Роза', 'description': 'Прекрасная красная роза, чтобы выразить свои чувства'}
+            },
+            'Tulips': {
+                'en': {'name': 'Tulips', 'description': 'Colorful tulips to brighten someone\'s day'},
+                'ru': {'name': 'Тюльпаны', 'description': 'Цветные тюльпаны, чтобы осветить чей-то день'}
+            },
+            'Sunflower': {
+                'en': {'name': 'Sunflower', 'description': 'A bright sunflower to bring joy and happiness'},
+                'ru': {'name': 'Подсолнух', 'description': 'Яркий подсолнух, чтобы принести радость и счастье'}
+            },
+            'Ring': {
+                'en': {'name': 'Ring', 'description': 'A beautiful ring symbolizing your affection'},
+                'ru': {'name': 'Кольцо', 'description': 'Красивое кольцо, символизирующее ваши чувства'}
+            },
+            'Diamond Ring': {
+                'en': {'name': 'Diamond Ring', 'description': 'A sparkling diamond ring showing serious commitment'},
+                'ru': {'name': 'Бриллиантовое кольцо', 'description': 'Сверкающее бриллиантовое кольцо, показывающее серьезные намерения'}
+            },
+            'Perfume': {
+                'en': {'name': 'Perfume', 'description': 'A lovely perfume for a special someone'},
+                'ru': {'name': 'Парфюм', 'description': 'Прекрасный парфюм для особенного человека'}
+            },
+            'Handbag': {
+                'en': {'name': 'Handbag', 'description': 'An elegant handbag as a token of appreciation'},
+                'ru': {'name': 'Сумка', 'description': 'Элегантная сумка как знак признания'}
+            },
+            'Chocolate': {
+                'en': {'name': 'Chocolate', 'description': 'Sweet chocolate for a sweet person'},
+                'ru': {'name': 'Шоколад', 'description': 'Сладкий шоколад для сладкого человека'}
+            },
+            'Wine': {
+                'en': {'name': 'Wine', 'description': 'A bottle of fine wine for a special occasion'},
+                'ru': {'name': 'Вино', 'description': 'Бутылка хорошего вина для особого случая'}
+            },
+            'Champagne': {
+                'en': {'name': 'Champagne', 'description': 'A bottle of sparkling champagne to celebrate'},
+                'ru': {'name': 'Шампанское', 'description': 'Бутылка игристого шампанского для празднования'}
+            },
+            'Teddy Bear': {
+                'en': {'name': 'Teddy Bear', 'description': 'A cute teddy bear to hug'},
+                'ru': {'name': 'Плюшевый мишка', 'description': 'Милый плюшевый мишка для объятий'}
+            },
+            'Kiss': {
+                'en': {'name': 'Kiss', 'description': 'A virtual kiss to show your love'},
+                'ru': {'name': 'Поцелуй', 'description': 'Виртуальный поцелуй, чтобы выразить свою любовь'}
+            },
+            'Heart': {
+                'en': {'name': 'Heart', 'description': 'A symbol of love and affection'},
+                'ru': {'name': 'Сердце', 'description': 'Символ любви и нежности'}
+            },
+            'Love Letter': {
+                'en': {'name': 'Love Letter', 'description': 'A heartfelt love letter expressing your feelings'},
+                'ru': {'name': 'Любовное письмо', 'description': 'Искреннее любовное письмо, выражающее ваши чувства'}
+            },
+            'Dinner Date': {
+                'en': {'name': 'Dinner Date', 'description': 'A romantic dinner date to remember'},
+                'ru': {'name': 'Ужин', 'description': 'Романтический ужин, который запомнится'}
+            },
+            'Concert Tickets': {
+                'en': {'name': 'Concert Tickets', 'description': 'Tickets to a concert for an unforgettable experience'},
+                'ru': {'name': 'Билеты на концерт', 'description': 'Билеты на концерт для незабываемого впечатления'}
+            }
+        }
+        
+        # Find translated gift name
+        gift_name_for_notification = gift.name
+        for original_name, translations in gift_translations.items():
+            if gift.name == translations['en']['name'] or gift.name == translations['ru']['name']:
+                gift_name_for_notification = translations[lang]['name']
+                break
+        
+        # Add the gift to the database
+        user_gift = UserGift(
+            sender_id=current_user.id,
+            recipient_id=recipient.id,
+            gift_id=gift.id,
+            message=message,
+            is_anonymous=is_anonymous
+        )
+        
+        from models import db
+        db.session.add(user_gift)
+        db.session.commit()
+        
+        # Create a notification for the recipient
+        from models import Notification
+        title = 'New Gift!' if not is_anonymous else 'Anonymous Gift!'
+        if lang == 'ru':
+            title = 'Новый подарок!' if not is_anonymous else 'Анонимный подарок!'
+            
+        notification = Notification(
+            user_id=recipient.id,
+            type='gift',
+            title=title,
+            content=f'You received a {gift_name_for_notification} gift!' if not is_anonymous else 'You received an anonymous gift!',
+            url=url_for('my_gifts')  # This would be the route to view received gifts
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success', 
+            'message': 'Gift sent successfully!',
+            'new_balance': current_user.coins
+        })
+    
+    except Exception as e:
+        print(f"Error sending gift: {e}")
+        # If there was an error, refund the coins
+        try:
+            current_user.coins += gift.price if 'gift' in locals() and hasattr(gift, 'price') else 0
+            db.session.commit()
+        except:
+            pass  # Ignore error if refund fails
+        return jsonify({'status': 'error', 'message': 'Failed to send gift'}), 500
+
+
+# API route to search for users to send gifts to
+@app.route('/api/search_users')
+@login_required
+def api_search_users():
+    query = request.args.get('query', '')
+    if len(query) < 1:
+        return jsonify([])
+    
+    from models import User
+    users = User.query.filter(
+        User.username.contains(query),
+        User.id != current_user.id  # Don't show current user in results
+    ).limit(10).all()
+    
+    user_list = []
+    for user in users:
+        user_list.append({
+            'id': user.id,
+            'username': user.username,
+            'first_name': user.first_name
+        })
+    
+    return jsonify(user_list)
+
+
+# API route to mark a gift as read
+@app.route('/api/mark_gift_read/<int:gift_id>', methods=['POST'])
+@login_required
+def api_mark_gift_read(gift_id):
+    try:
+        from models import UserGift, db
+        
+        # Find the gift
+        user_gift = UserGift.query.filter_by(id=gift_id, recipient_id=current_user.id).first()
+        
+        if not user_gift:
+            return jsonify({'status': 'error', 'message': 'Gift not found or you are not the recipient'}), 404
+        
+        # Mark as read
+        user_gift.is_read = True
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': 'Gift marked as read'})
+    
+    except Exception as e:
+        print(f"Error marking gift as read: {e}")
+        return jsonify({'status': 'error', 'message': 'Failed to mark gift as read'}), 500
+
+
 # API route for users data for swipe functionality
 @app.route('/api/users')
 @login_required
@@ -3278,31 +4117,24 @@ def api_users():
         elif current_user.match_by_country and current_user.country:
             query = query.filter_by(country=current_user.country)
         
-        # Get all users first
-        all_users = query.limit(100).all()  # Increase limit to get more users for sorting
-        
-        # Sort users: premium users first, then others
-        # Within each group, sort by created_at (newer first)
-        sorted_users = sorted(all_users, key=lambda u: (
-            not is_premium_user(u),  # False (premium) comes before True (non-premium)
-            u.created_at or datetime.min  # Newer users first
-        ), reverse=True)  # Reverse to put newer first within groups
-        
         # Limit to 50 users to prevent memory issues
-        db_users = sorted_users[:50]
+        db_users = query.limit(50).all()
         
         # Create a lightweight representation of users data
         users_list = []
         for user in db_users:
+            # Get gift badges for this user
+            gift_badges = get_user_gift_badges(user.id)
+            
             # Only include essential information for swipe cards
             user_data = {
                 'username': user.username,
-                'first_name': user.first_name,
                 'photo': user.photo,
                 'city': user.city,
                 'country': user.country,
                 'bio': user.bio[:100] if user.bio else '',  # Limit bio length
-                'is_premium': is_premium_user(user)  # Add premium status for UI
+                'gift_badges': gift_badges,  # Include gift badges
+                'is_premium': is_premium_user(user)
             }
             
             # Add user to the list with their ID
@@ -3471,8 +4303,77 @@ def create_tables():
     """Create database tables for SQLite"""
     try:
         with app.app_context():
-            # Create all tables
-            db.create_all()
+            from models import db as database
+            import sqlite3
+            import os
+            
+            # Get the database file path
+            db_path = app.config.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///users.db').replace('sqlite:///', '')
+            
+            # Check if database file exists
+            if os.path.exists(db_path):
+                print("Existing database found, checking structure...")
+                # If database exists, we need to handle schema changes
+                # For now, we'll recreate tables if needed, but with a warning
+                try:
+                    # Try to access the Gift table to check its structure
+                    from models import Gift
+                    # Attempt a simple query - if it fails due to missing columns, 
+                    # we know we need to handle schema changes
+                    sample_gift = db.session.query(Gift).first()
+                    # If no exception, continue with initialization
+                    db.create_all()
+                    initialize_default_gifts()
+                except Exception as e:
+                    # Handle schema mismatch - drop and recreate gift table specifically
+                    print(f"Schema mismatch detected: {e}")
+                    # In a real-world scenario, you would use database migrations
+                    # But for now, we'll add the new columns via raw SQL
+                    try:
+                        # Add missing columns to existing table
+                        with db.engine.connect() as conn:
+                            # Enable foreign keys for SQLite
+                            conn.execute("PRAGMA foreign_keys=ON;")
+                            
+                            # Try to add missing columns one by one
+                            try:
+                                conn.execute("ALTER TABLE gift ADD COLUMN description TEXT;")
+                                print("Added description column to gift table")
+                            except:
+                                pass  # Column may already exist
+                                
+                            try:
+                                conn.execute("ALTER TABLE gift ADD COLUMN thumbnail_url TEXT;")
+                                print("Added thumbnail_url column to gift table")
+                            except:
+                                pass  # Column may already exist
+                                
+                            try:
+                                conn.execute("ALTER TABLE gift ADD COLUMN is_active BOOLEAN DEFAULT 1;")
+                                print("Added is_active column to gift table")
+                            except:
+                                pass  # Column may already exist
+                                
+                            try:
+                                conn.execute("ALTER TABLE gift ADD COLUMN created_at DATETIME;")
+                                print("Added created_at column to gift table")
+                            except:
+                                pass  # Column may already exist
+                                
+                        db.session.commit()
+                        print("Database schema updated successfully!")
+                        # Now create any remaining tables
+                        db.create_all()
+                        initialize_default_gifts()
+                    except Exception as e2:
+                        print(f"Could not update schema: {e2}")
+                        print("Continuing with existing structure...")
+                        # Still try to create other tables and proceed
+                        db.create_all()
+            else:
+                # Fresh database, create all tables normally
+                db.create_all()
+                initialize_default_gifts()
             
             print("Database tables created successfully!")
             return True
@@ -3588,7 +4489,6 @@ def api_user_info(user_id):
     user_data = {
         'id': user.id,
         'username': user.username,
-        'first_name': user.first_name,
         'email': user.email,
         'photo': user.photo,
         'country': user.country,
@@ -3601,29 +4501,6 @@ def api_user_info(user_id):
     }
     
     return jsonify(user_data)
-
-
-@app.route('/api/rating/<int:user_id>')
-@login_required
-def api_get_rating(user_id):
-    """API endpoint to get user rating"""
-    user = UserModel.query.get(user_id)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    # Calculate average rating
-    ratings = Rating.query.filter_by(rated_user_id=user.id).all()
-    if ratings:
-        avg_rating = sum(r.stars for r in ratings) / len(ratings)
-        return jsonify({
-            'avg_rating': avg_rating,
-            'total_ratings': len(ratings)
-        })
-    else:
-        return jsonify({
-            'avg_rating': 0,
-            'total_ratings': 0
-        })
 
 @app.route('/api/send_message', methods=['POST'])
 @login_required
@@ -3747,237 +4624,6 @@ def api_match():
             response['matched_user_photo'] = matched_user.photo
     
     return jsonify(response)
-
-# Gift-related routes
-@app.route('/gifts')
-@login_required
-def gifts():
-    """Display available gifts and gift shop"""
-    # Get all active gifts
-    gifts = Gift.query.filter_by(is_active=True).all()
-    
-    # Get user's recent gifts
-    user_gifts_sent = UserGift.query.filter_by(sender_id=current_user.id).order_by(UserGift.timestamp.desc()).limit(10).all()
-    user_gifts_received = UserGift.query.filter_by(recipient_id=current_user.id).order_by(UserGift.timestamp.desc()).limit(10).all()
-    
-    return render_template('gifts.html', gifts=gifts, user_gifts_sent=user_gifts_sent, user_gifts_received=user_gifts_received)
-
-
-@app.route('/send_gift', methods=['POST'])
-@login_required
-def send_gift():
-    """Send a gift to another user"""
-    gift_id = request.form.get('gift_id')
-    recipient_id = request.form.get('recipient_id')
-    message = request.form.get('message', '')
-    is_anonymous = request.form.get('is_anonymous', False)
-    
-    # Validate input
-    if not gift_id or not recipient_id:
-        flash('Gift and recipient are required')
-        return redirect(url_for('gifts'))
-    
-    # Check if user has enough coins
-    gift = Gift.query.get(gift_id)
-    recipient = UserModel.query.get(recipient_id)
-    
-    if not gift or not recipient:
-        flash('Invalid gift or recipient')
-        return redirect(url_for('gifts'))
-    
-    if current_user.coins < gift.price:
-        flash('Not enough coins to send this gift')
-        return redirect(url_for('gifts'))
-    
-    # Deduct coins from sender
-    current_user.coins -= gift.price
-    
-    # Create user gift record
-    user_gift = UserGift(
-        sender_id=current_user.id,
-        recipient_id=recipient_id,
-        gift_id=gift_id,
-        message=message,
-        is_anonymous=is_anonymous
-    )
-    
-    db.session.add(user_gift)
-    db.session.commit()
-    
-    flash(f'Gift "{gift.name}" sent successfully!')
-    return redirect(url_for('gifts'))
-
-
-@app.route('/api/gifts')
-@login_required
-def api_gifts():
-    """API endpoint to get available gifts"""
-    gifts = Gift.query.filter_by(is_active=True).all()
-    
-    gifts_data = []
-    for gift in gifts:
-        gifts_data.append({
-            'id': gift.id,
-            'name': gift.name,
-            'description': gift.description,
-            'price': gift.price,
-            'icon': gift.icon,
-            'category': gift.category,
-            'thumbnail_url': gift.thumbnail_url
-        })
-    
-    return jsonify(gifts_data)
-
-
-# Music-related routes
-@app.route('/upload_track', methods=['POST'])
-@login_required
-def upload_track():
-    """Upload a music track to user's profile"""
-    try:
-        if 'track' not in request.files:
-            return jsonify({'status': 'error', 'message': 'No track file provided'}), 400
-        
-        track_file = request.files['track']
-        if track_file.filename == '':
-            return jsonify({'status': 'error', 'message': 'No track selected'}), 400
-        
-        # Check if file is audio
-        allowed_extensions = {'.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac'}
-        file_ext = os.path.splitext(track_file.filename)[1].lower()
-        if file_ext not in allowed_extensions:
-            return jsonify({'status': 'error', 'message': 'Invalid file type. Supported: MP3, WAV, OGG, FLAC, M4A, AAC'}), 400
-        
-        # Create uploads directory for tracks if it doesn't exist
-        tracks_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'tracks')
-        if not os.path.exists(tracks_upload_dir):
-            os.makedirs(tracks_upload_dir)
-        
-        # Generate unique filename
-        filename = f"{uuid.uuid4().hex}{file_ext}"
-        filepath = os.path.join(tracks_upload_dir, filename)
-        
-        # Save file
-        track_file.save(filepath)
-        
-        # Get track metadata (title, artist, duration)
-        title = request.form.get('title', 'Untitled Track')
-        artist = request.form.get('artist', '')
-        is_public = request.form.get('is_public', True)
-        
-        # Create track record
-        from models import UserTrack
-        user_track = UserTrack(
-            user_id=current_user.id,
-            title=title,
-            artist=artist,
-            file_path=os.path.join('tracks', filename),
-            is_public=is_public
-        )
-        
-        db.session.add(user_track)
-        db.session.commit()
-        
-        return jsonify({
-            'status': 'success', 
-            'message': 'Track uploaded successfully',
-            'track': {
-                'id': user_track.id,
-                'title': user_track.title,
-                'artist': user_track.artist,
-                'duration': user_track.duration,
-                'is_public': user_track.is_public,
-                'upload_date': user_track.upload_date.isoformat()
-            }
-        })
-        
-    except Exception as e:
-        print(f"Error uploading track: {e}")
-        return jsonify({'status': 'error', 'message': 'Error uploading track'}), 500
-
-
-@app.route('/api/tracks/<int:user_id>')
-@login_required
-def api_user_tracks(user_id):
-    """Get user's music tracks"""
-    try:
-        from models import UserTrack
-        
-        # Get user's public tracks
-        tracks = UserTrack.query.filter_by(
-            user_id=user_id,
-            is_public=True
-        ).order_by(UserTrack.upload_date.desc()).all()
-        
-        tracks_data = []
-        for track in tracks:
-            tracks_data.append({
-                'id': track.id,
-                'title': track.title,
-                'artist': track.artist,
-                'duration': track.duration,
-                'upload_date': track.upload_date.isoformat() if track.upload_date else None,
-                'play_count': track.play_count
-            })
-        
-        return jsonify(tracks_data)
-        
-    except Exception as e:
-        print(f"Error getting user tracks: {e}")
-        return jsonify([])
-
-
-@app.route('/api/track/<int:track_id>/play')
-@login_required
-def play_track(track_id):
-    """Increment play count for a track"""
-    try:
-        from models import UserTrack
-        
-        track = UserTrack.query.get(track_id)
-        if not track:
-            return jsonify({'status': 'error', 'message': 'Track not found'}), 404
-        
-        # Increment play count
-        track.play_count += 1
-        db.session.commit()
-        
-        return jsonify({'status': 'success', 'play_count': track.play_count})
-        
-    except Exception as e:
-        print(f"Error playing track: {e}")
-        return jsonify({'status': 'error', 'message': 'Error playing track'}), 500
-
-
-@app.route('/tracks/<int:track_id>')
-@login_required
-def serve_track(track_id):
-    """Serve track files"""
-    try:
-        from models import UserTrack
-        
-        # Get track info
-        track = UserTrack.query.get(track_id)
-        if not track:
-            return jsonify({'status': 'error', 'message': 'Track not found'}), 404
-        
-        # Check if track is public or user has permission to access it
-        if not track.is_public and track.user_id != current_user.id:
-            # Check if current user is premium or has permission
-            if not current_user.is_premium:
-                return jsonify({'status': 'error', 'message': 'Access denied'}), 403
-        
-        tracks_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'tracks')
-        track_path = os.path.join(tracks_dir, os.path.basename(track.file_path))
-        
-        if not os.path.exists(track_path):
-            return jsonify({'status': 'error', 'message': 'Track file not found'}), 404
-        
-        return send_from_directory(tracks_dir, os.path.basename(track.file_path))
-    except Exception as e:
-        print(f"Error serving track: {e}")
-        return jsonify({'status': 'error', 'message': 'Track not found'}), 404
-
 
 def print_server_info():
     """Выводит информацию о том, к какому адресу привязан сервер"""

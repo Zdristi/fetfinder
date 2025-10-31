@@ -1,201 +1,247 @@
 {% extends "base.html" %}
 
-{% block title %}{{ get_text('my_gifts') }} - {{ SITE_NAME }}{% endblock %}
+{% block title %}{{ get_text('my_gifts') or 'My Gifts' }}{% endblock %}
 
 {% block content %}
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">
-            <i class="fas fa-gift"></i> {{ get_text('my_gifts') }}
-        </h2>
+        <h2 class="card-title">{{ get_text('my_gifts') or 'My Gifts' }}</h2>
     </div>
     
-    <!-- Navigation Tabs -->
-    <div style="display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 30px;">
-        <button class="tab-button active" data-tab="received" style="padding: 15px 25px; background: none; border: none; color: var(--dark); font-weight: bold; cursor: pointer; border-bottom: 3px solid var(--primary);">
-            {{ get_text('received_gifts') }}
-        </button>
-        <button class="tab-button" data-tab="sent" style="padding: 15px 25px; background: none; border: none; color: var(--gray); font-weight: bold; cursor: pointer;">
-            {{ get_text('sent_gifts') }}
-        </button>
-    </div>
-    
-    <!-- Received Gifts Tab -->
-    <div id="received-tab" class="tab-content" style="display: block;">
-        {% if received_gifts %}
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px;">
-                {% for gift in received_gifts %}
-                    <div class="gift-item" style="background: var(--card-bg); border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s;">
-                        <div style="padding: 20px;">
-                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                                {% if gift.sender %}
-                                    <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 15px;">
-                                        {{ gift.sender.username[0].upper() }}
-                                    </div>
-                                {% endif %}
-                                
-                                <div>
-                                    <h4 style="margin: 0 0 5px 0; color: var(--dark);">
+    <div class="gifts-container">
+        <!-- Received Gifts Section -->
+        <div class="section">
+            <h3 class="section-title">{{ get_text('received_gifts') or 'Received Gifts' }}</h3>
+            
+            {% if received_gifts %}
+                <div class="gifts-list">
+                    {% for gift in received_gifts %}
+                    <div class="gift-item card">
+                        <div class="gift-header">
+                            <div class="gift-icon">
+                                <i class="fas fa-gift"></i>
+                            </div>
+                            <div class="gift-info">
+                                <h4>{{ gift.gift_name }}</h4>
+                                <div class="gift-meta">
+                                    <span class="sender">
                                         {% if gift.is_anonymous %}
-                                            {{ get_text('anonymous_sender') or 'Anonymous Sender' }}
+                                            {{ get_text('anonymous_sender') or 'Anonymous' }}
                                         {% else %}
-                                            {{ gift.sender.username if gift.sender else 'Unknown User' }}
+                                            {{ get_text('from') or 'From' }} {{ gift.sender }}
                                         {% endif %}
-                                    </h4>
-                                    <div style="color: var(--gray); font-size: 0.9rem;">
-                                        {{ gift.timestamp.strftime('%Y-%m-%d %H:%M') }}
-                                    </div>
+                                    </span>
+                                    <span class="timestamp">{{ gift.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
                                 </div>
-                            </div>
-                            
-                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                                {% if gift.gift.image_url %}
-                                    <img src="{{ gift.gift.image_url }}" alt="{{ gift.gift.name }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 10px; margin-right: 15px;">
-                                {% else %}
-                                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; border-radius: 10px; margin-right: 15px;">
-                                        <i class="fas fa-gift"></i>
-                                    </div>
-                                {% endif %}
-                                
-                                <div>
-                                    <h5 style="margin: 0 0 5px 0; color: var(--dark);">{{ gift.gift.name }}</h5>
-                                    <div style="display: flex; align-items: center; color: var(--primary);">
-                                        <i class="fas fa-coins"></i>
-                                        <span style="margin-left: 5px; font-weight: bold;">{{ gift.gift.price_coins }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            {% if gift.message %}
-                                <div style="background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                    <p style="margin: 0; color: var(--dark);">{{ gift.message }}</p>
-                                </div>
-                            {% endif %}
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="color: var(--gray); font-size: 0.9rem;">
-                                    {{ gift.gift.category or '' }}
-                                </div>
-                                
-                                {% if not gift.is_read %}
-                                    <span class="badge" style="background: var(--primary); color: white;">{{ get_text('new') or 'New' }}</span>
-                                {% endif %}
                             </div>
                         </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div style="text-align: center; padding: 60px 20px; color: var(--gray);">
-                <i class="fas fa-gift fa-3x" style="margin-bottom: 20px;"></i>
-                <h3 style="margin: 0 0 15px 0; color: var(--dark);">{{ get_text('no_gifts_yet') }}</h3>
-                <p>{{ get_text('check_back_later_for_gifts') or 'Check back later to see gifts you receive!' }}</p>
-                <a href="{{ url_for('gift_shop') }}" class="btn" style="margin-top: 20px;">
-                    <i class="fas fa-shopping-bag"></i> {{ get_text('gift_shop') }}
-                </a>
-            </div>
-        {% endif %}
-    </div>
-    
-    <!-- Sent Gifts Tab -->
-    <div id="sent-tab" class="tab-content" style="display: none;">
-        {% if sent_gifts %}
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px;">
-                {% for gift in sent_gifts %}
-                    <div class="gift-item" style="background: var(--card-bg); border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s;">
-                        <div style="padding: 20px;">
-                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                                {% if gift.recipient %}
-                                    <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 15px;">
-                                        {{ gift.recipient.username[0].upper() }}
-                                    </div>
-                                {% endif %}
-                                
-                                <div>
-                                    <h4 style="margin: 0 0 5px 0; color: var(--dark);">
-                                        {{ gift.recipient.username if gift.recipient else 'Unknown User' }}
-                                    </h4>
-                                    <div style="color: var(--gray); font-size: 0.9rem;">
-                                        {{ gift.timestamp.strftime('%Y-%m-%d %H:%M') }}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                                {% if gift.gift.image_url %}
-                                    <img src="{{ gift.gift.image_url }}" alt="{{ gift.gift.name }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 10px; margin-right: 15px;">
-                                {% else %}
-                                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; border-radius: 10px; margin-right: 15px;">
-                                        <i class="fas fa-gift"></i>
-                                    </div>
-                                {% endif %}
-                                
-                                <div>
-                                    <h5 style="margin: 0 0 5px 0; color: var(--dark);">{{ gift.gift.name }}</h5>
-                                    <div style="display: flex; align-items: center; color: var(--primary);">
-                                        <i class="fas fa-coins"></i>
-                                        <span style="margin-left: 5px; font-weight: bold;">{{ gift.gift.price_coins }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            {% if gift.message %}
-                                <div style="background: rgba(0,0,0,0.05); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                    <p style="margin: 0; color: var(--dark);">{{ gift.message }}</p>
-                                </div>
-                            {% endif %}
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="color: var(--gray); font-size: 0.9rem;">
-                                    {{ gift.gift.category or '' }}
-                                </div>
-                                
-                                {% if gift.is_anonymous %}
-                                    <span class="badge" style="background: var(--accent); color: white;">{{ get_text('anonymous') or 'Anonymous' }}</span>
-                                {% endif %}
-                            </div>
+                        
+                        {% if gift.message %}
+                        <div class="gift-message">
+                            <p><strong>{{ get_text('message') or 'Message' }}:</strong> {{ gift.message }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="gift-actions">
+                            <button class="btn btn-sm" onclick="markGiftAsRead({{ gift.id }})">
+                                {{ get_text('mark_as_read') or 'Mark as Read' }}
+                            </button>
                         </div>
                     </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div style="text-align: center; padding: 60px 20px; color: var(--gray);">
-                <i class="fas fa-paper-plane fa-3x" style="margin-bottom: 20px;"></i>
-                <h3 style="margin: 0 0 15px 0; color: var(--dark);">{{ get_text('no_sent_gifts_yet') or 'No gifts sent yet' }}</h3>
-                <p>{{ get_text('send_a_gift_to_someone_special') or 'Send a gift to someone special!' }}</p>
-                <a href="{{ url_for('gift_shop') }}" class="btn" style="margin-top: 20px;">
-                    <i class="fas fa-gift"></i> {{ get_text('send_gift') }}
-                </a>
-            </div>
-        {% endif %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-gift"></i>
+                    <h3>{{ get_text('no_received_gifts') or 'No received gifts' }}</h3>
+                    <p>{{ get_text('no_received_gifts_text') or 'You have not received any gifts yet' }}</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sent Gifts Section -->
+        <div class="section" style="margin-top: 30px;">
+            <h3 class="section-title">{{ get_text('sent_gifts') or 'Sent Gifts' }}</h3>
+            
+            {% if sent_gifts %}
+                <div class="gifts-list">
+                    {% for gift in sent_gifts %}
+                    <div class="gift-item card">
+                        <div class="gift-header">
+                            <div class="gift-icon">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <div class="gift-info">
+                                <h4>{{ gift.gift_name }}</h4>
+                                <div class="gift-meta">
+                                    <span class="recipient">{{ get_text('to') or 'To' }} {{ gift.recipient }}</span>
+                                    <span class="timestamp">{{ gift.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if gift.message %}
+                        <div class="gift-message">
+                            <p><strong>{{ get_text('message') or 'Message' }}:</strong> {{ gift.message }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-paper-plane"></i>
+                    <h3>{{ get_text('no_sent_gifts') or 'No sent gifts' }}</h3>
+                    <p>{{ get_text('no_sent_gifts_text') or 'You have not sent any gifts yet' }}</p>
+                    <a href="{{ url_for('gift_shop') }}" class="btn">{{ get_text('send_first_gift') or 'Send Your First Gift' }}</a>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 
 <script>
-    // Tab switching functionality
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', function() {
-            const tab = this.getAttribute('data-tab');
+function markGiftAsRead(giftId) {
+    fetch(`/api/mark_gift_read/${giftId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Find the gift element and update its appearance
+            const giftElement = document.querySelector(`[data-gift-id="${giftId}"]`);
+            if (giftElement) {
+                giftElement.classList.remove('unread');
+                giftElement.classList.add('read');
+            }
             
-            // Remove active class from all buttons and tabs
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.borderBottom = 'none';
-                btn.style.color = 'var(--gray)';
-            });
-            
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.style.display = 'none';
-            });
-            
-            // Add active class to clicked button
-            this.classList.add('active');
-            this.style.borderBottom = '3px solid var(--primary)';
-            this.style.color = 'var(--dark)';
-            
-            // Show corresponding tab content
-            document.getElementById(`${tab}-tab`).style.display = 'block';
-        });
+            // Update any notification indicators if needed
+            updateGiftNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking gift as read:', error);
     });
+}
+
+function updateGiftNotifications() {
+    // This function would update any UI indicators related to unread gifts
+    // For example, updating a badge count
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize any gift-related UI components
+    console.log('Gifts page loaded');
+});
 </script>
+
+<style>
+.gifts-container {
+    width: 100%;
+}
+
+.gifts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.gift-item {
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+}
+
+.gift-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.gift-icon {
+    font-size: 1.5rem;
+    color: var(--primary);
+}
+
+.gift-info h4 {
+    margin: 0 0 5px 0;
+    color: var(--primary);
+}
+
+.gift-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.9rem;
+    color: var(--gray);
+}
+
+.gift-meta .sender, .gift-meta .recipient {
+    font-weight: 500;
+}
+
+.gift-message {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: var(--light-gray);
+    border-radius: 8px;
+    font-style: italic;
+}
+
+.gift-actions {
+    margin-top: 10px;
+    text-align: right;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--gray);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    color: #ddd;
+}
+
+.empty-state h3 {
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+.section {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .gift-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .gift-meta {
+        flex-direction: row;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+    
+    .gift-actions {
+        text-align: center;
+    }
+    
+    .gift-item {
+        padding: 12px;
+    }
+}
+</style>
 {% endblock %}

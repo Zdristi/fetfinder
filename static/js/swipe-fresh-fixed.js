@@ -118,15 +118,23 @@ class SwipeSystem {
     // Update user information - only update if elements exist
     const usernameElem = document.getElementById('username');
     if (usernameElem) {
-      // Use first_name if available, otherwise fallback to username
-      let displayName = user.first_name || user.username || 'Anonymous';
-      
       // Add premium badge if user is premium
+      let usernameText = user.username || 'Anonymous';
       if (user.is_premium) {
-        displayName = `${displayName} <span class="premium-badge star" title="Premium Member"></span>`;
+        usernameText += ' <span class="premium-badge" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 3px 8px; border-radius: 10px; font-size: 0.8rem; margin-left: 10px;"><i class="fas fa-crown"></i> PREMIUM</span>';
       }
       
-      usernameElem.innerHTML = displayName;
+      // Add gift badges after the username
+      if (user.gift_badges && user.gift_badges.length > 0) {
+        const badgesHtml = user.gift_badges.map(badge => 
+          `<span class="gift-badge" title="${badge.description}" style="margin-left: 5px; background: var(--primary); color: white; padding: 3px 6px; border-radius: 10px; font-size: 0.8rem; display: inline-flex; align-items: center;">
+            ${badge.icon}
+          </span>`
+        ).join('');
+        usernameText += badgesHtml;
+      }
+      
+      usernameElem.innerHTML = usernameText;
     } else {
       console.error('Username element not found');
     }
@@ -241,114 +249,26 @@ class SwipeSystem {
           tagsContainer.appendChild(tag);
         });
       }
+      
+      // Add gift badges as tags if they exist
+      if (user.gift_badges && user.gift_badges.length > 0) {
+        user.gift_badges.forEach(badge => {
+          const tag = document.createElement('span');
+          tag.className = 'badge badge-gift';
+          tag.innerHTML = `${badge.icon} ${badge.name}`;
+          tag.title = badge.description;
+          tag.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+          tag.style.color = 'white';
+          tagsContainer.appendChild(tag);
+        });
+      }
     } else {
       console.error('Tags container element not found');
     }
     
-    // Load and display user's music tracks
-    this.loadUserTracks(user.id);
-    
     // Store current user ID
     this.currentUserId = user.id;
     console.log('Current user ID set to:', this.currentUserId);
-  }
-  
-  loadUserTracks(userId) {
-    console.log('Loading music tracks for user:', userId);
-    
-    // Fetch user's tracks
-    fetch(`/api/tracks/${userId}`)
-      .then(response => response.json())
-      .then(tracks => {
-        console.log('User tracks loaded:', tracks);
-        
-        const musicSection = document.getElementById('musicSection');
-        const tracksList = document.getElementById('userTracksList');
-        const audioPlayer = document.getElementById('userTrackPlayer');
-        
-        if (tracks && tracks.length > 0 && musicSection && tracksList) {
-          // Show music section
-          musicSection.style.display = 'block';
-          
-          // Display tracks
-          tracksList.innerHTML = '';
-          
-          tracks.slice(0, 3).forEach(track => { // Limit to 3 tracks
-            const trackDiv = document.createElement('div');
-            trackDiv.className = 'user-track-item';
-            trackDiv.style.cssText = 'padding: 8px; margin: 5px 0; background: rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; transition: background-color 0.3s;';
-            trackDiv.innerHTML = `
-              <div style="display: flex; align-items: center;">
-                <div style="margin-right: 10px; color: var(--primary);">
-                  <i class="fas fa-music"></i>
-                </div>
-                <div style="flex-grow: 1;">
-                  <div style="font-weight: bold; font-size: 0.9rem;">${track.title}</div>
-                  ${track.artist ? `<div style="font-size: 0.8rem; color: var(--gray);">${track.artist}</div>` : ''}
-                </div>
-                <div style="margin-left: 10px;">
-                  <button class="btn btn-sm play-track-btn" data-track-id="${track.id}" style="padding: 5px 10px; font-size: 0.8rem;">
-                    <i class="fas fa-play"></i>
-                  </button>
-                </div>
-              </div>
-            `;
-            
-            // Add click event to play button
-            const playButton = trackDiv.querySelector('.play-track-btn');
-            playButton.addEventListener('click', (e) => {
-              e.stopPropagation();
-              this.playUserTrack(track.id, track.title, track.artist);
-            });
-            
-            tracksList.appendChild(trackDiv);
-          });
-        } else if (musicSection) {
-          // Hide music section if no tracks
-          musicSection.style.display = 'none';
-        }
-      })
-      .catch(error => {
-        console.error('Error loading user tracks:', error);
-      });
-  }
-  
-  playUserTrack(trackId, trackTitle, trackArtist) {
-    console.log('Playing user track:', trackId);
-    
-    const audioPlayer = document.getElementById('userTrackPlayer');
-    const nowPlaying = document.getElementById('nowPlayingTrack');
-    
-    if (audioPlayer && nowPlaying) {
-      // Increment play count
-      fetch(`/api/track/${trackId}/play`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.status === 'success') {
-            console.log('Play count updated:', data.play_count);
-          }
-        })
-        .catch(error => {
-          console.error('Error updating play count:', error);
-        });
-      
-      // Show and play track
-      audioPlayer.style.display = 'block';
-      nowPlaying.style.display = 'block';
-      nowPlaying.textContent = `${trackTitle}${trackArtist ? ' - ' + trackArtist : ''}`;
-      
-      // Set track source (this would need to be implemented in the backend)
-      audioPlayer.src = `/tracks/${trackId}`;
-      audioPlayer.play()
-        .then(() => {
-          console.log('Track playback started');
-        })
-        .catch(error => {
-          console.error('Error playing track:', error);
-          // Show error message
-          alert('{{ get_text("error_playing_track") or "Error playing track" }}');
-        });
-    }
   }
   
   setupEventListeners() {
@@ -771,14 +691,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Global function for button clicks
 function swipe(action) {
-  console.log('=== Swipe action triggered by button ===');
-  console.log('Action:', action);
-  console.log('Current swipe system:', window.swipeSystem);
+  console.log('Swipe action triggered by button:', action);
   
   // Visual feedback on button click
   const button = event ? event.currentTarget : null;
   if (button) {
-    console.log('Button clicked:', button);
     button.style.transform = 'scale(0.9)';
     setTimeout(() => {
       button.style.transform = '';
@@ -787,89 +704,54 @@ function swipe(action) {
   
   // Perform the swipe if we have a current user
   if (window.swipeSystem && window.swipeSystem.currentUserId) {
-    console.log('Performing swipe for user:', window.swipeSystem.currentUserId);
     window.swipeSystem.performSwipe(action);
   } else {
     console.log('No current user to swipe on');
-    console.log('Current user ID:', window.swipeSystem ? window.swipeSystem.currentUserId : 'No swipe system');
-    
-    // Show error message to user
-    const errorMessage = document.createElement('div');
-    errorMessage.className = 'error-message';
-    errorMessage.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #dc3545;
-      color: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 10000;
-      font-weight: bold;
-    `;
-    errorMessage.textContent = 'Error: Cannot perform swipe action';
-    
-    document.body.appendChild(errorMessage);
-    
-    // Remove error message after 3 seconds
-    setTimeout(() => {
-      if (errorMessage.parentNode) {
-        errorMessage.remove();
-      }
-    }, 3000);
   }
 }
 
 // Superlike function
 function superlike() {
-  console.log('=== Superlike action triggered ===');
   swipe('superlike');
 }
 
 // Undo swipe function
 function undoSwipe() {
-  console.log('=== Undo swipe requested ===');
+  console.log('Undo swipe requested');
   // In a real implementation, this would connect to backend
-  const message = '{{ get_text("undo_swipe_premium") or "Undo swipe is a premium feature! Upgrade to premium to use this feature." }}';
-  alert(message);
+  alert('Undo swipe is a premium feature! Upgrade to premium to use this feature.');
 }
 
 // Message modal functions
 function openMessageModal() {
-  console.log('=== Opening message modal ===');
+  console.log('Opening message modal');
   const modal = document.getElementById('messageModal');
   if (modal) {
     modal.style.display = 'flex';
-  } else {
-    console.error('Message modal element not found');
   }
 }
 
 function closeMessageModal() {
-  console.log('=== Closing message modal ===');
+  console.log('Closing message modal');
   const modal = document.getElementById('messageModal');
   if (modal) {
     modal.style.display = 'none';
-  } else {
-    console.error('Message modal element not found');
   }
 }
 
 function sendMessageInsteadOfLike() {
-  console.log('=== Sending message instead of like ===');
+  console.log('Sending message instead of like');
   
   const messageInput = document.getElementById('messageInput');
-  const messageContent = messageInput ? messageInput.value.trim() : '';
+  const messageContent = messageInput.value.trim();
   
   if (!messageContent) {
-    alert('{{ get_text("please_enter_message") or "Please enter a message" }}');
+    alert('Please enter a message');
     return;
   }
   
   // In a real implementation, this would send the message to backend
-  const successMessage = '{{ get_text("message_sent_successfully") or "Message sent successfully!" }}';
-  alert(successMessage);
+  alert('Message sent successfully!');
   closeMessageModal();
   
   // Also perform like action

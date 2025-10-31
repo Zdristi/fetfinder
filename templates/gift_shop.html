@@ -1,57 +1,269 @@
 {% extends "base.html" %}
 
-{% block title %}Gift Shop{% endblock %}
+{% block title %}{{ get_text('shop') or 'Shop' }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1>Gift Shop</h1>
-    
-    <div class="current-coins">
-        <h3>Your Coins: {{ current_user.coins if current_user.coins else 0 }}</h3>
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">{{ get_text('shop') or 'Shop' }}</h2>
     </div>
     
-    <div class="gifts-grid">
-        <div class="gift-item">
-            <div class="gift-icon">🌹</div>
-            <h3>Rose</h3>
-            <p>10 coins</p>
-            <button class="btn btn-outline">Send</button>
+    <div class="section-title">{{ get_text('available_gifts') or 'Available Gifts' }}</div>
+    
+    {% if gifts %}
+        <div class="gifts-grid">
+            {% for gift in gifts %}
+            <div class="gift-card card">
+                <div class="gift-icon">
+                    {% if gift.icon %}
+                        <i class="{{ gift.icon }}"></i>
+                    {% else %}
+                        <i class="fas fa-gift"></i>
+                    {% endif %}
+                </div>
+                <div class="gift-info">
+                    <h3>{{ gift.name }}</h3>
+                    <p>{{ gift.description or (get_text('no_description') or 'No description') }}</p>
+                    <div class="gift-price">
+                        <span class="price">{{ gift.price }}</span> {{ get_text('coins') or 'coins' }}
+                    </div>
+                    <div class="gift-actions">
+                        <button class="btn buy-gift-btn" data-gift-id="{{ gift.id }}">
+                            {{ get_text('buy_gift') or 'Buy Gift' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
         </div>
-        
-        <div class="gift-item">
-            <div class="gift-icon">🍫</div>
-            <h3>Chocolate</h3>
-            <p>25 coins</p>
-            <button class="btn btn-outline">Send</button>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-gift"></i>
+            <h3>{{ get_text('no_gifts_available') or 'No gifts available' }}</h3>
+            <p>{{ get_text('gifts_will_appear_here') or 'Gifts will appear here when added by administrators' }}</p>
         </div>
-        
-        <div class="gift-item">
-            <div class="gift-icon">🧸</div>
-            <h3>Teddy Bear</h3>
-            <p>50 coins</p>
-            <button class="btn btn-outline">Send</button>
-        </div>
-        
-        <div class="gift-item">
-            <div class="gift-icon">🍾</div>
-            <h3>Champagne</h3>
-            <p>100 coins</p>
-            <button class="btn btn-outline">Send</button>
-        </div>
-        
-        <div class="gift-item">
-            <div class="gift-icon">💎</div>
-            <h3>Diamond</h3>
-            <p>250 coins</p>
-            <button class="btn btn-outline">Send</button>
-        </div>
-        
-        <div class="gift-item">
-            <div class="gift-icon">❤️</div>
-            <h3>Heart</h3>
-            <p>500 coins</p>
-            <button class="btn btn-outline">Send</button>
-        </div>
+    {% endif %}
+</div>
+
+<!-- Modal for sending gift -->
+<div id="sendGiftModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: var(--card-bg); margin: 15% auto; padding: 20px; border: none; border-radius: 15px; width: 90%; max-width: 400px; position: relative;">
+        <span class="close" id="closeModal" style="color: var(--text-color); float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+        <h3>{{ get_text('send_gift') or 'Send Gift' }}</h3>
+        <form id="sendGiftForm">
+            <div class="form-group">
+                <label for="recipient">{{ get_text('recipient') or 'Recipient' }}:</label>
+                <input type="text" id="recipient" class="form-control" placeholder="{{ get_text('search_recipient') or 'Search recipient...' }}">
+                <div id="recipientSuggestions" class="suggestions-dropdown" style="position: absolute; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 1001; display: none;"></div>
+            </div>
+            <div class="form-group">
+                <label for="giftMessage">{{ get_text('message_optional') or 'Message (optional)' }}:</label>
+                <textarea id="giftMessage" class="form-control" rows="3" placeholder="{{ get_text('write_message') or 'Write a message...' }}"></textarea>
+            </div>
+            <div class="form-group form-check">
+                <input type="checkbox" id="anonymousGift" class="form-check-input">
+                <label class="form-check-label" for="anonymousGift">{{ get_text('send_anonymously') or 'Send anonymously' }}</label>
+            </div>
+            <button type="submit" class="btn btn-primary">{{ get_text('send_gift') or 'Send Gift' }}</button>
+        </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle gift purchase buttons
+    const buyButtons = document.querySelectorAll('.buy-gift-btn');
+    buyButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const giftId = this.getAttribute('data-gift-id');
+            openGiftModal(giftId);
+        });
+    });
+    
+    // Close modal when clicking X
+    document.getElementById('closeModal').addEventListener('click', function() {
+        document.getElementById('sendGiftModal').style.display = 'none';
+    });
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('sendGiftModal');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+    
+    // Handle gift sending form
+    document.getElementById('sendGiftForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendGift();
+    });
+});
+
+function openGiftModal(giftId) {
+    // Store the selected gift ID for later use
+    document.getElementById('sendGiftModal').dataset.selectedGift = giftId;
+    document.getElementById('sendGiftModal').style.display = 'block';
+    
+    // Clear previous data
+    document.getElementById('recipient').value = '';
+    document.getElementById('giftMessage').value = '';
+    document.getElementById('recipientSuggestions').style.display = 'none';
+}
+
+function sendGift() {
+    const giftId = document.getElementById('sendGiftModal').dataset.selectedGift;
+    const recipientUsername = document.getElementById('recipient').value;
+    const message = document.getElementById('giftMessage').value;
+    const isAnonymous = document.getElementById('anonymousGift').checked;
+    
+    if (!recipientUsername) {
+        alert('Please enter a recipient username');
+        return;
+    }
+    
+    // Send the gift
+    fetch('/api/send_gift', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            gift_id: giftId,
+            recipient_username: recipientUsername,
+            message: message,
+            is_anonymous: isAnonymous
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Gift sent successfully!');
+            document.getElementById('sendGiftModal').style.display = 'none';
+        } else {
+            alert('Error sending gift: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error sending gift');
+    });
+}
+
+// Search for recipients as user types
+document.getElementById('recipient').addEventListener('input', function() {
+    const query = this.value;
+    if (query.length > 2) {
+        searchRecipients(query);
+    } else {
+        document.getElementById('recipientSuggestions').style.display = 'none';
+    }
+});
+
+function searchRecipients(query) {
+    fetch(`/api/search_users?query=${encodeURIComponent(query)}`)
+    .then(response => response.json())
+    .then(users => {
+        const suggestionsContainer = document.getElementById('recipientSuggestions');
+        suggestionsContainer.innerHTML = '';
+        
+        if (users.length > 0) {
+            users.forEach(user => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.className = 'suggestion-item';
+                suggestionItem.textContent = user.username;
+                suggestionItem.style.padding = '10px';
+                suggestionItem.style.cursor = 'pointer';
+                suggestionItem.style.borderBottom = '1px solid var(--border-color)';
+                
+                suggestionItem.addEventListener('click', function() {
+                    document.getElementById('recipient').value = user.username;
+                    suggestionsContainer.style.display = 'none';
+                });
+                
+                suggestionsContainer.appendChild(suggestionItem);
+            });
+            
+            suggestionsContainer.style.display = 'block';
+        } else {
+            suggestionsContainer.style.display = 'none';
+        }
+    })
+    .catch(error => {
+        console.error('Error searching users:', error);
+    });
+}
+</script>
+
+<style>
+.gifts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.gift-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+}
+
+.gift-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.gift-info h3 {
+    margin: 10px 0 5px 0;
+    color: var(--primary);
+}
+
+.gift-price {
+    font-weight: bold;
+    margin: 10px 0;
+    color: var(--success);
+}
+
+.buy-gift-btn {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.suggestions-dropdown {
+    position: absolute;
+    width: 100%;
+    z-index: 1000;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.suggestion-item:hover {
+    background-color: var(--light-gray);
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+@media (max-width: 768px) {
+    .gifts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+}
+</style>
 {% endblock %}
