@@ -8,75 +8,85 @@
         <h2 class="card-title">{{ get_text('gift_conversion') or 'Convert Gifts to Coins' }}</h2>
     </div>
     
-    <div class="section-title">{{ get_text('available_gifts_for_conversion') or 'Available Gifts for Conversion' }}</div>
-    <p>{{ get_text('conversion_rate_info') or 'Convert your received gifts to coins at 50% of their original value' }}</p>
+    <div class="section-title">{{ get_text('available_gifts_for_conversion') }}</div>
+    <p>{{ get_text('conversion_rate_info') }}</p>
     
     <div id="giftsForConversion" class="gifts-list">
-        <div class="loading">{{ get_text('loading') or 'Loading...' }}</div>
+        <div class="loading">{{ get_text('loading') }}</div>
     </div>
     
-    <div class="section-title" style="margin-top: 30px;">{{ get_text('purchase_premium') or 'Purchase Premium' }}</div>
+    <div class="section-title" style="margin-top: 30px;">{{ get_text('premium') or 'Premium' }}</div>
     
     <div class="premium-packages">
         <div class="package-card">
-            <h3>{{ get_text('premium_day') or '1 Day' }}</h3>
-            <div class="price">50 {{ get_text('coins') or 'coins' }}</div>
-            <button class="btn btn-primary" onclick="purchasePremium('day')">Buy Now</button>
+            <h3>{{ get_text('premium_day') }}</h3>
+            <div class="price">50 {{ get_text('coins') }}</div>
+            <button class="btn btn-primary" onclick="purchasePremium('day')">{{ get_text('buy_now') }}</button>
         </div>
         
         <div class="package-card">
-            <h3>{{ get_text('premium_week') or '1 Week' }}</h3>
-            <div class="price">200 {{ get_text('coins') or 'coins' }}</div>
-            <button class="btn btn-primary" onclick="purchasePremium('week')">Buy Now</button>
+            <h3>{{ get_text('premium_week') }}</h3>
+            <div class="price">200 {{ get_text('coins') }}</div>
+            <button class="btn btn-primary" onclick="purchasePremium('week')">{{ get_text('buy_now') }}</button>
         </div>
         
         <div class="package-card">
-            <h3>{{ get_text('premium_month') or '1 Month' }}</h3>
-            <div class="price">500 {{ get_text('coins') or 'coins' }}</div>
-            <button class="btn btn-primary" onclick="purchasePremium('month')">Buy Now</button>
+            <h3>{{ get_text('premium_month') }}</h3>
+            <div class="price">500 {{ get_text('coins') }}</div>
+            <button class="btn btn-primary" onclick="purchasePremium('month')">{{ get_text('buy_now') }}</button>
         </div>
         
         <div class="package-card">
-            <h3>{{ get_text('premium_year') or '1 Year' }}</h3>
-            <div class="price">4000 {{ get_text('coins') or 'coins' }}</div>
-            <button class="btn btn-primary" onclick="purchasePremium('year')">Buy Now</button>
+            <h3>{{ get_text('premium_year') }}</h3>
+            <div class="price">4000 {{ get_text('coins') }}</div>
+            <button class="btn btn-primary" onclick="purchasePremium('year')">{{ get_text('buy_now') }}</button>
         </div>
     </div>
     
-    <div class="section-title" style="margin-top: 30px;">{{ get_text('premium_features') or 'Premium Features' }}</div>
+    <div class="section-title" style="margin-top: 30px;">{{ get_text('premium_features') }}</div>
     
     <div class="premium-features-grid">
         <div class="feature-card">
-            <h4>{{ get_text('undo_swipe') or 'Undo Swipe' }}</h4>
-            <div class="price">25 {{ get_text('coins') or 'coins' }}</div>
-            <p>{{ get_text('undo_swipe_desc') or 'Undo your last swipe' }}</p>
-            <button class="btn btn-secondary" onclick="purchaseFeature('undo_swipe')">{{ get_text('buy_now') or 'Buy Now' }}</button>
+            <h4>{{ get_text('undo_swipe') }}</h4>
+            <div class="price">25 {{ get_text('coins') }}</div>
+            <p>{{ get_text('undo_swipe_desc') }}</p>
+            <button class="btn btn-secondary" onclick="purchaseFeature('undo_swipe')">{{ get_text('buy_now') }}</button>
         </div>
         
         <div class="feature-card">
-            <h4>{{ get_text('profile_boost') or 'Profile Boost' }}</h4>
-            <div class="price">100 {{ get_text('coins') or 'coins' }}</div>
-            <p>{{ get_text('profile_boost_desc') or 'Boost your profile for 30 minutes' }}</p>
-            <button class="btn btn-secondary" onclick="purchaseFeature('boost')">{{ get_text('buy_now') or 'Buy Now' }}</button>
+            <h4>{{ get_text('profile_boost') }}</h4>
+            <div class="price">100 {{ get_text('coins') }}</div>
+            <p>{{ get_text('profile_boost_desc') }}</p>
+            <button class="btn btn-secondary" onclick="purchaseFeature('boost')">{{ get_text('buy_now') }}</button>
         </div>
         
         <div class="feature-card">
-            <h4>{{ get_text('profile_highlight') or 'Profile Highlight' }}</h4>
-            <div class="price">75 {{ get_text('coins') or 'coins' }}</div>
-            <p>{{ get_text('profile_highlight_desc') or 'Highlight your profile for 24 hours' }}</p>
-            <button class="btn btn-secondary" onclick="purchaseFeature('highlight_profile')">{{ get_text('buy_now') or 'Buy Now' }}</button>
+            <h4>{{ get_text('profile_highlight') }}</h4>
+            <div class="price">75 {{ get_text('coins') }}</div>
+            <p>{{ get_text('profile_highlight_desc') }}</p>
+            <button class="btn btn-secondary" onclick="purchaseFeature('highlight_profile')">{{ get_text('buy_now') }}</button>
         </div>
         
         <div class="feature-card">
-            <h4>{{ get_text('extended_search') or 'Extended Search' }}</h4>
-            <div class="price">50 {{ get_text('coins') or 'coins' }}</div>
-            <p>{{ get_text('extended_search_desc') or 'Extended search for 1 day' }}</p>
-            <button class="btn btn-secondary" onclick="purchaseFeature('extended_search')">{{ get_text('buy_now') or 'Buy Now' }}</button>
+            <h4>{{ get_text('extended_search') }}</h4>
+            <div class="price">50 {{ get_text('coins') }}</div>
+            <p>{{ get_text('extended_search_desc') }}</p>
+            <button class="btn btn-secondary" onclick="purchaseFeature('extended_search')">{{ get_text('buy_now') }}</button>
         </div>
     </div>
 </div>
 
 <script>
+// Define translations for JavaScript
+const translations = {
+    'error_converting_gift': '{{ get_text("error_converting_gift") }}',
+    'no_gifts_to_convert': '{{ get_text("no_gifts_to_convert") }}',
+    'error_converting_gifts': '{{ get_text("error_converting_gifts") }}',
+    'error_purchasing_premium': '{{ get_text("error_purchasing_premium") }}',
+    'error_purchasing_feature': '{{ get_text("error_purchasing_feature") }}',
+    'loading': '{{ get_text("loading") }}'
+};
+
 let allGifts = [];
 
 function loadGiftsForConversion() {
@@ -88,8 +98,8 @@ function loadGiftsForConversion() {
             displayGiftsForConversion(data.gifts);
             document.getElementById('giftsForConversion').innerHTML = `
                 <div class="summary">
-                    <h3>{{ get_text('total_coins_available') or 'Total Coins Available' }}: <span id="totalCoins">${data.total_available_coins}</span></h3>
-                    <button class="btn btn-success" onclick="convertAllGifts()">{{ get_text('convert_all_gifts') or 'Convert All Gifts' }}</button>
+                    <h3>{{ get_text('total_coins_available') }}: <span id="totalCoins">${data.total_available_coins}</span></h3>
+                    <button class="btn btn-success" onclick="convertAllGifts()">{{ get_text('convert_all_gifts') }}</button>
                 </div>
                 <div class="gifts-container">
                     ${data.gifts.map(gift => `
@@ -101,7 +111,7 @@ function loadGiftsForConversion() {
                                 <div class="gift-info">
                                     <h4>${gift.gift_name}</h4>
                                     <div class="gift-meta">
-                                        <span class="sender">{{ get_text('from') or 'From' }} ${gift.sender}</span>
+                                        <span class="sender">{{ get_text('from') }} ${gift.sender}</span>
                                         <span class="timestamp">${new Date(gift.timestamp).toLocaleDateString()}</span>
                                     </div>
                                     <p>${gift.gift_description}</p>
@@ -110,10 +120,10 @@ function loadGiftsForConversion() {
                             
                             <div class="gift-conversion">
                                 <div class="conversion-info">
-                                    <div>{{ get_text('original_price') or 'Original Price' }}: ${gift.original_price} {{ get_text('coins') or 'coins' }}</div>
-                                    <div>{{ get_text('conversion_value') or 'Conversion Value' }}: <strong>${gift.conversion_value} {{ get_text('coins') or 'coins' }}</strong></div>
+                                    <div>{{ get_text('original_price') }}: ${gift.original_price} {{ get_text('coins') }}</div>
+                                    <div>{{ get_text('conversion_value') }}: <strong>${gift.conversion_value} {{ get_text('coins') }}</strong></div>
                                 </div>
-                                <button class="btn btn-info" onclick="convertSingleGift(${gift.id})">{{ get_text('convert_now') or 'Convert Now' }}</button>
+                                <button class="btn btn-info" onclick="convertSingleGift(${gift.id})">{{ get_text('convert_now') }}</button>
                             </div>
                         </div>
                     `).join('')}
@@ -124,7 +134,7 @@ function loadGiftsForConversion() {
     .catch(error => {
         console.error('Error loading gifts for conversion:', error);
         document.getElementById('giftsForConversion').innerHTML = `
-            <div class="error">{{ get_text('error_loading_gifts') or 'Error loading gifts for conversion' }}</div>
+            <div class="error">{{ get_text('error_loading_gifts') }}</div>
         `;
     });
 }
@@ -157,13 +167,13 @@ function convertSingleGift(giftId) {
     })
     .catch(error => {
         console.error('Error converting gift:', error);
-        alert('{{ get_text("error_converting_gift") or "Error converting gift" }}');
+        alert('{{ get_text("error_converting_gift") }}');
     });
 }
 
 function convertAllGifts() {
     if (allGifts.length === 0) {
-        alert('{{ get_text("no_gifts_to_convert") or "No gifts to convert" }}');
+        alert('{{ get_text("no_gifts_to_convert") }}');
         return;
     }
     
@@ -192,7 +202,7 @@ function convertAllGifts() {
     })
     .catch(error => {
         console.error('Error converting all gifts:', error);
-        alert('{{ get_text("error_converting_gifts") or "Error converting gifts" }}');
+        alert('{{ get_text("error_converting_gifts") }}');
     });
 }
 
@@ -220,7 +230,7 @@ function purchasePremium(duration) {
     })
     .catch(error => {
         console.error('Error purchasing premium:', error);
-        alert('{{ get_text("error_purchasing_premium") or "Error purchasing premium" }}');
+        alert('{{ get_text("error_purchasing_premium") }}');
     });
 }
 
@@ -246,7 +256,7 @@ function purchaseFeature(feature) {
     })
     .catch(error => {
         console.error('Error purchasing feature:', error);
-        alert('{{ get_text("error_purchasing_feature") or "Error purchasing feature" }}');
+        alert('{{ get_text("error_purchasing_feature") }}');
     });
 }
 
