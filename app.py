@@ -4035,6 +4035,269 @@ def api_send_gift():
         return jsonify({'status': 'error', 'message': 'Failed to send gift'}), 500
 
 
+# API route to convert gifts to coins
+@app.route('/api/convert_gifts_to_coins', methods=['POST'])
+@login_required
+def api_convert_gifts_to_coins():
+    """API endpoint to convert user's gifts to coins"""
+    try:
+        from models import UserGift, Gift
+        import json
+        
+        data = request.get_json()
+        gift_ids = data.get('gift_ids', [])  # List of gift IDs to convert
+        
+        if not gift_ids:
+            return jsonify({'status': 'error', 'message': 'No gifts specified for conversion'}), 400
+        
+        # Get the gifts that belong to the current user (received gifts)
+        user_gifts = UserGift.query.filter(
+            UserGift.recipient_id == current_user.id,
+            UserGift.id.in_(gift_ids),
+            UserGift.is_read == True  # Only allow converting read gifts
+        ).all()
+        
+        if not user_gifts:
+            return jsonify({'status': 'error', 'message': 'No valid gifts found for conversion'}), 404
+        
+        # Calculate total coin value
+        total_coins = 0
+        converted_gifts = []
+        
+        for user_gift in user_gifts:
+            gift = Gift.query.get(user_gift.gift_id)
+            if gift:
+                # Convert at 50% value to prevent inflation
+                coin_value = int(gift.price * 0.5)
+                if coin_value < 1:
+                    coin_value = 1  # Minimum 1 coin per gift
+                total_coins += coin_value
+                
+                # Add to converted list for response
+                converted_gifts.append({
+                    'id': user_gift.id,
+                    'gift_name': gift.name,
+                    'coin_value': coin_value
+                })
+        
+        # Add coins to user's balance
+        current_user.coins += total_coins
+        db.session.commit()
+        
+        # Create notification about the conversion
+        notification = Notification(
+            user_id=current_user.id,
+            type='gift_conversion',
+            title='Gifts Converted to Coins!',
+            content=f'You converted {len(converted_gifts)} gifts to {total_coins} coins',
+            url=url_for('my_gifts')
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Converted {len(converted_gifts)} gifts to {total_coins} coins',
+            'total_coins_added': total_coins,
+            'converted_gifts': converted_gifts,
+            'new_balance': current_user.coins
+        })
+    
+    except Exception as e:
+        print(f"Error converting gifts to coins: {e}")
+        return jsonify({'status': 'error', 'message': 'Failed to convert gifts to coins'}), 500
+
+
+# API route to get user's received gifts for conversion
+@app.route('/api/user_gifts_for_conversion')
+@login_required
+def api_user_gifts_for_conversion():
+    """API endpoint to get user's received gifts for conversion"""
+    try:
+        from models import UserGift, Gift
+        
+        # Get all received gifts for the current user that are read
+        user_gifts = UserGift.query.filter_by(
+            recipient_id=current_user.id,
+            is_read=True
+        ).order_by(UserGift.timestamp.desc()).all()
+        
+        gifts_data = []
+        for user_gift in user_gifts:
+            gift = Gift.query.get(user_gift.gift_id)
+            if gift:
+                # Calculate conversion value (50% of original price)
+                conversion_value = int(gift.price * 0.5)
+                if conversion_value < 1:
+                    conversion_value = 1
+                
+                gifts_data.append({
+                    'id': user_gift.id,
+                    'gift_name': gift.name,
+                    'gift_description': gift.description,
+                    'icon': gift.icon,
+                    'original_price': gift.price,
+                    'conversion_value': conversion_value,
+                    'timestamp': user_gift.timestamp.isoformat(),
+                    'sender': 'Anonymous' if user_gift.is_anonymous else user_gift.sender.username,
+                    'message': user_gift.message
+                })
+        
+        return jsonify({
+            'status': 'success',
+            'gifts': gifts_data,
+            'total_available_coins': sum(g['conversion_value'] for g in gifts_data)
+        })
+    
+    except Exception as e:
+        print(f"Error fetching user gifts for conversion: {e}")
+        return jsonify({'status': 'error', 'message': 'Failed to fetch gifts'}), 500
+
+
+# API route to purchase premium with coins
+@app.route('/api/purchase_premium', methods=['POST'])
+@login_required
+def api_purchase_premium():
+    """API endpoint to purchase premium subscription with coins"""
+    try:
+        from datetime import datetime, timedelta
+        import json
+        
+        data = request.get_json()
+        duration = data.get('duration', 'month')  # 'day', 'week', 'month', 'year'
+        
+        # Define premium prices in coins
+        premium_prices = {
+            'day': 50,
+            'week': 200,
+            'month': 500,
+            'year': 4000
+        }
+        
+        if duration not in premium_prices:
+            return jsonify({'status': 'error', 'message': 'Invalid duration'}), 400
+        
+        price = premium_prices[duration]
+        
+        if current_user.coins < price:
+            return jsonify({'status': 'error', 'message': f'Not enough coins. Premium {duration} costs {price} coins, you have {current_user.coins}'}), 400
+        
+        # Calculate premium expiry date
+        if duration == 'day':
+            expiry_date = datetime.utcnow() + timedelta(days=1)
+        elif duration == 'week':
+            expiry_date = datetime.utcnow() + timedelta(weeks=1)
+        elif duration == 'month':
+            expiry_date = datetime.utcnow() + timedelta(days=30)
+        elif duration == 'year':
+            expiry_date = datetime.utcnow() + timedelta(days=365)
+        
+        # Deduct coins and update premium status
+        current_user.coins -= price
+        current_user.is_premium = True
+        current_user.premium_expires = expiry_date
+        
+        db.session.commit()
+        
+        # Create notification about premium purchase
+        notification = Notification(
+            user_id=current_user.id,
+            type='premium',
+            title='Premium Activated!',
+            content=f'Your premium subscription is now active until {expiry_date.strftime("%Y-%m-%d")}',
+            url=url_for('profile')
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Premium subscription ({duration}) purchased successfully!',
+            'new_balance': current_user.coins,
+            'premium_expires': expiry_date.isoformat(),
+            'is_premium': True
+        })
+    
+    except Exception as e:
+        print(f"Error purchasing premium: {e}")
+        return jsonify({'status': 'error', 'message': 'Failed to purchase premium'}), 500
+
+
+# API route to purchase premium features with coins
+@app.route('/api/purchase_premium_feature', methods=['POST'])
+@login_required
+def api_purchase_premium_feature():
+    """API endpoint to purchase individual premium features with coins"""
+    try:
+        import json
+        
+        data = request.get_json()
+        feature = data.get('feature')  # 'undo_swipe', 'boost', 'highlight_profile', 'extended_search'
+        
+        # Define feature prices in coins
+        feature_prices = {
+            'undo_swipe': 25,      # Undo last swipe
+            'boost': 100,          # Profile boost for 30 min
+            'highlight_profile': 75,  # Highlight profile for 24h
+            'extended_search': 50, # Extended search for 1 day
+            'no_ads': 200,         # No ads for 1 week
+            'double_coins': 150    # Double coins earned for 1 week
+        }
+        
+        if feature not in feature_prices:
+            return jsonify({'status': 'error', 'message': 'Invalid feature'}), 400
+        
+        price = feature_prices[feature]
+        
+        if current_user.coins < price:
+            return jsonify({'status': 'error', 'message': f'Not enough coins. {feature.replace("_", " ").title()} costs {price} coins, you have {current_user.coins}'}), 400
+        
+        # Deduct coins
+        current_user.coins -= price
+        
+        # For now, we'll just create a notification
+        # In a real implementation, we'd set temporary flags or create feature records
+        feature_names = {
+            'undo_swipe': 'Undo Swipe',
+            'boost': 'Profile Boost',
+            'highlight_profile': 'Profile Highlight',
+            'extended_search': 'Extended Search',
+            'no_ads': 'No Ads',
+            'double_coins': 'Double Coins'
+        }
+        
+        db.session.commit()
+        
+        # Create notification about feature purchase
+        notification = Notification(
+            user_id=current_user.id,
+            type='feature_purchase',
+            title=f'{feature_names[feature]} Purchased!',
+            content=f'You purchased {feature_names[feature]} for {price} coins',
+            url=url_for('profile')
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'{feature_names[feature]} purchased successfully!',
+            'new_balance': current_user.coins,
+            'feature': feature
+        })
+    
+    except Exception as e:
+        print(f"Error purchasing premium feature: {e}")
+        return jsonify({'status': 'error', 'message': 'Failed to purchase premium feature'}), 500
+
+
+@app.route('/gift_conversion')
+@login_required
+def gift_conversion():
+    """Page for converting gifts to coins and purchasing premium features"""
+    return render_template('gift_conversion.html')
+
+
 # API route to search for users to send gifts to
 @app.route('/api/search_users')
 @login_required
